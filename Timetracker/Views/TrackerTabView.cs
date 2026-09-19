@@ -248,7 +248,8 @@ public sealed class TrackerTabView : UserControl
 
     private void OnTaskBoxTextChanged(object? sender, EventArgs e)
     {
-        if (_pickingSuggestion) return;
+        if (_pickingSuggestion)
+            return;
         UpdateSuggestions();
     }
 
@@ -294,7 +295,8 @@ public sealed class TrackerTabView : UserControl
 
     private void ApplySelectedSuggestion()
     {
-        if (_suggestionList.SelectedItem is not SuggestionItem suggestion) return;
+        if (_suggestionList.SelectedItem is not SuggestionItem suggestion)
+            return;
 
         _pickingSuggestion = true;
         try
@@ -336,7 +338,8 @@ public sealed class TrackerTabView : UserControl
     private void OnGridCellDoubleClick(object? sender, DataGridViewCellEventArgs e)
     {
         // Ignore header clicks; a running timer is left untouched.
-        if (e.RowIndex < 0 || e.RowIndex >= _vm.Entries.Count) return;
+        if (e.RowIndex < 0 || e.RowIndex >= _vm.Entries.Count)
+            return;
 
         _vm.StartFromRow(_vm.Entries[e.RowIndex]);
     }
@@ -384,9 +387,11 @@ public sealed class TrackerTabView : UserControl
         {
             // WinForms forbids sort glyphs on NotSortable columns (e.g. Description);
             // touching them would throw an InvalidOperationException.
-            if (column.SortMode == DataGridViewColumnSortMode.NotSortable) continue;
+            if (column.SortMode == DataGridViewColumnSortMode.NotSortable)
+                continue;
 
-            if (!_columnBaseNames.TryGetValue(column.DataPropertyName, out var baseName)) continue;
+            if (!_columnBaseNames.TryGetValue(column.DataPropertyName, out var baseName))
+                continue;
 
             if (column.DataPropertyName == _vm.SortColumn)
             {
@@ -407,7 +412,8 @@ public sealed class TrackerTabView : UserControl
     private void OnGridCellValidating(object? sender, DataGridViewCellValidatingEventArgs e)
     {
         var columnName = _grid.Columns[e.ColumnIndex].DataPropertyName;
-        if (columnName is not (nameof(EntryRow.Task) or nameof(EntryRow.Description))) return;
+        if (columnName is not (nameof(EntryRow.Task) or nameof(EntryRow.Description)))
+            return;
 
         if (e.RowIndex < 0 || e.RowIndex >= _vm.Entries.Count)
         {
@@ -425,9 +431,11 @@ public sealed class TrackerTabView : UserControl
     private void OnGridCellEndEdit(object? sender, DataGridViewCellEventArgs e)
     {
         var columnName = _grid.Columns[e.ColumnIndex].DataPropertyName;
-        if (columnName is not (nameof(EntryRow.Task) or nameof(EntryRow.Description))) return;
+        if (columnName is not (nameof(EntryRow.Task) or nameof(EntryRow.Description)))
+            return;
 
-        if (e.RowIndex < 0 || e.RowIndex >= _vm.Entries.Count) return;
+        if (e.RowIndex < 0 || e.RowIndex >= _vm.Entries.Count)
+            return;
         var row = _vm.Entries[e.RowIndex];
 
         // The binding has pushed the new text into EntryRow by now. Commit deferred,
