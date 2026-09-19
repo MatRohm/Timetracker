@@ -25,6 +25,11 @@ This repository contains a .NET/C# application.
 - Prefer dependency injection over service locator patterns.
 - Prefer immutable data where practical.
 - Avoid unnecessary abstractions and premature generalization.
+- Assign the return value to a named variable before returning, so the
+  value is self-documenting and easy to inspect in the debugger.
+  Write `var result = Compute(); return result;` rather than
+  `return Compute();`. Trivial returns (`return;`, constants, direct
+  field/property reads, expression-bodied members) are exempt.
 
 ## Architecture
 
