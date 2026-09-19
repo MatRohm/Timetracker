@@ -116,7 +116,13 @@ Timetracker/
 │   ├── CommandBindings.cs       # Wires Buttons to ICommands (WinForms)
 │   └── FormsUiTimer.cs          # WinForms timer implementation
 ├── Program.cs                   # Entry point + composition root
-└── Timetracker.csproj
+├── Timetracker.csproj
+├── Timetracker.slnx             # XML solution (app + tests)
+└── Timetracker.Tests/           # NUnit tests with AwesomeAssertions + FakeItEasy
+    ├── TrackerViewModelTests.cs
+    ├── JsonTrackerRepositoryTests.cs
+    ├── WeekViewModelTests.cs
+    └── TestDoubles.cs
 ```
 
 The view model knows nothing about WinForms; the view contains no business logic.
