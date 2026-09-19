@@ -36,12 +36,12 @@ jobs:
 
       - name: Build & publish win-x64
         run: >
-          dotnet publish src/Timetracker.csproj -c Release -r win-x64 --self-contained true
+          dotnet publish Timetracker/Timetracker.csproj -c Release -r win-x64 --self-contained true
           -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
 
       - name: Build & publish win-x86
         run: >
-          dotnet publish src/Timetracker.csproj -c Release -r win-x86 --self-contained true
+          dotnet publish Timetracker/Timetracker.csproj -c Release -r win-x86 --self-contained true
           -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
 
       - name: Package (zip)
