@@ -95,30 +95,32 @@ stop; every existing entry is always preserved, nothing is ever removed.
 
 ```
 Timetracker/
-├── Models/
-│   └── TrackerEntry.cs          # One finished time entry
-├── Services/
-│   └── JsonTrackerRepository.cs # Append-only JSON persistence (atomic writes)
-├── ViewModels/
-│   ├── TrackerViewModel.cs      # All logic: start/stop, timer, state, sorting
-│   ├── EntryRow.cs              # Aggregated display row (grouped sessions)
-│   ├── WeekViewModel.cs         # Week view state: 7 day columns, navigation
-│   ├── WeekDayViewModel.cs      # One weekday column (header, bookings, total)
-│   ├── SuggestionItem.cs        # Autocomplete suggestion (name + total time)
-│   ├── ObservableObject.cs      # INotifyPropertyChanged base class
-│   ├── RelayCommand.cs          # ICommand implementation
-│   ├── IUiTimer.cs              # UI-agnostic timer abstraction
-│   └── TrackerStatus.cs         # Info / Success / Error status kinds
-├── Views/
-│   ├── TrackerForm.cs           # Shell: window, tabs, title binding, close handling
-│   ├── TrackerTabView.cs        # Tracker tab: input, suggestions, timer, history grid
-│   ├── WeekTabView.cs           # Week view tab: weekday columns, navigation
-│   ├── CommandBindings.cs       # Wires Buttons to ICommands (WinForms)
-│   └── FormsUiTimer.cs          # WinForms timer implementation
-├── Program.cs                   # Entry point + composition root
-├── Timetracker.csproj
-├── Timetracker.slnx             # XML solution (app + tests)
-└── Timetracker.Tests/           # NUnit tests with AwesomeAssertions + FakeItEasy
+├── src/                             # Application project
+│   ├── Models/
+│   │   └── TrackerEntry.cs          # One finished time entry
+│   ├── Services/
+│   │   ├── JsonTrackerRepository.cs # Append-only JSON persistence (atomic writes)
+│   │   └── ErrorLog.cs              # Timestamped error log next to the executable
+│   ├── ViewModels/
+│   │   ├── TrackerViewModel.cs      # All logic: start/stop, timer, state, sorting
+│   │   ├── EntryRow.cs              # Aggregated display row (grouped sessions)
+│   │   ├── WeekViewModel.cs         # Week view state: 7 day columns, navigation
+│   │   ├── WeekDayViewModel.cs      # One weekday column (header, bookings, total)
+│   │   ├── SuggestionItem.cs        # Autocomplete suggestion (name + total time)
+│   │   ├── ObservableObject.cs      # INotifyPropertyChanged base class
+│   │   ├── RelayCommand.cs          # ICommand implementation
+│   │   ├── IUiTimer.cs              # UI-agnostic timer abstraction
+│   │   └── TrackerStatus.cs         # Info / Success / Error status kinds
+│   ├── Views/
+│   │   ├── TrackerForm.cs           # Shell: window, tabs, title binding, close handling
+│   │   ├── TrackerTabView.cs        # Tracker tab: input, suggestions, timer, history grid
+│   │   ├── WeekTabView.cs           # Week view tab: weekday columns, navigation
+│   │   ├── CommandBindings.cs       # Wires Buttons to ICommands (WinForms)
+│   │   └── FormsUiTimer.cs          # WinForms timer implementation
+│   ├── Program.cs                   # Entry point + composition root
+│   └── Timetracker.csproj
+├── Timetracker.slnx                 # XML solution (app + tests)
+└── Timetracker.Tests/               # NUnit tests with AwesomeAssertions + FakeItEasy
     ├── TrackerViewModelTests.cs
     ├── JsonTrackerRepositoryTests.cs
     ├── WeekViewModelTests.cs
@@ -139,10 +141,10 @@ dotnet build
 ### Single-file desktop build
 
 ```pwsh
-dotnet publish -c Release -r win-x64 --self-contained true `
+dotnet publish src/Timetracker.csproj -c Release -r win-x64 --self-contained true `
   -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
 ```
 
 The standalone executable ends up at
-`bin\Release\net10.0-windows\win-x64\publish\Timetracker.exe` and runs on any
+`src\bin\Release\net10.0-windows\win-x64\publish\Timetracker.exe` and runs on any
 Windows 10/11 machine without installing .NET.
