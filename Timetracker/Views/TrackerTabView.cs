@@ -224,8 +224,11 @@ public sealed class TrackerTabView : UserControl
         _grid.AllowUserToDeleteRows = false;
         _grid.AllowUserToResizeRows = false;
         _grid.RowHeadersVisible = false;
-        _grid.SelectionMode = DataGridViewSelectionMode.CellSelect;
-        _grid.MultiSelect = false;
+        // Row-based multi-selection: click selects a row, SHIFT+CLICK selects the
+        // range from the anchor row, CTRL+CLICK adds or removes single rows. Del
+        // then deletes every selected row together.
+        _grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+        _grid.MultiSelect = true;
         _grid.AutoGenerateColumns = false;
         _grid.BackgroundColor = SystemColors.Window;
         _grid.BorderStyle = BorderStyle.None;
