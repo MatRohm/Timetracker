@@ -129,6 +129,58 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     public void AcceptSuggestion(SuggestionItem suggestion) => TaskName = suggestion.Name;
 
     /// <summary>
+    /// Deletes the given rows (all their sessions) from the log after asking the
+    /// user to confirm. Returns false when the user declined or the save failed.
+    /// </summary>
+    public bool DeleteEntries(IReadOnlyList<EntryRow> rows, Func<string, bool> confirm)
+    {
+        if (rows is null || rows.Count == 0)
+        {
+            return false;
+        }
+
+        var summary = rows.Count == 1
+            ? $"\"{rows[0].Task}\" (all {rows[0].Sessions.Count} sessions)"
+            : $"{rows.Count} tasks ({rows.Sum(r => r.Sessions.Count)} sessions)";
+        if (!confirm(summary))
+        {
+            return false;
+        }
+
+        // Snapshot so a failed save can restore exactly the previous state.
+        var backup = _sessions.Select(e => e.Clone()).ToList();
+        var removeKeys = rows.SelectMany(r => r.Sessions)
+            .Select(s => (s.Task, s.Start))
+            .ToHashSet();
+
+        var remaining = _sessions
+            .Where(s => !removeKeys.Contains((s.Task, s.Start)))
+            .ToList();
+
+        try
+        {
+            _repository.Save(remaining);
+
+            Status = TrackerStatus.Success;
+            StatusText = $"✓ Deleted {summary}";
+            RefreshEntries();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // Roll back the in-memory state to the pre-delete snapshot.
+            _sessions = backup;
+            RefreshEntries();
+
+            ErrorLog.Log("DeleteEntries", ex);
+            Status = TrackerStatus.Error;
+            StatusText = "✗ Delete failed: " + ex.Message;
+            ErrorOccurred?.Invoke("Could not delete the entry:\n" + ex.Message);
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Starts tracking the given history row (double-click in the list). Fills the
     /// task field with its name, so the new session continues that task, and starts
     /// the timer. Does nothing while the timer is already running.
