@@ -128,6 +128,19 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     public void AcceptSuggestion(SuggestionItem suggestion) => TaskName = suggestion.Name;
 
     /// <summary>
+    /// Starts tracking the given history row (double-click in the list). Fills the
+    /// task field with its name, so the new session continues that task, and starts
+    /// the timer. Does nothing while the timer is already running.
+    /// </summary>
+    public void StartFromRow(EntryRow row)
+    {
+        if (IsRunning || row is null) return;
+
+        TaskName = row.Task;
+        Start();
+    }
+
+    /// <summary>
     /// Commits an inline text edit (task name / description) and persists the whole log.
     /// Returns false when the edit was rejected (empty task name or save failure).
     /// </summary>
@@ -197,7 +210,6 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
             InvalidTaskName?.Invoke();
             return;
         }
-
         _startedAt = DateTimeOffset.Now;
         _watch.Restart();
         _timer.Start();

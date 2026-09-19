@@ -61,9 +61,14 @@ direction. Sortable columns: **Task** (A–Z), **Started**, **Ended** (newest fi
 on first click) and **Duration** (sorted numerically). Sorting state lives in the
 view model (`SortColumn` / `SortAscending`); the grid only shows sort glyphs.
 
-The **Task** and **Description** cells are editable inline: double-click a cell,
-type, and press **Enter** to commit (Esc cancels). Changes are persisted to the
-JSON file immediately; an empty task name is rejected, the description is optional.
+The **Task** and **Description** cells are editable inline: press **F2** on a
+selected cell, type, and press **Enter** to commit (Esc cancels). Changes are
+persisted to the JSON file immediately; an empty task name is rejected, the
+description is optional. Started/Ended/Duration stay read-only.
+
+**Double-click a row to start tracking that task immediately**: the timer starts
+with the row's task name (a running session is never interrupted; editing stays
+on F2).
 
 ## Data file
 
