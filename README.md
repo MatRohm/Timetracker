@@ -95,7 +95,7 @@ stop; every existing entry is always preserved, nothing is ever removed.
 
 ```
 Timetracker/
-├── src/                             # Application project
+├── Timetracker/                     # Application project (named after the csproj)
 │   ├── Models/
 │   │   └── TrackerEntry.cs          # One finished time entry
 │   ├── Services/
@@ -141,10 +141,10 @@ dotnet build
 ### Single-file desktop build
 
 ```pwsh
-dotnet publish src/Timetracker.csproj -c Release -r win-x64 --self-contained true `
+dotnet publish Timetracker/Timetracker.csproj -c Release -r win-x64 --self-contained true `
   -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
 ```
 
 The standalone executable ends up at
-`src\bin\Release\net10.0-windows\win-x64\publish\Timetracker.exe` and runs on any
+`Timetracker\bin\Release\net10.0-windows\win-x64\publish\Timetracker.exe` and runs on any
 Windows 10/11 machine without installing .NET.
