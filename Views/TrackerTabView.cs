@@ -155,6 +155,8 @@ public sealed class TrackerTabView : UserControl
         _taskBox.KeyDown += OnTaskBoxKeyDown;
 
         _grid.ColumnHeaderMouseClick += OnGridColumnHeaderClick;
+        _grid.CellDoubleClick += OnGridCellDoubleClick;
+        _grid.KeyDown += OnGridKeyDown;
         _grid.CellValidating += OnGridCellValidating;
         _grid.CellEndEdit += OnGridCellEndEdit;
         _grid.DataError += OnGridDataError;
@@ -327,6 +329,27 @@ public sealed class TrackerTabView : UserControl
         if (e.ColumnIndex >= 0)
         {
             _vm.ApplySort(_grid.Columns[e.ColumnIndex].DataPropertyName);
+        }
+    }
+
+    /// <summary>Double-clicking a row starts the timer for that task.</summary>
+    private void OnGridCellDoubleClick(object? sender, DataGridViewCellEventArgs e)
+    {
+        // Ignore header clicks; a running timer is left untouched.
+        if (e.RowIndex < 0 || e.RowIndex >= _vm.Entries.Count) return;
+
+        _vm.StartFromRow(_vm.Entries[e.RowIndex]);
+    }
+
+    private void OnGridKeyDown(object? sender, KeyEventArgs e)
+    {
+        // Edit mode now lives on F2 only (double-click starts the timer instead).
+        if (e.KeyCode == Keys.F2
+            && _grid.CurrentCell is { } cell
+            && _grid.Columns[cell.ColumnIndex].ReadOnly == false)
+        {
+            _grid.BeginEdit(true);
+            e.Handled = true;
         }
     }
 
