@@ -12,4 +12,10 @@
     <Version>1.0.0</Version>
   </PropertyGroup>
 
+  <!-- The test project lives in a subfolder of this project; without this
+       exclusion its sources and generated obj files would be compiled here too. -->
+  <ItemGroup>
+    <Compile Remove="Timetracker.Tests/**" />
+  </ItemGroup>
+
 </Project>
