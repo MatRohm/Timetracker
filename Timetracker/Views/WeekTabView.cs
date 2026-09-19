@@ -18,6 +18,7 @@ public sealed class WeekTabView : UserControl
     private readonly Button _prevButton = new();
     private readonly Button _nextButton = new();
     private readonly Button _currentButton = new();
+    private readonly CheckBox _groupByBookingElementCheck = new();
 
     public WeekTabView(WeekViewModel week)
     {
@@ -79,6 +80,7 @@ public sealed class WeekTabView : UserControl
         buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
         _prevButton.Text = "◀ Previous week";
         _prevButton.AutoSize = true;
@@ -97,6 +99,13 @@ public sealed class WeekTabView : UserControl
         buttonRow.Controls.Add(_prevButton, 0, 0);
         buttonRow.Controls.Add(_nextButton, 1, 0);
         buttonRow.Controls.Add(_currentButton, 2, 0);
+
+        _groupByBookingElementCheck.Text = "Group by booking element";
+        _groupByBookingElementCheck.AutoSize = true;
+        _groupByBookingElementCheck.Checked = true;
+        _groupByBookingElementCheck.Margin = new Padding(16, 4, 0, 0);
+
+        buttonRow.Controls.Add(_groupByBookingElementCheck, 3, 0);
 
         _grid.Dock = DockStyle.Fill;
         _grid.ReadOnly = true;
@@ -144,6 +153,10 @@ public sealed class WeekTabView : UserControl
         _prevButton.Click += (_, _) => _week.PreviousWeekCommand.Execute(null);
         _nextButton.Click += (_, _) => _week.NextWeekCommand.Execute(null);
         _currentButton.Click += (_, _) => _week.CurrentWeekCommand.Execute(null);
+
+        _groupByBookingElementCheck.DataBindings.Add(nameof(CheckBox.Checked), _week,
+            nameof(WeekViewModel.GroupByBookingElement), formattingEnabled: false,
+            DataSourceUpdateMode.OnPropertyChanged);
 
         _week.PropertyChanged += OnWeekPropertyChanged;
         _week.Days.ListChanged += (_, _) => UpdateGrid();

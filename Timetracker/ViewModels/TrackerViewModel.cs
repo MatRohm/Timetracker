@@ -143,10 +143,11 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Commits an inline text edit (task name / description) and persists the whole log.
-    /// Returns false when the edit was rejected (empty task name or save failure).
+    /// Commits an inline text edit (task name / booking element) and persists the
+    /// whole log. Returns false when the edit was rejected (empty task name or
+    /// save failure).
     /// </summary>
-    public bool UpdateEntryText(EntryRow row, string task, string description)
+    public bool UpdateEntryText(EntryRow row, string task, string bookingElement)
     {
         task = task.Trim();
         if (task.Length == 0)
@@ -156,22 +157,22 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         }
 
         // Compare against the committed snapshot: the grid binding stages the edited
-        // text in the row BEFORE this method runs, so row.Task/row.Description already
-        // hold the new values and cannot be used to detect a change.
+        // text in the row BEFORE this method runs, so row.Task/row.BookingElement
+        // already hold the new values and cannot be used to detect a change.
         var originalTask = row.CommittedTask;
-        var originalDescription = row.CommittedDescription;
+        var originalBookingElement = row.CommittedBookingElement;
 
-        if (task == originalTask && description == originalDescription)
+        if (task == originalTask && bookingElement == originalBookingElement)
         {
             // Nothing changed; drop the staged edit and restore the committed text.
-            row.CommitText(originalTask, originalDescription);
+            row.CommitText(originalTask, originalBookingElement);
             return true;
         }
 
         foreach (var session in row.Sessions)
         {
             session.Task = task;
-            session.Description = description;
+            session.BookingElement = bookingElement;
         }
 
         try
@@ -179,7 +180,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
             // Rewrite the file with the edited values; existing entries are preserved.
             _repository.Save(_sessions);
 
-            row.CommitText(task, description);
+            row.CommitText(task, bookingElement);
 
             Status = TrackerStatus.Success;
             StatusText = $"✓ Updated \"{task}\"";
@@ -248,11 +249,11 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     private TrackerEntry BuildEntry(DateTimeOffset endedAt, TimeSpan elapsed) => new()
     {
         Task = TaskName.Trim(),
-        // New sessions inherit the task's latest description so grouping stays consistent.
-        Description = _sessions
+        // New sessions inherit the task's latest booking element so grouping stays consistent.
+        BookingElement = _sessions
             .Where(e => e.Task.Trim().Equals(TaskName.Trim(), StringComparison.OrdinalIgnoreCase))
-            .Select(e => e.Description)
-            .LastOrDefault(d => !string.IsNullOrWhiteSpace(d)) ?? "",
+            .Select(e => e.BookingElement)
+            .LastOrDefault(b => !string.IsNullOrWhiteSpace(b)) ?? "",
         Start = _startedAt,
         End = endedAt,
         Duration = elapsed.ToString(@"hh\:mm\:ss"),
@@ -282,12 +283,12 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// <summary>
     /// Sorts the history list. Clicking the same column again toggles the direction;
     /// a new column starts with dates newest-first, everything else ascending.
-    /// Non-sortable columns (Description) are ignored, so clicking them keeps the
+    /// Non-sortable columns (BookingElement) are ignored, so clicking them keeps the
     /// current sort and never produces a sort glyph on a NotSortable column.
     /// </summary>
     public void ApplySort(string column)
     {
-        if (column == nameof(EntryRow.Description))
+        if (column == nameof(EntryRow.BookingElement))
         {
             return;
         }

@@ -20,6 +20,7 @@ public sealed class WeekViewModel : ObservableObject
     private DateTimeOffset _weekStart;
     private string _weekTitle = "";
     private string _weekTotalText = "";
+    private bool _groupByBookingElement = true;
 
     public WeekViewModel()
     {
@@ -50,6 +51,22 @@ public sealed class WeekViewModel : ObservableObject
         private set => SetProperty(ref _weekTotalText, value);
     }
 
+    /// <summary>
+    /// True: day columns group entries by booking element (default). False: they
+    /// show the task names instead.
+    /// </summary>
+    public bool GroupByBookingElement
+    {
+        get => _groupByBookingElement;
+        set
+        {
+            if (SetProperty(ref _groupByBookingElement, value))
+            {
+                Rebuild();
+            }
+        }
+    }
+
     public ICommand PreviousWeekCommand => _previousWeekCommand;
 
     public ICommand NextWeekCommand => _nextWeekCommand;
@@ -63,6 +80,14 @@ public sealed class WeekViewModel : ObservableObject
     public void UpdateSessions(IReadOnlyList<TrackerEntry> sessions)
     {
         _sessions = sessions;
+        Rebuild();
+    }
+
+    /// <summary>Sets the grouping mode without changing the grouping itself (for binding only).</summary>
+    public void SetGrouping(bool groupByBookingElement)
+    {
+        _groupByBookingElement = groupByBookingElement;
+        OnPropertyChanged(nameof(GroupByBookingElement));
         Rebuild();
     }
 
@@ -88,7 +113,7 @@ public sealed class WeekViewModel : ObservableObject
         for (var i = 0; i < 7; i++)
         {
             var day = _weekStart.AddDays(i);
-            _days[i].Update(day, weekSessions.Where(s => s.Start.Date == day.Date));
+            _days[i].Update(day, weekSessions.Where(s => s.Start.Date == day.Date), GroupByBookingElement);
         }
 
         WeekTotalText = $"Σ {HoursMinutes(weekSessions.Sum(s => s.DurationSeconds))}";

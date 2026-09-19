@@ -82,7 +82,7 @@ public sealed class TrackerViewModelTests
             new TrackerEntry
             {
                 Task = "Report",
-                Description = "quarterly",
+                BookingElement = "quarterly",
                 Start = new DateTimeOffset(2026, 9, 18, 9, 0, 0, TimeSpan.FromHours(2)),
                 End = new DateTimeOffset(2026, 9, 18, 10, 0, 0, TimeSpan.FromHours(2)),
                 Duration = "01:00:00",
@@ -100,14 +100,14 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void Description_edit_survives_adding_a_new_session()
+    public void BookingElement_edit_survives_adding_a_new_session()
     {
-        // Regression: the description used to revert to empty after a new session.
+        // Regression: the booking element used to revert to empty after a new session.
         var (repo, _) = RepositoryFake.Create(
             new TrackerEntry
             {
                 Task = "Report",
-                Description = "draft",
+                BookingElement = "draft",
                 Start = new DateTimeOffset(2026, 9, 18, 9, 0, 0, TimeSpan.FromHours(2)),
                 End = new DateTimeOffset(2026, 9, 18, 10, 0, 0, TimeSpan.FromHours(2)),
                 Duration = "01:00:00",
@@ -115,14 +115,14 @@ public sealed class TrackerViewModelTests
             });
         using var vm = new TrackerViewModel(repo, new FakeTimer());
         var row = vm.Entries[0];
-        row.Description = "edited via grid"; // binding stages first, as in the real grid
-        vm.UpdateEntryText(row, row.Task, row.Description).Should().BeTrue();
+        row.BookingElement = "edited via grid"; // binding stages first, as in the real grid
+        vm.UpdateEntryText(row, row.Task, row.BookingElement).Should().BeTrue();
 
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
         vm.StopCommand.Execute(null);
 
-        vm.Entries.Single(r => r.Task == "Report").Description.Should().Be("edited via grid");
+        vm.Entries.Single(r => r.Task == "Report").BookingElement.Should().Be("edited via grid");
     }
 
     [Test]
@@ -140,7 +140,7 @@ public sealed class TrackerViewModelTests
         using var vm = new TrackerViewModel(repo, new FakeTimer());
         var row = vm.Entries[0];
 
-        var result = vm.UpdateEntryText(row, "   ", row.Description);
+        var result = vm.UpdateEntryText(row, "   ", row.BookingElement);
 
         result.Should().BeFalse();
         vm.Entries.Should().ContainSingle().Which.Task.Should().Be("Report");
@@ -198,7 +198,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void ApplySort_ignores_the_non_sortable_description_column()
+    public void ApplySort_ignores_the_non_sortable_booking_element_column()
     {
         var (repo, _) = RepositoryFake.Create(
             new TrackerEntry
@@ -211,9 +211,9 @@ public sealed class TrackerViewModelTests
             });
         using var vm = new TrackerViewModel(repo, new FakeTimer());
 
-        vm.ApplySort(nameof(EntryRow.Description));
+        vm.ApplySort(nameof(EntryRow.BookingElement));
 
-        vm.SortColumn.Should().NotBe(nameof(EntryRow.Description));
+        vm.SortColumn.Should().NotBe(nameof(EntryRow.BookingElement));
         vm.SortColumn.Should().Be(nameof(EntryRow.StartText), "the previous sort is kept");
     }
 
@@ -245,7 +245,7 @@ public sealed class TrackerViewModelTests
             new TrackerEntry
             {
                 Task = "Report",
-                Description = "quarterly",
+                BookingElement = "quarterly",
                 Start = new DateTimeOffset(2026, 9, 18, 9, 0, 0, TimeSpan.FromHours(2)),
                 End = new DateTimeOffset(2026, 9, 18, 10, 0, 0, TimeSpan.FromHours(2)),
                 Duration = "01:00:00",

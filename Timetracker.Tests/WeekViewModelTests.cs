@@ -36,28 +36,65 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
-    public void Same_task_entries_on_a_day_are_merged_into_one_line_with_total()
+    public void Group_by_booking_element_merges_entries_across_tasks()
     {
         var week = new WeekViewModel();
         var today = DateTimeOffset.Now.Date;
 
         week.UpdateSessions(
         [
-            Session(today, 9, 60, "Report"),
-            Session(today, 14, 30, "Report"),
-            Session(today, 12, 30, "Meeting"),
+            Session(today, 9, 60, "Report", "Project X"),
+            Session(today, 11, 30, "Meeting", "Project X"),
+            Session(today, 13, 45, "Review", "Project Y"),
         ]);
 
         var lines = week.Days.Single(d => d.IsToday).EntriesText.Split(Environment.NewLine);
-        lines.Should().HaveCount(2, "identical tasks merge into one line");
+
+        // Default mode: grouped by booking element; the label is the element name.
+        lines.Should().HaveCount(2, "both Project X entries merge into one line");
+        lines[0].Should().Be("Project X (1:30)");
+        lines[1].Should().Be("Project Y (0:45)");
+    }
+
+    [Test]
+    public void Switching_to_task_grouping_shows_task_names_again()
+    {
+        var week = new WeekViewModel();
+        var today = DateTimeOffset.Now.Date;
+
+        week.UpdateSessions(
+        [
+            Session(today, 9, 60, "Report", "Project X"),
+            Session(today, 14, 30, "Report", "Project X"),
+            Session(today, 12, 30, "Meeting", "Project X"),
+        ]);
+
+        week.GroupByBookingElement = false;
+
+        var lines = week.Days.Single(d => d.IsToday).EntriesText.Split(Environment.NewLine);
+        lines.Should().HaveCount(2);
         lines[0].Should().Be("Report (1:30)");
         lines[1].Should().Be("Meeting (0:30)");
     }
 
     [Test]
-    public void Merging_is_case_insensitive()
+    public void Entries_without_booking_element_are_labeled_when_grouping_by_element()
     {
         var week = new WeekViewModel();
+        var today = DateTimeOffset.Now.Date;
+
+        week.UpdateSessions([Session(today, 9, 60, "Adhoc")]);
+
+        week.Days.Single(d => d.IsToday).EntriesText.Should().Contain("Adhoc (1:00)");
+    }
+
+    [Test]
+    public void Same_task_entries_merge_in_task_grouping_mode()
+    {
+        var week = new WeekViewModel
+        {
+            GroupByBookingElement = false,
+        };
         var today = DateTimeOffset.Now.Date;
 
         week.UpdateSessions(
@@ -109,9 +146,10 @@ public sealed class WeekViewModelTests
         week.Days[0].Date.Date.Should().Be(monday, "current week jumps back");
     }
 
-    private static TrackerEntry Session(DateTime date, int startHour, int minutes, string task) => new()
+    private static TrackerEntry Session(DateTime date, int startHour, int minutes, string task, string bookingElement = "") => new()
     {
         Task = task,
+        BookingElement = bookingElement,
         Start = new DateTimeOffset(date.AddHours(startHour), DateTimeOffset.Now.Offset),
         End = new DateTimeOffset(date.AddHours(startHour).AddMinutes(minutes), DateTimeOffset.Now.Offset),
         Duration = TimeSpan.FromMinutes(minutes).ToString(@"hh\:mm\:ss"),

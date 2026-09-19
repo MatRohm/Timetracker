@@ -97,12 +97,41 @@ public sealed class JsonTrackerRepository : ITrackerRepository
             var text = File.ReadAllText(_jsonPath);
             if (string.IsNullOrWhiteSpace(text))
                 return [];
-            return JsonSerializer.Deserialize<List<TrackerEntry>>(text, JsonOptions) ?? [];
+            return MigrateLegacy(
+                JsonSerializer.Deserialize<List<LegacyEntryDto>>(text, JsonOptions) ?? []);
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
             _fileWasCorrupt = true;
             return [];
         }
+    }
+
+    /// <summary>
+    /// Older files stored the booking element under the JSON name "description";
+    /// map that value to <see cref="TrackerEntry.BookingElement"/> so existing
+    /// data survives the rename. Saves always write the new name.
+    /// </summary>
+    private static List<TrackerEntry> MigrateLegacy(IEnumerable<LegacyEntryDto> dtos) =>
+        [.. dtos.Select(d => new TrackerEntry
+        {
+            Task = d.Task,
+            BookingElement = d.BookingElement.Length > 0 ? d.BookingElement : d.Description,
+            Start = d.Start,
+            End = d.End,
+            Duration = d.Duration,
+            DurationSeconds = d.DurationSeconds,
+        })];
+
+    /// <summary>Load shape that tolerates both the legacy and the current JSON name.</summary>
+    private sealed class LegacyEntryDto
+    {
+        public string Task { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string BookingElement { get; set; } = "";
+        public DateTimeOffset Start { get; set; }
+        public DateTimeOffset End { get; set; }
+        public string Duration { get; set; } = "";
+        public double DurationSeconds { get; set; }
     }
 }
