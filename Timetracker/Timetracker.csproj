@@ -9,6 +9,7 @@
     <AssemblyName>Timetracker</AssemblyName>
     <RootNamespace>Timetracker</RootNamespace>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationIcon>Timetracker.ico</ApplicationIcon>
     <Version>1.0.0</Version>
   </PropertyGroup>
 

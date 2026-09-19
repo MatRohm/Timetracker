@@ -21,6 +21,8 @@ public sealed class TrackerForm : Form
         MinimumSize = new Size(760, 520);
         StartPosition = FormStartPosition.CenterScreen;
         ClientSize = new Size(820, 560);
+        // Fist-smashed-clock app icon in the title bar (and taskbar/alt-tab).
+        Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
 
         _trackerView = new TrackerTabView(_vm);
         var weekView = new WeekTabView(_vm.Week);

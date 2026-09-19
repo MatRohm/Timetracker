@@ -154,3 +154,10 @@ dotnet publish Timetracker/Timetracker.csproj -c Release -r win-x64 --self-conta
 The standalone executable ends up at
 `Timetracker\bin\Release\net10.0-windows\win-x64\publish\Timetracker.exe` and runs on any
 Windows 10/11 machine without installing .NET.
+
+## App icon
+
+The app icon (a fist smashing a clock) lives at
+`Timetracker/Timetracker.ico` as a multi-size ICO (16/32/48/256 px). It is
+embedded into the exe via `ApplicationIcon` and shown in the title bar,
+taskbar and Alt-Tab view.
