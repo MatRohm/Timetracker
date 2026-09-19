@@ -11,4 +11,14 @@ public sealed class TrackerEntry
     public DateTimeOffset End { get; set; }
     public string Duration { get; set; } = "";
     public double DurationSeconds { get; set; }
+
+    public TrackerEntry Clone() => new()
+    {
+        Task = Task,
+        BookingElement = BookingElement,
+        Start = Start,
+        End = End,
+        Duration = Duration,
+        DurationSeconds = DurationSeconds,
+    };
 }

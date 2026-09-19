@@ -353,8 +353,38 @@ public sealed class TrackerTabView : UserControl
         {
             _grid.BeginEdit(true);
             e.Handled = true;
+            return;
+        }
+
+        // Delete removes the selected entries (with confirmation).
+        if (e.KeyCode == Keys.Delete && !_grid.IsCurrentCellInEditMode)
+        {
+            DeleteSelectedEntries();
+            e.Handled = true;
         }
     }
+
+    /// <summary>Rows currently selected in the grid (distinct, in list order).</summary>
+    private List<EntryRow> SelectedRows() => _grid.SelectedCells.Cast<DataGridViewCell>()
+        .Where(c => c.RowIndex >= 0 && c.RowIndex < _vm.Entries.Count)
+        .Select(c => _vm.Entries[c.RowIndex])
+        .Distinct()
+        .ToList();
+
+    private void DeleteSelectedEntries()
+    {
+        var rows = SelectedRows();
+        if (rows.Count == 0)
+        {
+            return;
+        }
+
+        _vm.DeleteEntries(rows, ConfirmDelete);
+    }
+
+    private bool ConfirmDelete(string summary) => MessageBox.Show(this,
+        $"Delete {summary}?\n\nThis removes the sessions from the JSON file and cannot be undone.",
+        "Timetracker", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes;
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {

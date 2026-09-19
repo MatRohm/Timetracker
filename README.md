@@ -75,6 +75,10 @@ booking element is optional. Started/Ended/Duration stay read-only.
 with the row's task name (a running session is never interrupted; editing stays
 on F2).
 
+**Press Del to delete the selected entries**: a confirmation dialog shows what
+will be removed (task names / session counts). Deletion removes all sessions of
+the selected tasks from the JSON file and cannot be undone.
+
 ## Data file
 
 Entries are stored at `%USERPROFILE%\timetracker.json`
