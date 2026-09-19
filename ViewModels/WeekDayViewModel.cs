@@ -47,8 +47,15 @@ public sealed class WeekDayViewModel : ObservableObject
 
         Date = date;
         Header = $"{date.ToString("ddd", CultureInfo.InvariantCulture)} {date.Day:00}.{date.Month:00}.";
-        EntriesText = string.Join(Environment.NewLine, items.Select(e =>
-            $"{e.Start:HH:mm}–{e.End:HH:mm} {e.Task} ({HoursMinutes(e.DurationSeconds)})"));
+
+        // One line per task: identical tasks are merged and only the total
+        // duration is shown (case-insensitive, like everywhere else).
+        var grouped = items
+            .GroupBy(e => e.Task.Trim(), StringComparer.CurrentCultureIgnoreCase)
+            .OrderBy(g => g.Min(e => e.Start));
+        EntriesText = string.Join(Environment.NewLine, grouped.Select(g =>
+            $"{g.Key} ({HoursMinutes(g.Sum(e => e.DurationSeconds))})"));
+
         TotalText = items.Count > 0 ? $"Σ {HoursMinutes(items.Sum(e => e.DurationSeconds))}" : "";
         IsToday = date.Date == DateTimeOffset.Now.Date;
         OnPropertyChanged(nameof(Date));
