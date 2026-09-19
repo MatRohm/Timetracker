@@ -12,22 +12,22 @@ public sealed class EntryRow : ObservableObject
 {
     private readonly IReadOnlyList<TrackerEntry> _sessions;
     private string _task;
-    private string _description;
+    private string _bookingElement;
 
     /// <summary>Text as last committed to the repository; edits are compared against this.</summary>
     private string _committedTask;
-    private string _committedDescription;
+    private string _committedBookingElement;
 
     public EntryRow(IReadOnlyList<TrackerEntry> sessions)
     {
         _sessions = sessions;
         var latest = sessions[^1];
         _task = latest.Task;
-        _description = sessions
-            .Select(e => e.Description)
-            .LastOrDefault(d => !string.IsNullOrWhiteSpace(d)) ?? "";
+        _bookingElement = sessions
+            .Select(e => e.BookingElement)
+            .LastOrDefault(b => !string.IsNullOrWhiteSpace(b)) ?? "";
         _committedTask = _task;
-        _committedDescription = _description;
+        _committedBookingElement = _bookingElement;
 
         Start = sessions.Min(e => e.Start);
         End = sessions.Max(e => e.End);
@@ -44,17 +44,17 @@ public sealed class EntryRow : ObservableObject
         set => SetProperty(ref _task, value);
     }
 
-    public string Description
+    public string BookingElement
     {
-        get => _description;
-        set => SetProperty(ref _description, value);
+        get => _bookingElement;
+        set => SetProperty(ref _bookingElement, value);
     }
 
     /// <summary>Task name as last persisted (staged edits are not included).</summary>
     public string CommittedTask => _committedTask;
 
-    /// <summary>Description as last persisted (staged edits are not included).</summary>
-    public string CommittedDescription => _committedDescription;
+    /// <summary>Booking element as last persisted (staged edits are not included).</summary>
+    public string CommittedBookingElement => _committedBookingElement;
 
     /// <summary>First time any session of this task started.</summary>
     public DateTimeOffset Start { get; }
@@ -78,13 +78,13 @@ public sealed class EntryRow : ObservableObject
     /// Marks the staged text as persisted. The staged values already match, so this
     /// only updates the commit snapshot and refreshes display bindings.
     /// </summary>
-    public void CommitText(string task, string description)
+    public void CommitText(string task, string bookingElement)
     {
         _committedTask = task;
-        _committedDescription = description;
+        _committedBookingElement = bookingElement;
         OnPropertyChanged(nameof(CommittedTask));
-        OnPropertyChanged(nameof(CommittedDescription));
+        OnPropertyChanged(nameof(CommittedBookingElement));
         OnPropertyChanged(nameof(Task));
-        OnPropertyChanged(nameof(Description));
+        OnPropertyChanged(nameof(BookingElement));
     }
 }

@@ -4,8 +4,8 @@ public sealed class TrackerEntry
 {
     public string Task { get; set; } = "";
 
-    /// <summary>Optional free-text note; may be empty.</summary>
-    public string Description { get; set; } = "";
+    /// <summary>Booking element this session belongs to; may be empty.</summary>
+    public string BookingElement { get; set; } = "";
 
     public DateTimeOffset Start { get; set; }
     public DateTimeOffset End { get; set; }

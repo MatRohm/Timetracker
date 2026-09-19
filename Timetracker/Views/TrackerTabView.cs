@@ -198,10 +198,10 @@ public sealed class TrackerTabView : UserControl
             SortMode = DataGridViewColumnSortMode.Programmatic,
         };
 
-        var descriptionColumn = new DataGridViewTextBoxColumn
+        var bookingElementColumn = new DataGridViewTextBoxColumn
         {
-            DataPropertyName = nameof(EntryRow.Description),
-            HeaderText = "Description",
+            DataPropertyName = nameof(EntryRow.BookingElement),
+            HeaderText = "Booking element",
             AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
             FillWeight = 28,
             SortMode = DataGridViewColumnSortMode.NotSortable,
@@ -236,11 +236,11 @@ public sealed class TrackerTabView : UserControl
         };
         durationColumn.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
 
-        _grid.Columns.AddRange(taskColumn, descriptionColumn, startedColumn, endedColumn, durationColumn);
+        _grid.Columns.AddRange(taskColumn, bookingElementColumn, startedColumn, endedColumn, durationColumn);
 
-        // Only Task and Description are editable; started/ended/duration stay read-only.
+        // Only Task and BookingElement are editable; started/ended/duration stay read-only.
         taskColumn.ReadOnly = false;
-        descriptionColumn.ReadOnly = false;
+        bookingElementColumn.ReadOnly = false;
         startedColumn.ReadOnly = true;
         endedColumn.ReadOnly = true;
         durationColumn.ReadOnly = true;
@@ -385,7 +385,7 @@ public sealed class TrackerTabView : UserControl
     {
         foreach (DataGridViewColumn column in _grid.Columns)
         {
-            // WinForms forbids sort glyphs on NotSortable columns (e.g. Description);
+            // WinForms forbids sort glyphs on NotSortable columns (e.g. BookingElement);
             // touching them would throw an InvalidOperationException.
             if (column.SortMode == DataGridViewColumnSortMode.NotSortable)
                 continue;
@@ -412,7 +412,7 @@ public sealed class TrackerTabView : UserControl
     private void OnGridCellValidating(object? sender, DataGridViewCellValidatingEventArgs e)
     {
         var columnName = _grid.Columns[e.ColumnIndex].DataPropertyName;
-        if (columnName is not (nameof(EntryRow.Task) or nameof(EntryRow.Description)))
+        if (columnName is not (nameof(EntryRow.Task) or nameof(EntryRow.BookingElement)))
             return;
 
         if (e.RowIndex < 0 || e.RowIndex >= _vm.Entries.Count)
@@ -421,7 +421,7 @@ public sealed class TrackerTabView : UserControl
             return;
         }
 
-        // Reject empty task names up front (descriptions may be empty).
+        // Reject empty task names up front (booking elements may be empty).
         if (columnName == nameof(EntryRow.Task) && string.IsNullOrWhiteSpace(e.FormattedValue?.ToString()))
         {
             e.Cancel = true;
@@ -431,7 +431,7 @@ public sealed class TrackerTabView : UserControl
     private void OnGridCellEndEdit(object? sender, DataGridViewCellEventArgs e)
     {
         var columnName = _grid.Columns[e.ColumnIndex].DataPropertyName;
-        if (columnName is not (nameof(EntryRow.Task) or nameof(EntryRow.Description)))
+        if (columnName is not (nameof(EntryRow.Task) or nameof(EntryRow.BookingElement)))
             return;
 
         if (e.RowIndex < 0 || e.RowIndex >= _vm.Entries.Count)
@@ -440,7 +440,7 @@ public sealed class TrackerTabView : UserControl
 
         // The binding has pushed the new text into EntryRow by now. Commit deferred,
         // so a re-sort inside the view model cannot reenter the grid event pipeline.
-        BeginInvoke(() => _vm.UpdateEntryText(row, row.Task, row.Description));
+        BeginInvoke(() => _vm.UpdateEntryText(row, row.Task, row.BookingElement));
     }
 
     private void OnGridDataError(object? sender, DataGridViewDataErrorEventArgs e)

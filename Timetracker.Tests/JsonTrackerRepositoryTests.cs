@@ -21,14 +21,14 @@ public sealed class JsonTrackerRepositoryTests
             End = new DateTimeOffset(2026, 9, 18, 10, 0, 0, TimeSpan.FromHours(2)),
             Duration = "01:00:00",
             DurationSeconds = 3600,
-            Description = "quarterly",
+            BookingElement = "quarterly",
         });
 
         File.Exists(path).Should().BeTrue();
         var all = new JsonTrackerRepository(path).GetAll();
         all.Should().ContainSingle();
         all[0].Task.Should().Be("Report");
-        all[0].Description.Should().Be("quarterly");
+        all[0].BookingElement.Should().Be("quarterly");
         all[0].DurationSeconds.Should().Be(3600);
     }
 
@@ -65,7 +65,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void Missing_description_loads_as_empty_string()
+    public void Missing_booking_element_loads_as_empty_string()
     {
         var path = TempPath();
         File.WriteAllText(path, """
@@ -76,7 +76,38 @@ public sealed class JsonTrackerRepositoryTests
 
         var all = new JsonTrackerRepository(path).GetAll();
 
-        all.Should().ContainSingle().Which.Description.Should().BeEmpty();
+        all.Should().ContainSingle().Which.BookingElement.Should().BeEmpty();
+    }
+
+    [Test]
+    public void Legacy_description_field_is_migrated_to_booking_element()
+    {
+        var path = TempPath();
+        File.WriteAllText(path, """
+            [
+              { "task": "Legacy", "description": "old note", "start": "2026-09-18T09:00:00+02:00", "end": "2026-09-18T10:00:00+02:00", "duration": "01:00:00", "durationSeconds": 3600 },
+              { "task": "Current", "bookingElement": "new note", "start": "2026-09-18T11:00:00+02:00", "end": "2026-09-18T12:00:00+02:00", "duration": "01:00:00", "durationSeconds": 3600 }
+            ]
+            """);
+
+        var all = new JsonTrackerRepository(path).GetAll();
+
+        all[0].BookingElement.Should().Be("old note", "the legacy JSON name is migrated");
+        all[1].BookingElement.Should().Be("new note", "the current JSON name is preferred");
+    }
+
+    [Test]
+    public void Save_writes_the_booking_element_under_its_new_name()
+    {
+        var path = TempPath();
+        var repo = new JsonTrackerRepository(path);
+        repo.Add(NewEntry("Report"));
+
+        repo.Save(repo.GetAll());
+
+        var text = File.ReadAllText(path);
+        text.Should().Contain("\"bookingElement\"");
+        text.Should().NotContain("description");
     }
 
     [Test]

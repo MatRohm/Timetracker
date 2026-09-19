@@ -28,9 +28,14 @@ Inline edits of **Task** apply to every session of that task, which also merges
 ## Week view
 
 The second tab shows the selected week as a **grid with seven columns, one per
-weekday, Monday first**. Every cell lists that day's bookings — one line per
-session (`09:00–10:00 Report (1:00)`) — with a per-day sum (`Σ 1:30`) at the
-bottom of the cell. Today's column is highlighted.
+weekday, Monday first**. Every cell lists that day's bookings — **one line per
+booking element with its total duration** (`Project X (1:30)`), entries without
+a booking element fall back to their task names — with a per-day sum (`Σ 1:30`)
+at the bottom of the cell. Today's column is highlighted.
+
+The **Group by booking element** checkbox switches the grouping: checked
+(default) groups by booking element; unchecked shows one line per task name
+instead.
 
 Navigate with **◀ Previous week** / **Next week ▶**; **● Current week** jumps
 back to today's week. The title shows the ISO week number and date range.
@@ -54,17 +59,17 @@ log — each stop still appends one record; grouping only happens in the view.
 
 ## History list
 
-Below the timer, a table lists every saved entry (task, description, started,
+Below the timer, a table lists every saved entry (task, booking element, started,
 ended, duration).
 Click a column header to sort by it; clicking the same header again toggles the
 direction. Sortable columns: **Task** (A–Z), **Started**, **Ended** (newest first
 on first click) and **Duration** (sorted numerically). Sorting state lives in the
 view model (`SortColumn` / `SortAscending`); the grid only shows sort glyphs.
 
-The **Task** and **Description** cells are editable inline: press **F2** on a
+The **Task** and **Booking element** cells are editable inline: press **F2** on a
 selected cell, type, and press **Enter** to commit (Esc cancels). Changes are
 persisted to the JSON file immediately; an empty task name is rejected, the
-description is optional. Started/Ended/Duration stay read-only.
+booking element is optional. Started/Ended/Duration stay read-only.
 
 **Double-click a row to start tracking that task immediately**: the timer starts
 with the row's task name (a running session is never interrupted; editing stays
@@ -80,7 +85,7 @@ stop; every existing entry is always preserved, nothing is ever removed.
 [
   {
     "task": "Writing report",
-    "description": "Quarterly figures, draft 2",
+    "bookingElement": "Quarterly figures",
     "start": "2026-09-19T14:03:21.123+02:00",
     "end": "2026-09-19T15:10:02.456+02:00",
     "duration": "01:06:41",
@@ -89,7 +94,8 @@ stop; every existing entry is always preserved, nothing is ever removed.
 ]
 ```
 
-`description` is optional — older entries without it load as an empty string.
+`bookingElement` is optional. Older files that stored it under the JSON name
+`description` are migrated automatically on load; saves always write the new name.
 
 ## Project structure (MVVM)
 
