@@ -29,7 +29,7 @@ jobs:
 
       - name: Publish single-file executable
         run: >
-          dotnet publish Timetracker.csproj -c Release -r win-x64 --self-contained true
+          dotnet publish src/Timetracker.csproj -c Release -r win-x64 --self-contained true
           -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
 
       - name: Upload executable artifact
