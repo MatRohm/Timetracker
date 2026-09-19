@@ -66,6 +66,11 @@ direction. Sortable columns: **Task** (A–Z), **Started**, **Ended** (newest fi
 on first click) and **Duration** (sorted numerically). Sorting state lives in the
 view model (`SortColumn` / `SortAscending`); the grid only shows sort glyphs.
 
+**Pagination**: the grid shows ten tasks per page. When the history spans more
+than one page, **◀ Previous / Next ▶** controls with a page indicator appear
+below the list. Sorting spans all pages, and the task-name suggestions always
+use every saved task — regardless of the visible page.
+
 The **Task** and **Booking element** cells are editable inline: press **F2** on a
 selected cell, type, and press **Enter** to commit (Esc cancels). Changes are
 persisted to the JSON file immediately; an empty task name is rejected, the
@@ -78,6 +83,11 @@ on F2).
 **Press Del to delete the selected entries**: a confirmation dialog shows what
 will be removed (task names / session counts). Deletion removes all sessions of
 the selected tasks from the JSON file and cannot be undone.
+
+**Multi-selection for deleting**: click selects a row, **SHIFT+CLICK** selects
+the whole range from the previously selected row, and **CTRL+CLICK** adds or
+removes single rows from the selection. Pressing **Del** removes every selected
+row together.
 
 ## Data file
 

@@ -14,6 +14,8 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
     private readonly RelayCommand _startCommand;
     private readonly RelayCommand _stopCommand;
+    private readonly RelayCommand _previousPageCommand;
+    private readonly RelayCommand _nextPageCommand;
 
     private DateTimeOffset _startedAt;
     private bool _isRunning;
@@ -29,6 +31,14 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     private string _sortColumn = nameof(EntryRow.StartText);
     private bool _sortAscending;
 
+    /// <summary>Rows shown in the history grid per page; paging appears above this size.</summary>
+    private const int PageSize = 10;
+
+    /// <summary>All rows in sort order; <see cref="_entries"/> holds only the current page.</summary>
+    private List<EntryRow> _allRows = [];
+    private int _currentPage = 1;
+    private int _totalPages = 1;
+
     /// <summary>Raised when Start was attempted without a task name; the view shows a hint.</summary>
     public event Action? InvalidTaskName;
 
@@ -43,6 +53,8 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
         _startCommand = new RelayCommand(Start, () => !IsRunning);
         _stopCommand = new RelayCommand(Stop, () => IsRunning);
+        _previousPageCommand = new RelayCommand(() => GoToPage(CurrentPage - 1), () => CurrentPage > 1);
+        _nextPageCommand = new RelayCommand(() => GoToPage(CurrentPage + 1), () => CurrentPage < TotalPages);
 
         StatusText = "Entries are appended to " + _repository.FilePath;
 
@@ -96,7 +108,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         private set => SetProperty(ref _title, value);
     }
 
-    /// <summary>All tasks (grouped sessions) for the history list; refreshed after every save.</summary>
+    /// <summary>Tasks (grouped sessions) of the current history page; refreshed after every save.</summary>
     public BindingList<EntryRow> Entries => _entries;
 
     /// <summary>Autocomplete suggestions for the current task-name input.</summary>
@@ -117,6 +129,42 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         get => _sortAscending;
         private set => SetProperty(ref _sortAscending, value);
     }
+
+    public ICommand PreviousPageCommand => _previousPageCommand;
+
+    public ICommand NextPageCommand => _nextPageCommand;
+
+    /// <summary>1-based page number shown in the history grid.</summary>
+    public int CurrentPage
+    {
+        get => _currentPage;
+        private set
+        {
+            if (SetProperty(ref _currentPage, value))
+            {
+                OnPropertyChanged(nameof(PageText));
+            }
+        }
+    }
+
+    public int TotalPages
+    {
+        get => _totalPages;
+        private set
+        {
+            if (SetProperty(ref _totalPages, value))
+            {
+                OnPropertyChanged(nameof(HasMultiplePages));
+                OnPropertyChanged(nameof(PageText));
+            }
+        }
+    }
+
+    /// <summary>True when the history has more than one page of rows.</summary>
+    public bool HasMultiplePages => TotalPages > 1;
+
+    /// <summary>Text for the pager label, e.g. "Page 2 of 5".</summary>
+    public string PageText => $"Page {CurrentPage} of {TotalPages}";
 
     /// <summary>Saves the running entry (if any); called by the view when the app is closing.</summary>
     public void SaveRunningEntryOnClose()
@@ -238,6 +286,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
             StatusText = $"✓ Updated \"{task}\"";
 
             RefreshEntries();
+            RevealTask(task);
             return true;
         }
         catch (Exception ex)
@@ -322,6 +371,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
             StatusText = $"✓ Saved {entry.Duration} to {_repository.FilePath}";
 
             RefreshEntries();
+            RevealTask(entry.Task);
         }
         catch (Exception ex)
         {
@@ -360,7 +410,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
     private void SortEntries()
     {
-        var rows = Entries.ToList();
+        var rows = _allRows.ToList();
         rows.Sort(CompareRows);
         FillEntries(rows);
     }
@@ -385,15 +435,65 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
     private void FillEntries(IReadOnlyList<EntryRow> rows)
     {
+        _allRows = [.. rows];
+        TotalPages = Math.Max(1, (_allRows.Count + PageSize - 1) / PageSize);
+        CurrentPage = Math.Clamp(CurrentPage, 1, TotalPages);
+
+        var pageRows = _allRows
+            .Skip((CurrentPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+
         // One reset instead of a change event per row, so the grid redraws in one go.
         Entries.RaiseListChangedEvents = false;
         Entries.Clear();
-        foreach (var row in rows)
+        foreach (var row in pageRows)
         {
             Entries.Add(row);
         }
         Entries.RaiseListChangedEvents = true;
         Entries.ResetBindings();
+
+        RefreshPageCommands();
+    }
+
+    private void GoToPage(int page)
+    {
+        var target = Math.Clamp(page, 1, TotalPages);
+        if (target == CurrentPage)
+        {
+            return;
+        }
+
+        CurrentPage = target;
+        FillEntries(_allRows);
+    }
+
+    /// <summary>
+    /// Flips to the page containing the row for the given task, so the row the user
+    /// just saved or edited stays visible even if its sort position is on another page.
+    /// </summary>
+    private void RevealTask(string task)
+    {
+        var index = _allRows.FindIndex(r =>
+            r.Task.Equals(task.Trim(), StringComparison.CurrentCultureIgnoreCase));
+        if (index < 0)
+        {
+            return;
+        }
+
+        var page = index / PageSize + 1;
+        if (page != CurrentPage)
+        {
+            CurrentPage = page;
+            FillEntries(_allRows);
+        }
+    }
+
+    private void RefreshPageCommands()
+    {
+        _previousPageCommand.RaiseCanExecuteChanged();
+        _nextPageCommand.RaiseCanExecuteChanged();
     }
 
     private void RefreshSuggestions()

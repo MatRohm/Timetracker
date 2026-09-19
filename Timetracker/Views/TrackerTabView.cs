@@ -20,6 +20,12 @@ public sealed class TrackerTabView : UserControl
     private readonly Label _statusLabel = new();
     private readonly DataGridView _grid = new();
     private readonly ListBox _suggestionList = new();
+    private readonly Button _previousPageButton = new();
+    private readonly Label _pageLabel = new();
+    private readonly Button _nextPageButton = new();
+
+    /// <summary>Pager band below the grid; only visible when the rows span several pages.</summary>
+    private TableLayoutPanel _pagerRow = null!;
 
     /// <summary>Layout row of the suggestion list; its height toggles with visibility.</summary>
     private RowStyle _suggestionRowStyle = null!;
@@ -53,7 +59,7 @@ public sealed class TrackerTabView : UserControl
             Dock = DockStyle.Fill,
             Padding = new Padding(12, 10, 12, 10),
             ColumnCount = 1,
-            RowCount = 6,
+            RowCount = 7,
         };
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 0 label
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 1 task box
@@ -62,6 +68,7 @@ public sealed class TrackerTabView : UserControl
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 3 buttons
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 4 status
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));             // 5 grid
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 6 pager
 
         var taskLabel = new Label
         {
@@ -120,10 +127,42 @@ public sealed class TrackerTabView : UserControl
         _statusLabel.AutoSize = true;
         _statusLabel.Margin = new Padding(0, 2, 0, 4);
 
+        var pagerRow = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            ColumnCount = 3,
+            RowCount = 1,
+            Margin = new Padding(0),
+        };
+        pagerRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        pagerRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        pagerRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+
+        _previousPageButton.Text = "◀ Previous";
+        _previousPageButton.AutoSize = true;
+        _previousPageButton.MinimumSize = new Size(110, 28);
+        _previousPageButton.Margin = new Padding(0, 4, 8, 0);
+
+        _pageLabel.AutoSize = true;
+        _pageLabel.TextAlign = ContentAlignment.MiddleLeft;
+        _pageLabel.Margin = new Padding(0, 9, 8, 0);
+
+        _nextPageButton.Text = "Next ▶";
+        _nextPageButton.AutoSize = true;
+        _nextPageButton.MinimumSize = new Size(110, 28);
+        _nextPageButton.Margin = new Padding(0, 4, 0, 0);
+
+        pagerRow.Controls.Add(_previousPageButton, 0, 0);
+        pagerRow.Controls.Add(_pageLabel, 1, 0);
+        pagerRow.Controls.Add(_nextPageButton, 2, 0);
+        _pagerRow = pagerRow;
+
         ConfigureGrid();
         BuildColumns();
 
         // Dock order matters: the fill control is added first, the top bands after.
+        layout.Controls.Add(_pagerRow, 0, 6);
         layout.Controls.Add(_grid, 0, 5);
         layout.Controls.Add(_statusLabel, 0, 4);
         layout.Controls.Add(buttonRow, 0, 3);
@@ -151,6 +190,9 @@ public sealed class TrackerTabView : UserControl
         _suggestionList.DataSource = _vm.Suggestions;
         _suggestionList.DisplayMember = nameof(SuggestionItem.DisplayText);
 
+        _pageLabel.DataBindings.Add(nameof(Label.Text), _vm, nameof(TrackerViewModel.PageText),
+            formattingEnabled: false);
+
         _taskBox.TextChanged += OnTaskBoxTextChanged;
         _taskBox.KeyDown += OnTaskBoxKeyDown;
 
@@ -163,12 +205,15 @@ public sealed class TrackerTabView : UserControl
 
         CommandBindings.Bind(_startButton, _vm.StartCommand);
         CommandBindings.Bind(_stopButton, _vm.StopCommand);
+        CommandBindings.Bind(_previousPageButton, _vm.PreviousPageCommand);
+        CommandBindings.Bind(_nextPageButton, _vm.NextPageCommand);
 
         _vm.PropertyChanged += OnViewModelPropertyChanged;
         _vm.InvalidTaskName += OnInvalidTaskName;
 
         UpdateSortGlyphs();
         UpdateSuggestions();
+        UpdatePager();
     }
 
     private void ConfigureGrid()
@@ -320,6 +365,12 @@ public sealed class TrackerTabView : UserControl
         _suggestionRowStyle.Height = show ? 100 : 0;
     }
 
+    private void UpdatePager()
+    {
+        // Paging only appears when there is more than one page of rows.
+        _pagerRow.Visible = _vm.HasMultiplePages;
+    }
+
     private void HideSuggestions()
     {
         _suggestionList.Visible = false;
@@ -399,6 +450,10 @@ public sealed class TrackerTabView : UserControl
         else if (e.PropertyName is nameof(TrackerViewModel.SortColumn) or nameof(TrackerViewModel.SortAscending))
         {
             UpdateSortGlyphs();
+        }
+        else if (e.PropertyName == nameof(TrackerViewModel.TotalPages))
+        {
+            UpdatePager();
         }
         else if (e.PropertyName == nameof(TrackerViewModel.Status))
         {

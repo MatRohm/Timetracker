@@ -277,4 +277,94 @@ public sealed class TrackerViewModelTests
         reported.Should().Contain("disk full");
         vm.Status.Should().Be(TrackerStatus.Error);
     }
+
+    [Test]
+    public void With_more_than_ten_tasks_the_grid_shows_the_first_page_only()
+    {
+        var repo = SeedTasks(25);
+        using var vm = new TrackerViewModel(repo, new FakeTimer());
+
+        vm.Entries.Should().HaveCount(10);
+        vm.TotalPages.Should().Be(3);
+        vm.HasMultiplePages.Should().BeTrue();
+        vm.CurrentPage.Should().Be(1);
+    }
+
+    [Test]
+    public void At_most_ten_tasks_need_no_paging()
+    {
+        var repo = SeedTasks(10);
+        using var vm = new TrackerViewModel(repo, new FakeTimer());
+
+        vm.Entries.Should().HaveCount(10);
+        vm.TotalPages.Should().Be(1);
+        vm.HasMultiplePages.Should().BeFalse();
+        vm.NextPageCommand.CanExecute(null).Should().BeFalse();
+        vm.PreviousPageCommand.CanExecute(null).Should().BeFalse();
+    }
+
+    [Test]
+    public void Next_and_previous_page_commands_page_through_all_rows()
+    {
+        var repo = SeedTasks(25);
+        using var vm = new TrackerViewModel(repo, new FakeTimer());
+
+        vm.PreviousPageCommand.CanExecute(null).Should().BeFalse("page 1 is the first page");
+        vm.NextPageCommand.Execute(null);
+
+        vm.CurrentPage.Should().Be(2);
+        vm.Entries.Should().HaveCount(10);
+        vm.Entries[0].Task.Should().Be("Task 14", "rows are sorted newest first");
+        vm.NextPageCommand.Execute(null);
+
+        vm.CurrentPage.Should().Be(3);
+        vm.Entries.Should().HaveCount(5, "the remaining rows of the last page");
+        vm.Entries[0].Task.Should().Be("Task 04", "rows are sorted newest first");
+        vm.NextPageCommand.CanExecute(null).Should().BeFalse("page 3 is the last page");
+
+        vm.PreviousPageCommand.Execute(null);
+        vm.CurrentPage.Should().Be(2);
+        vm.Entries.Should().HaveCount(10);
+    }
+
+    [Test]
+    public void Suggestions_come_from_all_tasks_not_only_the_current_page()
+    {
+        var repo = SeedTasks(25); // "Task 00" is the oldest row → page 3
+        using var vm = new TrackerViewModel(repo, new FakeTimer());
+
+        vm.TaskName = "task 0";
+
+        vm.Suggestions.Select(s => s.Name).Should().Contain("Task 00",
+            "suggestions ignore pagination and use all existing items");
+    }
+
+    [Test]
+    public void Saving_a_new_session_reveals_the_task_row_even_on_another_page()
+    {
+        var repo = SeedTasks(25);
+        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        vm.NextPageCommand.Execute(null);
+        vm.TaskName = "Brand new task";
+
+        vm.StartCommand.Execute(null);
+        vm.StopCommand.Execute(null);
+
+        vm.CurrentPage.Should().Be(1, "the new row is revealed on its page");
+        vm.Entries[0].Task.Should().Be("Brand new task", "it has the newest start time");
+    }
+
+    private static ITrackerRepository SeedTasks(int count)
+    {
+        var entries = Enumerable.Range(0, count).Select(i => new TrackerEntry
+        {
+            Task = $"Task {i:00}",
+            Start = new DateTimeOffset(2026, 9, 18, 9, 0, 0, TimeSpan.FromHours(2)).AddMinutes(i),
+            End = new DateTimeOffset(2026, 9, 18, 10, 0, 0, TimeSpan.FromHours(2)).AddMinutes(i),
+            Duration = "01:00:00",
+            DurationSeconds = 3600,
+        }).ToArray();
+        var (repo, _) = RepositoryFake.Create(entries);
+        return repo;
+    }
 }
