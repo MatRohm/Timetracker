@@ -105,7 +105,9 @@ Timetracker/
 │   ├── IUiTimer.cs              # UI-agnostic timer abstraction
 │   └── TrackerStatus.cs         # Info / Success / Error status kinds
 ├── Views/
-│   ├── TrackerForm.cs           # Thin view: builds controls, binds, no logic
+│   ├── TrackerForm.cs           # Shell: window, tabs, title binding, close handling
+│   ├── TrackerTabView.cs        # Tracker tab: input, suggestions, timer, history grid
+│   ├── WeekTabView.cs           # Week view tab: weekday columns, navigation
 │   ├── CommandBindings.cs       # Wires Buttons to ICommands (WinForms)
 │   └── FormsUiTimer.cs          # WinForms timer implementation
 ├── Program.cs                   # Entry point + composition root
