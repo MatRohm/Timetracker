@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release ${{ github.event.inputs.version }}
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate version input
+        shell: bash
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Version must look like v1.0.0 (optionally with suffix like -beta.1), got: '$VERSION'"
+            exit 1
+          fi
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build & publish win-x64
+        run: >
+          dotnet publish -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
+
+      - name: Build & publish win-x86
+        run: >
+          dotnet publish -c Release -r win-x86 --self-contained true
+          -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
+
+      - name: Package (zip)
+        shell: pwsh
+        run: |
+          $v = "${{ github.event.inputs.version }}"
+          Compress-Archive -Path "bin/Release/net10.0-windows/win-x64/publish/Timetracker.exe" -DestinationPath "Timetracker-$v-win-x64.zip"
+          Compress-Archive -Path "bin/Release/net10.0-windows/win-x86/publish/Timetracker.exe" -DestinationPath "Timetracker-$v-win-x86.zip"
+
+      - name: Create GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          gh release create "$VERSION" \
+            --title "Timetracker $VERSION" \
+            --notes "Timetracker $VERSION - portable Windows executables.
+
+          - Timetracker-$VERSION-win-x64.zip - for 64-bit Windows
+          - Timetracker-$VERSION-win-x86.zip - for 32-bit Windows
+
+          Self-contained single-file builds: no .NET installation needed.
+          Unzip and run Timetracker.exe. Data file: %USERPROFILE%\\timetracker.json" \
+            "Timetracker-$VERSION-win-x64.zip" \
+            "Timetracker-$VERSION-win-x86.zip"
+
+      - name: Summary
+        shell: bash
+        run: |
+          echo "### Release ${{ github.event.inputs.version }} created" >> $GITHUB_STEP_SUMMARY
+          echo "- win-x64 zip: attached" >> $GITHUB_STEP_SUMMARY
+          echo "- win-x86 zip: attached" >> $GITHUB_STEP_SUMMARY
