@@ -121,7 +121,8 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// <summary>Saves the running entry (if any); called by the view when the app is closing.</summary>
     public void SaveRunningEntryOnClose()
     {
-        if (IsRunning) HaltAndSave();
+        if (IsRunning)
+            HaltAndSave();
     }
 
     /// <summary>Puts a suggestion's task name into the input field.</summary>
@@ -134,7 +135,8 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// </summary>
     public void StartFromRow(EntryRow row)
     {
-        if (IsRunning || row is null) return;
+        if (IsRunning || row is null)
+            return;
 
         TaskName = row.Task;
         Start();
@@ -202,7 +204,8 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
     private void Start()
     {
-        if (IsRunning) return;
+        if (IsRunning)
+            return;
 
         var task = TaskName.Trim();
         if (task.Length == 0)
@@ -225,7 +228,8 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
     private void Stop()
     {
-        if (!IsRunning) return;
+        if (!IsRunning)
+            return;
         HaltAndSave();
     }
 

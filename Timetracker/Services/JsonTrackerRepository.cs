@@ -92,9 +92,11 @@ public sealed class JsonTrackerRepository : ITrackerRepository
         _fileWasCorrupt = false;
         try
         {
-            if (!File.Exists(_jsonPath)) return [];
+            if (!File.Exists(_jsonPath))
+                return [];
             var text = File.ReadAllText(_jsonPath);
-            if (string.IsNullOrWhiteSpace(text)) return [];
+            if (string.IsNullOrWhiteSpace(text))
+                return [];
             return JsonSerializer.Deserialize<List<TrackerEntry>>(text, JsonOptions) ?? [];
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
