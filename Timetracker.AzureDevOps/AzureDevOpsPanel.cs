@@ -1,21 +1,42 @@
 namespace Timetracker.AzureDevOps;
 
 /// <summary>
-/// Add-in panel for the tracker tab: an issue-number box with an "Apply" button.
-/// Fetching the work item runs asynchronously; results are pushed into the
-/// tracker inputs through <see cref="ITrackerUiHost"/>. View-only.
+/// Add-in control for the tracker tab: a single button with the Azure DevOps
+/// favicon. Clicking it opens a small popup where the user types the issue
+/// number; fetching runs asynchronously and results are pushed into the tracker
+/// inputs through <see cref="ITrackerUiHost"/>. View-only.
 /// </summary>
 public sealed class AzureDevOpsPanel : UserControl
 {
     private readonly AzureDevOpsService _service;
     private readonly ITrackerUiHost _host;
 
-    private readonly TextBox _issueBox = new();
-    private readonly Button _applyButton = new();
+    private readonly Button _importButton = new();
     private readonly Label _statusLabel = new();
 
     /// <summary>Suppresses concurrent apply attempts while a request is running.</summary>
     private bool _busy;
+
+    /// <summary>The 16x16 Azure DevOps icon for the button.</summary>
+    private static Icon AzureIcon => LoadIcon(16);
+
+    /// <summary>The 32x32 icon for the popup's title bar.</summary>
+    private static Icon PopupIcon => LoadIcon(32);
+
+    private static Icon LoadIcon(int size)
+    {
+        var stream = typeof(AzureDevOpsPanel).Assembly.GetManifestResourceStream(
+            "Timetracker.AzureDevOps.azure-favicon.ico");
+        if (stream is null)
+        {
+            return SystemIcons.Application;
+        }
+
+        using (stream)
+        {
+            return new Icon(stream, size, size);
+        }
+    }
 
     public AzureDevOpsPanel(AzureDevOpsService service, ITrackerUiHost host)
     {
@@ -33,7 +54,7 @@ public sealed class AzureDevOpsPanel : UserControl
         {
             Dock = DockStyle.Fill,
             AutoSize = true,
-            ColumnCount = 3,
+            ColumnCount = 4,
             RowCount = 1,
             Margin = new Padding(0),
         };
@@ -42,20 +63,13 @@ public sealed class AzureDevOpsPanel : UserControl
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-        var label = new Label
-        {
-            Text = "Azure DevOps issue",
-            AutoSize = true,
-            Margin = new Padding(0, 5, 8, 0),
-        };
-
-        _issueBox.Width = 90;
-        _issueBox.Margin = new Padding(0, 3, 8, 0);
-        _issueBox.KeyDown += OnIssueBoxKeyDown;
-
-        _applyButton.Text = "⇩ Apply";
-        _applyButton.AutoSize = true;
-        _applyButton.Margin = new Padding(0, 2, 8, 0);
+        _importButton.Image = AzureIcon.ToBitmap();
+        _importButton.ImageAlign = ContentAlignment.MiddleLeft;
+        _importButton.TextImageRelation = TextImageRelation.ImageBeforeText;
+        _importButton.Text = "Azure DevOps import";
+        _importButton.AutoSize = true;
+        _importButton.MinimumSize = new Size(170, 30);
+        _importButton.Margin = new Padding(0, 2, 8, 0);
 
         _statusLabel.AutoSize = true;
         _statusLabel.ForeColor = Color.DimGray;
@@ -63,12 +77,10 @@ public sealed class AzureDevOpsPanel : UserControl
         _statusLabel.Dock = DockStyle.Fill;
         _statusLabel.Margin = new Padding(0, 5, 0, 0);
 
-        layout.Controls.Add(label, 0, 0);
-        layout.Controls.Add(_issueBox, 1, 0);
-        layout.Controls.Add(_applyButton, 2, 0);
-        layout.Controls.Add(_statusLabel, 3, 0);
+        layout.Controls.Add(_importButton, 0, 0);
+        layout.Controls.Add(_statusLabel, 1, 0);
 
-        _applyButton.Click += async (_, _) => await ApplyAsync();
+        _importButton.Click += async (_, _) => await ShowImportPopupAsync();
 
         Controls.Add(layout);
     }
@@ -77,28 +89,49 @@ public sealed class AzureDevOpsPanel : UserControl
     {
         _statusLabel.ForeColor = Color.DimGray;
         _statusLabel.Text = _service.IsConfigured
-            ? "Fetches title and AZE-Element into the fields below."
+            ? "Fetches issue number, title and AZE-Element into the fields."
             : "Not configured - create " + _service.ConfigFilePath
                 + " (url, project, pat) and restart.";
     }
 
-    private async Task ApplyAsync()
+    private async Task ShowImportPopupAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        using var popup = new ImportPopup(PopupIcon);
+        switch (popup.ShowDialog(FindForm()))
+        {
+            case DialogResult.OK:
+                await ApplyAsync(popup.IssueNumber);
+                break;
+            case DialogResult.Retry:
+                // Same as OK; the retry result keeps the popup's Enter-to-submit
+                // behavior distinct from a cancel for future extensions.
+                await ApplyAsync(popup.IssueNumber);
+                break;
+        }
+    }
+
+    private async Task ApplyAsync(string issueNumber)
     {
         if (_busy)
         {
             return;
         }
         _busy = true;
-        _applyButton.Enabled = false;
+        _importButton.Enabled = false;
         try
         {
-            var result = await _service.ApplyIssueAsync(_issueBox.Text, _host);
+            var result = await _service.ApplyIssueAsync(issueNumber, _host);
             ShowResult(result);
         }
         finally
         {
             _busy = false;
-            _applyButton.Enabled = true;
+            _importButton.Enabled = true;
         }
     }
 
@@ -116,13 +149,74 @@ public sealed class AzureDevOpsPanel : UserControl
         }
     }
 
-    private void OnIssueBoxKeyDown(object? sender, KeyEventArgs e)
+    // Popup for entering the issue number: OK (Enter or Apply button) starts the
+    // import, Esc cancels.
+    private sealed class ImportPopup : Form
     {
-        if (e.KeyCode == Keys.Enter)
+        private readonly TextBox _issueBox = new();
+        private readonly Button _applyButton = new();
+        private readonly Button _cancelButton = new();
+
+        /// <summary>Typed issue number; only meaningful when DialogResult is OK.</summary>
+        public string IssueNumber => _issueBox.Text;
+
+        public ImportPopup(Icon icon)
         {
-            e.Handled = true;
-            e.SuppressKeyPress = true;
-            _ = ApplyAsync();
+            Text = "Azure DevOps import";
+            Icon = icon;
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MinimizeBox = false;
+            MaximizeBox = false;
+            ShowInTaskbar = false;
+            StartPosition = FormStartPosition.CenterParent;
+            ClientSize = new Size(300, 110);
+
+            var label = new Label
+            {
+                Text = "Issue number:",
+                AutoSize = true,
+                Location = new Point(12, 12),
+            };
+
+            _issueBox.Location = new Point(15, 32);
+            _issueBox.Size = new Size(270, 27);
+
+            _applyButton.Text = "Import";
+            _applyButton.Location = new Point(127, 70);
+            _applyButton.Size = new Size(75, 28);
+
+            _cancelButton.Text = "Cancel";
+            _cancelButton.Location = new Point(210, 70);
+            _cancelButton.Size = new Size(75, 28);
+            _cancelButton.DialogResult = DialogResult.Cancel;
+
+            _applyButton.Click += (_, _) =>
+            {
+                if (ValidateInput())
+                {
+                    DialogResult = DialogResult.OK;
+                }
+            };
+
+            Controls.Add(label);
+            Controls.Add(_issueBox);
+            Controls.Add(_applyButton);
+            Controls.Add(_cancelButton);
+
+            AcceptButton = _applyButton;
+            CancelButton = _cancelButton;
+        }
+
+        private bool ValidateInput()
+        {
+            var text = _issueBox.Text.Trim();
+            if (text.Length == 0 || !int.TryParse(text, out var id) || id <= 0)
+            {
+                MessageBox.Show(this, "Please enter a numeric issue number.", "Azure DevOps import",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+            return true;
         }
     }
 }

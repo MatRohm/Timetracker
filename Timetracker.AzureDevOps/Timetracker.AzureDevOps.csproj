@@ -8,4 +8,8 @@
     <RootNamespace>Timetracker.AzureDevOps</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="azure-favicon.ico" />
+  </ItemGroup>
+
 </Project>
