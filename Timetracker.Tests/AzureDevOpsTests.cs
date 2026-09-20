@@ -156,6 +156,8 @@ public sealed class AzureDevOpsTests
         result.Success.Should().BeTrue();
         host.TaskName.Should().Be("42 Fix login bug", "the name is '<issue number> <title>'");
         host.BookingElement.Should().Be("Quarterly figures");
+        host.LastStatusKind.Should().Be(TrackerStatusKind.Success);
+        host.LastStatusMessage.Should().Contain("42 Fix login bug");
     }
 
     [Test]
@@ -288,8 +290,18 @@ public sealed class AzureDevOpsTests
 
         public string BookingElement { get; private set; } = "";
 
+        public string? LastStatusMessage { get; private set; }
+
+        public TrackerStatusKind? LastStatusKind { get; private set; }
+
         public void SetTaskName(string taskName) => TaskName = taskName;
 
         public void SetBookingElement(string bookingElement) => BookingElement = bookingElement;
+
+        public void ShowStatus(string message, TrackerStatusKind kind)
+        {
+            LastStatusMessage = message;
+            LastStatusKind = kind;
+        }
     }
 }
