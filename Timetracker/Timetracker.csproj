@@ -16,6 +16,11 @@
   <ItemGroup>
     <ProjectReference Include="..\Timetracker.AzureDevOps\Timetracker.AzureDevOps.csproj" />
     <ProjectReference Include="..\Timetracker.ActivityMonitor\Timetracker.ActivityMonitor.csproj" />
+    <ProjectReference Include="..\Timetracker.Plugins\Timetracker.Plugins.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
   </ItemGroup>
 
   <!--
@@ -28,15 +33,9 @@
       <ActivityMonitorPublishDir>$(MSBuildThisFileDirectory)..\Timetracker.ActivityMonitor\bin\Release\$(TargetFramework)\win-x64\publish\</ActivityMonitorPublishDir>
       <ActivityMonitorPublishDir Condition="!Exists('$(ActivityMonitorPublishDir)')">$(MSBuildThisFileDirectory)..\Timetracker.ActivityMonitor\bin\Release\$(TargetFramework)\</ActivityMonitorPublishDir>
     </PropertyGroup>
-    <Copy SourceFiles="$(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe"
-          DestinationFolder="$(PublishDir)"
-          SkipUnchangedFiles="true"
-          Condition="Exists('$(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe')" />
-    <Message Text="Published activity monitor: $(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe -> $(PublishDir)"
-             Importance="high"
-             Condition="Exists('$(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe')" />
-    <Warning Text="Timetracker.ActivityMonitor.exe was not found to publish; the install button will not find the monitor."
-             Condition="!Exists('$(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe')" />
+    <Copy SourceFiles="$(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" Condition="Exists('$(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe')" />
+    <Message Text="Published activity monitor: $(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe -&gt; $(PublishDir)" Importance="high" Condition="Exists('$(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe')" />
+    <Warning Text="Timetracker.ActivityMonitor.exe was not found to publish; the install button will not find the monitor." Condition="!Exists('$(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe')" />
   </Target>
 
 </Project>

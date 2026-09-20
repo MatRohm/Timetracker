@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+using Timetracker.Plugins;
 using Timetracker.Services;
 using Timetracker.ViewModels;
 using Timetracker.Views;
@@ -24,10 +26,25 @@ internal static class Program
         {
             ApplicationConfiguration.Initialize();
 
-            // Composition root: wire the layers together.
-            var repository = new JsonTrackerRepository();
-            using var viewModel = new TrackerViewModel(repository, new FormsUiTimer());
-            Application.Run(new TrackerForm(viewModel));
+            // Composition root: build the container; every component registers
+            // itself in HookRegistry, the shell resolves only interfaces.
+            var services = HookRegistry.BuildServiceProvider();
+
+            using var viewModel = services.GetRequiredService<ViewModels.TrackerViewModel>();
+            var form = new TrackerForm(viewModel, services);
+
+            // Let the components run their startup hooks.
+            foreach (var hook in services.GetServices<Plugins.IAppHook>())
+            {
+                hook.OnAppStarted(services);
+            }
+
+            Application.Run(form);
+
+            foreach (var hook in services.GetServices<Plugins.IAppHook>())
+            {
+                hook.OnAppClosing();
+            }
         }
         catch (Exception ex)
         {
