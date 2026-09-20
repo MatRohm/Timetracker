@@ -10,13 +10,21 @@ namespace Timetracker.ActivityMonitor;
 /// </summary>
 public sealed class MonitorSetupPanel : UserControl
 {
+    private readonly IActivityMonitorInstaller _installer;
     private readonly IWeekStatusHost _statusHost;
 
     private readonly Button _installButton = new();
     private readonly Button _uninstallButton = new();
 
-    public MonitorSetupPanel(IWeekStatusHost statusHost)
+    /// <summary>Exposed so tests can assert the button state without a window handle.</summary>
+    internal bool InstallEnabled => _installButton.Enabled;
+
+    /// <summary>Exposed so tests can assert the button state without a window handle.</summary>
+    internal bool UninstallEnabled => _uninstallButton.Enabled;
+
+    public MonitorSetupPanel(IActivityMonitorInstaller installer, IWeekStatusHost statusHost)
     {
+        _installer = installer;
         _statusHost = statusHost;
         // Size the panel to its buttons; the default UserControl size would
         // clip the remove button in the auto-sized contributor row.
@@ -70,10 +78,10 @@ public sealed class MonitorSetupPanel : UserControl
 
     private void OnInstallClicked(object? sender, EventArgs e)
     {
-        var success = ActivityMonitorInstaller.Install();
+        var success = _installer.Install();
         _statusHost.ShowStatus(success
             ? "✓ The PC activity monitor will start with Windows."
-            : "✗ Installation failed. Make sure \"" + ActivityMonitorInstaller.MonitorExePath
+            : "✗ Installation failed. Make sure \"" + _installer.MonitorExePath
                 + "\" exists next to the app.",
             success ? WeekStatusKind.Success : WeekStatusKind.Error);
         UpdateButtons();
@@ -81,7 +89,7 @@ public sealed class MonitorSetupPanel : UserControl
 
     private void OnUninstallClicked(object? sender, EventArgs e)
     {
-        var success = ActivityMonitorInstaller.Uninstall();
+        var success = _installer.Uninstall();
         _statusHost.ShowStatus(success
             ? "✓ The PC activity monitor autostart was removed."
             : "✗ Removing the autostart entry failed.",
@@ -92,7 +100,7 @@ public sealed class MonitorSetupPanel : UserControl
     /// <summary>Enables exactly the button that matches the autostart state.</summary>
     private void UpdateButtons()
     {
-        var installed = ActivityMonitorInstaller.IsInstalled;
+        var installed = _installer.IsInstalled;
         _installButton.Enabled = !installed;
         _uninstallButton.Enabled = installed;
     }
@@ -100,7 +108,7 @@ public sealed class MonitorSetupPanel : UserControl
     /// <summary>Shows the current monitor state in the shared status line at the bottom.</summary>
     private void ReportState()
     {
-        var installed = ActivityMonitorInstaller.IsInstalled;
+        var installed = _installer.IsInstalled;
         _statusHost.ShowStatus(installed
             ? "Monitoring is installed (starts with Windows)."
             : "The monitor is not installed; PC activity is only recorded while it runs.",

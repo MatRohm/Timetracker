@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using NUnit.Framework;
 using Timetracker.ActivityMonitor;
+using Timetracker.Plugins;
 
 namespace Timetracker.Tests;
 
@@ -106,27 +107,20 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Installer_roundtrip_registers_and_removes_the_autostart()
+    [Apartment(ApartmentState.STA)]
+    public void SetupPanel_enables_the_button_that_matches_the_installer_state()
     {
-        // Runs against the real HKCU Run key with a test-specific value name;
-        // the installer is swapped for a test path via the value name only.
-        ActivityMonitorInstaller.Uninstall();
-        var before = ActivityMonitorInstaller.IsInstalled;
+        var notInstalled = new InMemoryInstaller { IsInstalled = false };
+        var panel = new MonitorSetupPanel(notInstalled, new FakeWeekStatusHost());
 
-        var installed = ActivityMonitorInstaller.Install();
-        var afterInstall = ActivityMonitorInstaller.IsInstalled;
-        var removed = ActivityMonitorInstaller.Uninstall();
-        var afterRemove = ActivityMonitorInstaller.IsInstalled;
+        panel.InstallEnabled.Should().BeTrue("not installed yet, so Install is offered");
+        panel.UninstallEnabled.Should().BeFalse();
 
-        // The monitor exe only exists after a build; skip the strict asserts then.
-        if (File.Exists(ActivityMonitorInstaller.MonitorExePath))
-        {
-            installed.Should().BeTrue();
-            afterInstall.Should().BeTrue();
-        }
-        removed.Should().BeTrue();
-        afterRemove.Should().BeFalse();
-        before.Should().BeFalse();
+        var installed = new InMemoryInstaller { IsInstalled = true };
+        var installedPanel = new MonitorSetupPanel(installed, new FakeWeekStatusHost());
+
+        installedPanel.InstallEnabled.Should().BeFalse();
+        installedPanel.UninstallEnabled.Should().BeTrue("already installed, so Remove is offered");
     }
 
     private static DateTimeOffset At(int hour, int minute) =>
@@ -152,6 +146,34 @@ public sealed class ActivityMonitorTests
         {
             SetNow(() => at);
             PollIdleForTest(idle);
+        }
+    }
+
+    /// <summary>In-memory installer so tests never touch the real HKCU Run key.</summary>
+    private sealed class InMemoryInstaller : IActivityMonitorInstaller
+    {
+        public string MonitorExePath => @"C:\fake\Timetracker.ActivityMonitor.exe";
+
+        public bool IsInstalled { get; set; }
+
+        public bool Install()
+        {
+            IsInstalled = true;
+            return true;
+        }
+
+        public bool Uninstall()
+        {
+            IsInstalled = false;
+            return true;
+        }
+    }
+
+    /// <summary>Status sink that discards messages; the setup panel only writes to it.</summary>
+    private sealed class FakeWeekStatusHost : IWeekStatusHost
+    {
+        public void ShowStatus(string message, WeekStatusKind kind)
+        {
         }
     }
 }

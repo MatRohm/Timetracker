@@ -13,5 +13,6 @@ public sealed class MonitorSetupUiContributor : IUiContributor
     public string TargetTab => "Week view";
 
     public Control CreateControl(IServiceProvider services) => new MonitorSetupPanel(
+        services.GetRequiredService<IActivityMonitorInstaller>(),
         services.GetRequiredService<IWeekStatusHost>());
 }

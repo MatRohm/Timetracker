@@ -8,17 +8,17 @@ namespace Timetracker.ActivityMonitor;
 /// and is not needed for a per-user monitor; the Run key starts the monitor at
 /// every logon without elevation.
 /// </summary>
-public static class ActivityMonitorInstaller
+public sealed class ActivityMonitorInstaller : IActivityMonitorInstaller
 {
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string ValueName = "TimetrackerActivityMonitor";
 
     /// <summary>Full path of the monitor executable next to the main app.</summary>
-    public static string MonitorExePath => Path.Combine(
+    public string MonitorExePath => Path.Combine(
         AppContext.BaseDirectory, "Timetracker.ActivityMonitor.exe");
 
     /// <summary>True when the autostart entry exists and points at this exe.</summary>
-    public static bool IsInstalled
+    public bool IsInstalled
     {
         get
         {
@@ -32,7 +32,7 @@ public static class ActivityMonitorInstaller
     }
 
     /// <summary>Registers the autostart entry. Returns false when it failed.</summary>
-    public static bool Install()
+    public bool Install()
     {
         if (!File.Exists(MonitorExePath))
         {
@@ -54,7 +54,7 @@ public static class ActivityMonitorInstaller
     }
 
     /// <summary>Removes the autostart entry. Returns false when it failed.</summary>
-    public static bool Uninstall()
+    public bool Uninstall()
     {
         try
         {
