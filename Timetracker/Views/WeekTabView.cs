@@ -1,5 +1,6 @@
 using System.ComponentModel;
-using Timetracker.ActivityMonitor;
+using Microsoft.Extensions.DependencyInjection;
+using Timetracker.Plugins;
 using Timetracker.ViewModels;
 
 namespace Timetracker.Views;
@@ -7,11 +8,16 @@ namespace Timetracker.Views;
 /// <summary>
 /// Week view tab: one column per weekday (Monday first) showing all booked times,
 /// with navigation to previous/next/current week. View-only; state lives in
-/// <see cref="WeekViewModel"/>.
+/// <see cref="WeekViewModel"/>. Additional per-day lines (e.g. PC activity) and
+/// setup bands come from the registered <see cref="IWeekDayContributor"/> and
+/// <see cref="IUiContributor"/> hooks.
 /// </summary>
-public sealed class WeekTabView : UserControl
+public sealed class WeekTabView : UserControl, IWeekStatusHost
 {
     private readonly WeekViewModel _week;
+    private readonly IServiceProvider _services;
+    private readonly IReadOnlyList<IWeekDayContributor> _weekDayContributors;
+    private readonly IReadOnlyList<IUiContributor> _uiContributors;
 
     private readonly Label _titleLabel = new();
     private readonly Label _totalLabel = new();
@@ -20,15 +26,29 @@ public sealed class WeekTabView : UserControl
     private readonly Button _nextButton = new();
     private readonly Button _currentButton = new();
     private readonly CheckBox _groupByBookingElementCheck = new();
-    private readonly Button _installMonitorButton = new();
-    private readonly Button _uninstallMonitorButton = new();
-    private readonly Label _monitorStateLabel = new();
     private readonly Label _statusLabel = new();
 
-    public WeekTabView(WeekViewModel week)
+    /// <summary>Band row between buttons and grid where contributor controls go.</summary>
+    private TableLayoutPanel _contributorRow = null!;
+
+    public WeekTabView(WeekViewModel week, IServiceProvider services)
     {
         _week = week;
+        _services = services;
+        _weekDayContributors = services.GetServices<IWeekDayContributor>().ToArray();
+        _uiContributors = services.GetServices<IUiContributor>()
+            .Where(c => c.TargetTab == "Week view")
+            .ToArray();
         Dock = DockStyle.Fill;
+
+        // Add-in panels report results through the shared status line.
+        UiHostAccessor.RegisterWeekStatusSink((message, success) =>
+        {
+            if (IsHandleCreated)
+            {
+                BeginInvoke(() => ShowStatus(message, success));
+            }
+        });
 
         BuildUi();
         BindViewModel();
@@ -48,7 +68,7 @@ public sealed class WeekTabView : UserControl
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                  // 0 header row
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                  // 1 buttons
-        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                  // 2 monitor row
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                  // 2 contributors
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));              // 3 grid
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                  // 4 status
 
@@ -83,7 +103,7 @@ public sealed class WeekTabView : UserControl
         {
             Dock = DockStyle.Top,
             AutoSize = true,
-            ColumnCount = 3,
+            ColumnCount = 4,
             RowCount = 1,
             Margin = new Padding(0, 0, 0, 6),
         };
@@ -117,34 +137,25 @@ public sealed class WeekTabView : UserControl
 
         buttonRow.Controls.Add(_groupByBookingElementCheck, 3, 0);
 
-        var monitorRow = new TableLayoutPanel
+        _contributorRow = new TableLayoutPanel
         {
             Dock = DockStyle.Top,
             AutoSize = true,
-            ColumnCount = 3,
+            ColumnCount = _uiContributors.Count + 1,
             RowCount = 1,
             Margin = new Padding(0),
         };
-        monitorRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        monitorRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        monitorRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        monitorRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        for (var i = 0; i < _uiContributors.Count; i++)
+        {
+            _contributorRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        }
+        _contributorRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-        _installMonitorButton.Text = "⏻ Install PC activity monitor";
-        _installMonitorButton.AutoSize = true;
-        _installMonitorButton.MinimumSize = new Size(200, 30);
-        _installMonitorButton.Margin = new Padding(0, 0, 8, 6);
-
-        _uninstallMonitorButton.Text = "⏻ Remove PC activity monitor";
-        _uninstallMonitorButton.AutoSize = true;
-        _uninstallMonitorButton.MinimumSize = new Size(210, 30);
-        _uninstallMonitorButton.Margin = new Padding(0, 0, 8, 6);
-
-        _monitorStateLabel.AutoSize = false;
-        _monitorStateLabel.ForeColor = Color.DimGray;
-        _monitorStateLabel.Dock = DockStyle.Fill;
-        _monitorStateLabel.TextAlign = ContentAlignment.MiddleLeft;
-        _monitorStateLabel.Margin = new Padding(0, 6, 0, 6);
+        // Contributor controls first (left to right), the filler column last.
+        for (var i = 0; i < _uiContributors.Count; i++)
+        {
+            _contributorRow.Controls.Add(_uiContributors[i].CreateControl(_services), i, 0);
+        }
 
         _statusLabel.Dock = DockStyle.Top;
         _statusLabel.AutoEllipsis = true;
@@ -154,29 +165,6 @@ public sealed class WeekTabView : UserControl
         _statusLabel.AutoSize = false;
         _statusLabel.Height = 22;
         _statusLabel.Margin = new Padding(0, 4, 0, 0);
-
-        monitorRow.Controls.Add(_installMonitorButton, 0, 0);
-        monitorRow.Controls.Add(_uninstallMonitorButton, 1, 0);
-        monitorRow.Controls.Add(_monitorStateLabel, 2, 0);
-
-        _installMonitorButton.Click += (_, _) =>
-        {
-            var success = ActivityMonitorInstaller.Install();
-            ShowStatus(success
-                ? "✓ The PC activity monitor will start with Windows."
-                : "✗ Installation failed. Make sure \"" + ActivityMonitorInstaller.MonitorExePath
-                    + "\" exists next to the app.", success);
-            UpdateMonitorButtons();
-        };
-
-        _uninstallMonitorButton.Click += (_, _) =>
-        {
-            var success = ActivityMonitorInstaller.Uninstall();
-            ShowStatus(success
-                ? "✓ The PC activity monitor autostart was removed."
-                : "✗ Removing the autostart entry failed.", success);
-            UpdateMonitorButtons();
-        };
 
         _grid.Dock = DockStyle.Fill;
         _grid.ReadOnly = true;
@@ -214,7 +202,7 @@ public sealed class WeekTabView : UserControl
         // Dock order matters: the fill control is added first, the top bands after.
         layout.Controls.Add(_statusLabel, 0, 4);
         layout.Controls.Add(_grid, 0, 3);
-        layout.Controls.Add(monitorRow, 0, 2);
+        layout.Controls.Add(_contributorRow, 0, 2);
         layout.Controls.Add(buttonRow, 0, 1);
         layout.Controls.Add(headerRow, 0, 0);
 
@@ -227,6 +215,8 @@ public sealed class WeekTabView : UserControl
         _statusLabel.Text = message;
         _statusLabel.ForeColor = success ? Color.ForestGreen : Color.Firebrick;
     }
+
+    void IWeekStatusHost.ShowStatus(string message, bool success) => ShowStatus(message, success);
 
     private void BindViewModel()
     {
@@ -241,18 +231,6 @@ public sealed class WeekTabView : UserControl
         _week.PropertyChanged += OnWeekPropertyChanged;
         _week.Days.ListChanged += (_, _) => UpdateGrid();
         UpdateGrid();
-        UpdateMonitorButtons();
-    }
-
-    /// <summary>Enables exactly the button that matches the autostart state.</summary>
-    private void UpdateMonitorButtons()
-    {
-        var installed = ActivityMonitorInstaller.IsInstalled;
-        _installMonitorButton.Enabled = !installed;
-        _uninstallMonitorButton.Enabled = installed;
-        _monitorStateLabel.Text = installed
-            ? "Monitoring is installed (starts with Windows)."
-            : "The monitor is not installed; PC activity is only recorded while it runs.";
     }
 
     private void OnWeekPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -272,12 +250,15 @@ public sealed class WeekTabView : UserControl
         _titleLabel.Text = _week.WeekTitle;
         _totalLabel.Text = _week.WeekTotalText;
 
-        // Two rows: bookings per day on top, the PC activity line below.
+        // Header row plus one summary line per registered week-day contributor.
         if (_grid.Rows.Count == 0)
         {
             _grid.Rows.Add();
-            _grid.Rows.Add();
-            _grid.Rows[1].ReadOnly = true;
+            for (var i = 0; i < _weekDayContributors.Count; i++)
+            {
+                _grid.Rows.Add();
+                _grid.Rows[1 + i].ReadOnly = true;
+            }
         }
 
         for (var i = 0; i < 7; i++)
@@ -285,7 +266,6 @@ public sealed class WeekTabView : UserControl
             var day = _week.Days[i];
             _grid.Columns[i].HeaderText = day.Header;
             _grid.Rows[0].Cells[i].Value = day.EntriesText;
-            _grid.Rows[1].Cells[i].Value = day.ActivityText;
 
             // Highlight the today column.
             _grid.Columns[i].DefaultCellStyle.BackColor = day.IsToday
@@ -293,11 +273,21 @@ public sealed class WeekTabView : UserControl
                 : SystemColors.Window;
         }
 
-        // Style the activity row as a compact summary line.
-        _grid.Rows[1].DefaultCellStyle.ForeColor = Color.DimGray;
-        _grid.Rows[1].DefaultCellStyle.Font = new Font(
-            _grid.Font, FontStyle.Italic);
-        _grid.Rows[1].Height = 24;
+        // One gray summary row per contributor (e.g. PC activity).
+        for (var c = 0; c < _weekDayContributors.Count; c++)
+        {
+            var rowIndex = 1 + c;
+            for (var i = 0; i < 7; i++)
+            {
+                var day = _week.Days[i];
+                var date = DateOnly.FromDateTime(day.Date.Date);
+                _grid.Rows[rowIndex].Cells[i].Value = _weekDayContributors[c].GetDayText(date);
+            }
+
+            _grid.Rows[rowIndex].DefaultCellStyle.ForeColor = Color.DimGray;
+            _grid.Rows[rowIndex].DefaultCellStyle.Font = new Font(_grid.Font, FontStyle.Italic);
+            _grid.Rows[rowIndex].Height = 24;
+        }
 
         // No cell should look pre-selected when the tab opens.
         _grid.ClearSelection();

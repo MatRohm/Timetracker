@@ -1,17 +1,20 @@
+using Microsoft.Extensions.DependencyInjection;
+using Timetracker.Plugins;
 using Timetracker.ViewModels;
 
 namespace Timetracker.Views;
 
 /// <summary>
 /// Application shell: hosts the tracker and week tabs, binds the window title and
-/// app-level events. All tab content lives in the dedicated tab views.
+/// app-level events. All tab content lives in the dedicated tab views; add-in UI
+/// comes from the registered hooks.
 /// </summary>
 public sealed class TrackerForm : Form
 {
     private readonly TrackerViewModel _vm;
     private readonly TrackerTabView _trackerView;
 
-    public TrackerForm(TrackerViewModel viewModel)
+    public TrackerForm(TrackerViewModel viewModel, IServiceProvider services)
     {
         _vm = viewModel;
 
@@ -24,8 +27,8 @@ public sealed class TrackerForm : Form
         // Fist-smashed-clock app icon in the title bar (and taskbar/alt-tab).
         Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
 
-        _trackerView = new TrackerTabView(_vm);
-        var weekView = new WeekTabView(_vm.Week);
+        _trackerView = new TrackerTabView(_vm, services);
+        var weekView = new WeekTabView(_vm.Week, services);
 
         var tabs = new TabControl { Dock = DockStyle.Fill };
         tabs.TabPages.Add(new TabPage("Tracker") { Controls = { _trackerView } });

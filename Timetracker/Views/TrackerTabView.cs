@@ -1,5 +1,6 @@
 using System.ComponentModel;
-using Timetracker.AzureDevOps;
+using Microsoft.Extensions.DependencyInjection;
+using Timetracker.Plugins;
 using Timetracker.Services;
 using Timetracker.ViewModels;
 
@@ -8,11 +9,14 @@ namespace Timetracker.Views;
 /// <summary>
 /// Tracker tab: task input with suggestions, start/stop controls, status line and
 /// the sortable, inline-editable history grid. View-only; logic lives in
-/// <see cref="TrackerViewModel"/>.
+/// <see cref="TrackerViewModel"/>. UI bands from add-ins (e.g. the Azure DevOps
+/// import) come from the registered <see cref="IUiContributor"/> hooks.
 /// </summary>
 public sealed class TrackerTabView : UserControl, ITrackerUiHost
 {
     private readonly TrackerViewModel _vm;
+    private readonly IServiceProvider _services;
+    private readonly IReadOnlyList<IUiContributor> _uiContributors;
 
     private readonly TextBox _taskBox = new();
     private readonly Button _startButton = new();
@@ -44,10 +48,17 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
 
     public Button StopButton => _stopButton;
 
-    public TrackerTabView(TrackerViewModel viewModel)
+    public TrackerTabView(TrackerViewModel viewModel, IServiceProvider services)
     {
         _vm = viewModel;
+        _services = services;
+        _uiContributors = services.GetServices<IUiContributor>()
+            .Where(c => c.TargetTab == "Tracker")
+            .ToArray();
         Dock = DockStyle.Fill;
+
+        // Add-in controls resolve the host interfaces through the registry.
+        UiHostAccessor.RegisterTrackerHost(this);
 
         BuildUi();
         BindViewModel();
@@ -96,13 +107,16 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         {
             Dock = DockStyle.Top,
             AutoSize = true,
-            ColumnCount = 4,
+            ColumnCount = 4 + _uiContributors.Count,
             RowCount = 1,
             Margin = new Padding(0),
         };
         buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        for (var i = 0; i < _uiContributors.Count; i++)
+        {
+            buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        }
         buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
         _startButton.Text = "▶ Start";
@@ -124,13 +138,18 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         _elapsedLabel.TextAlign = ContentAlignment.MiddleRight;
         _elapsedLabel.Margin = new Padding(0, 0, 0, 4);
 
-        var azureDevOpsPanel = new AzureDevOpsPanel(
-            new AzureDevOpsService(), this);
+        var azureDevOpsPanels = _uiContributors
+            .Select(c => c.CreateControl(_services))
+            .ToArray();
 
         buttonRow.Controls.Add(_startButton, 0, 0);
         buttonRow.Controls.Add(_stopButton, 1, 0);
-        buttonRow.Controls.Add(azureDevOpsPanel, 2, 0);
-        buttonRow.Controls.Add(_elapsedLabel, 3, 0);
+        // Contributor controls go between Stop and the elapsed label.
+        for (var i = 0; i < azureDevOpsPanels.Length; i++)
+        {
+            buttonRow.Controls.Add(azureDevOpsPanels[i], 2 + i, 0);
+        }
+        buttonRow.Controls.Add(_elapsedLabel, 2 + azureDevOpsPanels.Length, 0);
 
         _statusLabel.Dock = DockStyle.Top;
         _statusLabel.AutoEllipsis = true;

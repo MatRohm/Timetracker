@@ -175,11 +175,21 @@ stop; every existing entry is always preserved, nothing is ever removed.
 `bookingElement` is optional. Older files that stored it under the JSON name
 `description` are migrated automatically on load; saves always write the new name.
 
-## Project structure (MVVM)
+## Project structure (MVVM + add-in hooks)
+
+The solution follows a small hook system: `Timetracker.Plugins` defines the
+interfaces (`IUiContributor` for tab UI bands, `IWeekDayContributor` for per-day
+summary lines, `IAppHook` for startup/close, plus host interfaces the add-ins
+call). Every add-in registers its services in **one** place —
+`Timetracker/HookRegistry.cs` — which builds a
+`Microsoft.Extensions.DependencyInjection` container. The shell and tab views
+resolve only the hook interfaces, never concrete add-in types; add-ins never
+reference the main app project (they get hosts via `UiHostAccessor`).
 
 ```
 Timetracker/
 ├── Timetracker/                     # Application project (named after the csproj)
+│   ├── HookRegistry.cs              # DI container: every component registers here
 │   ├── Models/
 │   │   └── TrackerEntry.cs          # One finished time entry
 │   ├── Services/
@@ -203,6 +213,7 @@ Timetracker/
 │   │   └── FormsUiTimer.cs          # WinForms timer implementation
 │   ├── Program.cs                   # Entry point + composition root
 │   └── Timetracker.csproj
+├── Timetracker.Plugins/             # Hook interfaces + UI host accessor (no logic)
 ├── Timetracker.AzureDevOps/         # Add-in: work item import (issue number → fields)
 ├── Timetracker.ActivityMonitor/     # Add-in: PC active/idle recording (background exe)
 ├── Timetracker.slnx                 # XML solution (app + add-ins + tests)
