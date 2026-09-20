@@ -101,6 +101,14 @@ public sealed class AzureDevOpsPanel : UserControl
             return;
         }
 
+        // Without a usable config the popup cannot succeed; explain instead.
+        if (!_service.IsConfigured)
+        {
+            MessageBox.Show(this, _service.ConfigurationHint,
+                "Azure DevOps import", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
         using var popup = new ImportPopup(PopupIcon);
         switch (popup.ShowDialog(FindForm()))
         {

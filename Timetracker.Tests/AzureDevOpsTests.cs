@@ -173,6 +173,20 @@ public sealed class AzureDevOpsTests
     }
 
     [Test]
+    public void ConfigurationHint_names_the_path_and_shows_an_example()
+    {
+        using var service = new AzureDevOpsService(new AzureDevOpsConfig());
+
+        var hint = service.ConfigurationHint;
+
+        hint.Should().Contain(AzureDevOpsConfig.DefaultFilePath);
+        hint.Should().Contain("\"url\"");
+        hint.Should().Contain("\"project\"");
+        hint.Should().Contain("\"pat\"");
+        hint.Should().Contain("https://dev.azure.com/your-organization");
+    }
+
+    [Test]
     public async Task ApplyIssue_maps_http_failures_to_error_results()
     {
         using var service = new AzureDevOpsService(Config(), () => new AzureDevOpsClient(
