@@ -37,7 +37,9 @@ public static class HookRegistry
         // Azure DevOps import.
         services.AddSingleton<AzureDevOps.AzureDevOpsConfig>(_ =>
             AzureDevOps.AzureDevOpsConfig.Load());
-        services.AddSingleton<AzureDevOps.AzureDevOpsService>();
+        services.AddSingleton<AzureDevOps.AzureDevOpsService>(sp =>
+            new AzureDevOps.AzureDevOpsService(
+                sp.GetRequiredService<AzureDevOps.AzureDevOpsConfig>()));
         services.AddSingleton<ITrackerUiHost>(_ => UiHostAccessor.GetTrackerHost<ITrackerUiHost>());
         services.AddSingleton<IUiContributor, AzureDevOps.AzureDevOpsUiContributor>();
 
