@@ -83,6 +83,13 @@ If a command fails:
 Do not claim that a change works unless it has been built/tested,
 or explicitly state that validation could not be performed.
 
+## Git
+
+- Committing finished work in sensible, separate commits is allowed and
+  expected.
+- **Never push to remotes without an explicit request from the user** —
+  pushing happens only when the user asks for it.
+
 ## Before creating new code
 
 Before creating a new:
