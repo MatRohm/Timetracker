@@ -8,6 +8,6 @@ namespace Timetracker.ActivityMonitor;
 /// </summary>
 public sealed class WeekStatusHostAdapter : IWeekStatusHost
 {
-    public void ShowStatus(string message, bool success) =>
-        UiHostAccessor.ShowWeekStatus(message, success);
+    public void ShowStatus(string message, WeekStatusKind kind) =>
+        UiHostAccessor.ShowWeekStatus(message, kind);
 }

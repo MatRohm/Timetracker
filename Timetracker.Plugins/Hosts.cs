@@ -31,6 +31,14 @@ public enum TrackerStatusKind
 /// </summary>
 public interface IWeekStatusHost
 {
-    /// <summary>Shows a one-line status message; success selects the color.</summary>
-    void ShowStatus(string message, bool success);
+    /// <summary>Shows a one-line status message; kind selects the color.</summary>
+    void ShowStatus(string message, WeekStatusKind kind);
+}
+
+/// <summary>Severity of a status message shown by the week view's status line.</summary>
+public enum WeekStatusKind
+{
+    Info,
+    Success,
+    Error,
 }
