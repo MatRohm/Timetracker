@@ -1,4 +1,3 @@
-using System.Globalization;
 using AwesomeAssertions;
 using NUnit.Framework;
 using Timetracker.Models;

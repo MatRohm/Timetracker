@@ -3,7 +3,6 @@ using AwesomeAssertions;
 using NUnit.Framework;
 using Timetracker.AzureDevOps;
 using Timetracker.Plugins;
-using Timetracker.Services;
 using Timetracker.ViewModels;
 
 namespace Timetracker.Tests;
