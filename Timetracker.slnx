@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="Timetracker/Timetracker.csproj" />
   <Project Path="Timetracker.AzureDevOps/Timetracker.AzureDevOps.csproj" />
+  <Project Path="Timetracker.ActivityMonitor/Timetracker.ActivityMonitor.csproj" />
   <Project Path="Timetracker.Tests/Timetracker.Tests.csproj" />
 </Solution>
