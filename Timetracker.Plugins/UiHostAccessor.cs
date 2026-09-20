@@ -9,14 +9,14 @@ namespace Timetracker.Plugins;
 public static class UiHostAccessor
 {
     private static volatile object? _trackerHost;
-    private static volatile Action<string, bool>? _weekStatusSink;
+    private static volatile Action<string, WeekStatusKind>? _weekStatusSink;
 
     /// <summary>Called by the tracker tab view when it is created.</summary>
     public static void RegisterTrackerHost(object host) =>
         _trackerHost = host ?? throw new ArgumentNullException(nameof(host));
 
     /// <summary>Called by the week tab view when it is created.</summary>
-    public static void RegisterWeekStatusSink(Action<string, bool> sink) =>
+    public static void RegisterWeekStatusSink(Action<string, WeekStatusKind> sink) =>
         _weekStatusSink = sink ?? throw new ArgumentNullException(nameof(sink));
 
     /// <summary>
@@ -28,6 +28,6 @@ public static class UiHostAccessor
             "The tracker view has not registered a host yet.");
 
     /// <summary>Shows a status in the week view's shared status line (if shown).</summary>
-    public static void ShowWeekStatus(string message, bool success) =>
-        _weekStatusSink?.Invoke(message, success);
+    public static void ShowWeekStatus(string message, WeekStatusKind kind) =>
+        _weekStatusSink?.Invoke(message, kind);
 }

@@ -42,11 +42,11 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
         Dock = DockStyle.Fill;
 
         // Add-in panels report results through the shared status line.
-        UiHostAccessor.RegisterWeekStatusSink((message, success) =>
+        UiHostAccessor.RegisterWeekStatusSink((message, kind) =>
         {
             if (IsHandleCreated)
             {
-                BeginInvoke(() => ShowStatus(message, success));
+                BeginInvoke(() => ShowStatus(message, kind));
             }
         });
 
@@ -210,13 +210,18 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
     }
 
     /// <summary>One-line status at the bottom, styled like the tracker's status line.</summary>
-    private void ShowStatus(string message, bool success)
+    private void ShowStatus(string message, WeekStatusKind kind)
     {
         _statusLabel.Text = message;
-        _statusLabel.ForeColor = success ? Color.ForestGreen : Color.Firebrick;
+        _statusLabel.ForeColor = kind switch
+        {
+            WeekStatusKind.Success => Color.ForestGreen,
+            WeekStatusKind.Error => Color.Firebrick,
+            _ => Color.DimGray,
+        };
     }
 
-    void IWeekStatusHost.ShowStatus(string message, bool success) => ShowStatus(message, success);
+    void IWeekStatusHost.ShowStatus(string message, WeekStatusKind kind) => ShowStatus(message, kind);
 
     private void BindViewModel()
     {
