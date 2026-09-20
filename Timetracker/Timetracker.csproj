@@ -18,4 +18,25 @@
     <ProjectReference Include="..\Timetracker.ActivityMonitor\Timetracker.ActivityMonitor.csproj" />
   </ItemGroup>
 
+  <!--
+    Copy the activity monitor exe next to the published single-file app: the
+    monitor must stay a separate process (it outlives the tracker and starts
+    with Windows), so the installer looks for it in AppContext.BaseDirectory.
+  -->
+  <Target Name="PublishActivityMonitor" AfterTargets="Publish">
+    <PropertyGroup>
+      <ActivityMonitorPublishDir>$(MSBuildThisFileDirectory)..\Timetracker.ActivityMonitor\bin\Release\$(TargetFramework)\win-x64\publish\</ActivityMonitorPublishDir>
+      <ActivityMonitorPublishDir Condition="!Exists('$(ActivityMonitorPublishDir)')">$(MSBuildThisFileDirectory)..\Timetracker.ActivityMonitor\bin\Release\$(TargetFramework)\</ActivityMonitorPublishDir>
+    </PropertyGroup>
+    <Copy SourceFiles="$(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe"
+          DestinationFolder="$(PublishDir)"
+          SkipUnchangedFiles="true"
+          Condition="Exists('$(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe')" />
+    <Message Text="Published activity monitor: $(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe -> $(PublishDir)"
+             Importance="high"
+             Condition="Exists('$(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe')" />
+    <Warning Text="Timetracker.ActivityMonitor.exe was not found to publish; the install button will not find the monitor."
+             Condition="!Exists('$(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe')" />
+  </Target>
+
 </Project>

@@ -149,6 +149,10 @@ the monitor starts with Windows — no admin rights required; a Windows service
 or scheduled task is not necessary for this. The buttons reflect the current
 state (exactly one is enabled), and removal takes effect at the next logon.
 
+The single-file publish (`dotnet publish ... -p:PublishSingleFile=true`) copies
+`Timetracker.ActivityMonitor.exe` next to the app automatically, so the install
+button works out of the box.
+
 ## Data file
 
 Entries are stored at `%USERPROFILE%\timetracker.json`
