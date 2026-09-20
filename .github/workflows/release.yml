@@ -34,6 +34,16 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Publish activity monitor win-x64
+        run: >
+          dotnet publish Timetracker.ActivityMonitor/Timetracker.ActivityMonitor.csproj -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
+
+      - name: Publish activity monitor win-x86
+        run: >
+          dotnet publish Timetracker.ActivityMonitor/Timetracker.ActivityMonitor.csproj -c Release -r win-x86 --self-contained true
+          -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
+
       - name: Build & publish win-x64
         run: >
           dotnet publish Timetracker/Timetracker.csproj -c Release -r win-x64 --self-contained true
@@ -48,8 +58,8 @@ jobs:
         shell: pwsh
         run: |
           $v = "${{ github.event.inputs.version }}"
-          Compress-Archive -Path "Timetracker/bin/Release/net10.0-windows/win-x64/publish/Timetracker.exe" -DestinationPath "Timetracker-$v-win-x64.zip"
-          Compress-Archive -Path "Timetracker/bin/Release/net10.0-windows/win-x86/publish/Timetracker.exe" -DestinationPath "Timetracker-$v-win-x86.zip"
+          Compress-Archive -Path "Timetracker/bin/Release/net10.0-windows/win-x64/publish/Timetracker.exe", "Timetracker/bin/Release/net10.0-windows/win-x64/publish/Timetracker.ActivityMonitor.exe" -DestinationPath "Timetracker-$v-win-x64.zip"
+          Compress-Archive -Path "Timetracker/bin/Release/net10.0-windows/win-x86/publish/Timetracker.exe", "Timetracker/bin/Release/net10.0-windows/win-x86/publish/Timetracker.ActivityMonitor.exe" -DestinationPath "Timetracker-$v-win-x86.zip"
 
       - name: Create GitHub Release
         shell: bash
