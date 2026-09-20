@@ -13,4 +13,8 @@
     <Version>1.0.0</Version>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Timetracker.AzureDevOps\Timetracker.AzureDevOps.csproj" />
+  </ItemGroup>
+
 </Project>

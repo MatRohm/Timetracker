@@ -20,6 +20,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     private DateTimeOffset _startedAt;
     private bool _isRunning;
     private string _taskName = "";
+    private string _previewBookingElement = "";
     private string _elapsedTimeText = "00:00:00";
     private string _statusText = "";
     private TrackerStatus _status = TrackerStatus.Info;
@@ -106,6 +107,17 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     {
         get => _title;
         private set => SetProperty(ref _title, value);
+    }
+
+    /// <summary>
+    /// Booking element supplied by an integration (e.g. Azure DevOps) for the next
+    /// started session; consumed and cleared by <see cref="BuildEntry"/> so it does
+    /// not leak into later sessions of other tasks.
+    /// </summary>
+    public string PreviewBookingElement
+    {
+        get => _previewBookingElement;
+        set => SetProperty(ref _previewBookingElement, value);
     }
 
     /// <summary>Tasks (grouped sessions) of the current history page; refreshed after every save.</summary>
@@ -325,6 +337,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         StatusText = $"Tracking \"{task}\" since {_startedAt:HH:mm:ss} …";
         Title = "Timetracker – " + task;
 
+        // The preview is consumed with the next save (see BuildEntry).
         RefreshCommands();
     }
 
@@ -343,6 +356,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         Title = "Timetracker";
 
         Save(BuildEntry(DateTimeOffset.Now, _watch.Elapsed));
+        PreviewBookingElement = "";
 
         RefreshCommands();
     }
@@ -350,11 +364,14 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     private TrackerEntry BuildEntry(DateTimeOffset endedAt, TimeSpan elapsed) => new()
     {
         Task = TaskName.Trim(),
-        // New sessions inherit the task's latest booking element so grouping stays consistent.
-        BookingElement = _sessions
-            .Where(e => e.Task.Trim().Equals(TaskName.Trim(), StringComparison.OrdinalIgnoreCase))
-            .Select(e => e.BookingElement)
-            .LastOrDefault(b => !string.IsNullOrWhiteSpace(b)) ?? "",
+        // An integration-provided element wins for this session; otherwise the new
+        // session inherits the task's latest booking element so grouping stays consistent.
+        BookingElement = PreviewBookingElement.Length > 0
+            ? PreviewBookingElement
+            : _sessions
+                .Where(e => e.Task.Trim().Equals(TaskName.Trim(), StringComparison.OrdinalIgnoreCase))
+                .Select(e => e.BookingElement)
+                .LastOrDefault(b => !string.IsNullOrWhiteSpace(b)) ?? "",
         Start = _startedAt,
         End = endedAt,
         Duration = elapsed.ToString(@"hh\:mm\:ss"),
