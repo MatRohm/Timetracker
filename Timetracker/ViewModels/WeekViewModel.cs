@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Globalization;
 using System.Windows.Input;
+using Timetracker.ActivityMonitor;
 using Timetracker.Models;
 
 namespace Timetracker.ViewModels;
@@ -17,6 +18,7 @@ public sealed class WeekViewModel : ObservableObject
     private readonly RelayCommand _currentWeekCommand;
 
     private IReadOnlyList<TrackerEntry> _sessions = [];
+    private IReadOnlyList<ActivitySpan> _activitySpans = [];
     private DateTimeOffset _weekStart;
     private string _weekTitle = "";
     private string _weekTotalText = "";
@@ -83,6 +85,16 @@ public sealed class WeekViewModel : ObservableObject
         Rebuild();
     }
 
+    /// <summary>
+    /// Refreshes the PC activity spans (active/idle per day) shown in the week
+    /// columns; null or missing data simply leaves the line empty.
+    /// </summary>
+    public void UpdateActivitySpans(IReadOnlyList<ActivitySpan> spans)
+    {
+        _activitySpans = spans;
+        Rebuild();
+    }
+
     /// <summary>Sets the grouping mode without changing the grouping itself (for binding only).</summary>
     public void SetGrouping(bool groupByBookingElement)
     {
@@ -114,6 +126,8 @@ public sealed class WeekViewModel : ObservableObject
         {
             var day = _weekStart.AddDays(i);
             _days[i].Update(day, weekSessions.Where(s => s.Start.Date == day.Date), GroupByBookingElement);
+            _days[i].UpdateActivity(
+                _activitySpans.Where(s => s.Start.Date == day.Date || s.End.Date == day.Date));
         }
 
         WeekTotalText = $"Σ {HoursMinutes(weekSessions.Sum(s => s.DurationSeconds))}";

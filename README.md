@@ -33,6 +33,10 @@ booking element with its total duration** (`Project X (1:30)`), entries without
 a booking element fall back to their task names — with a per-day sum (`Σ 1:30`)
 at the bottom of the cell. Today's column is highlighted.
 
+Below each day's bookings, a gray **PC activity line** shows the recorded
+machine activity for that day (`PC 7:15 active · 1:20 idle`), based on the
+activity monitor's log (see below).
+
 The **Group by booking element** checkbox switches the grouping: checked
 (default) groups by booking element; unchecked shows one line per task name
 instead.
@@ -122,6 +126,29 @@ in the panel's status hint when it is missing). An example file lives at
 If the file is missing, broken, or incomplete, the panel shows a hint and apply
 attempts fail with a clear message; the tracker works normally without it.
 
+## PC activity monitor
+
+The separate project **`Timetracker.ActivityMonitor`** records when the computer
+is actively used: it watches for idle periods, logoff and shutdown, and writes
+one JSON span per period to **`%USERPROFILE%\timetracker-activity.json`**.
+
+- **Active** spans cover periods with user input; they are always logged.
+- **Idle** spans are only logged when they last **at least one hour** — shorter
+  breaks are ignored entirely.
+- Logoff/shutdown closes the open span (also across hard process kills, via a
+  small state file), and the next logon starts a new one.
+
+The week view shows the resulting **active/idle time per weekday** in the gray
+line below each day's bookings.
+
+### Installation
+
+The week view offers **⏻ Install PC activity monitor** / **⏻ Remove PC activity
+monitor** buttons. Installing registers a per-user autostart (HKCU Run key) so
+the monitor starts with Windows — no admin rights required; a Windows service
+or scheduled task is not necessary for this. The buttons reflect the current
+state (exactly one is enabled), and removal takes effect at the next logon.
+
 ## Data file
 
 Entries are stored at `%USERPROFILE%\timetracker.json`
@@ -172,11 +199,15 @@ Timetracker/
 │   │   └── FormsUiTimer.cs          # WinForms timer implementation
 │   ├── Program.cs                   # Entry point + composition root
 │   └── Timetracker.csproj
-├── Timetracker.slnx                 # XML solution (app + tests)
+├── Timetracker.AzureDevOps/         # Add-in: work item import (issue number → fields)
+├── Timetracker.ActivityMonitor/     # Add-in: PC active/idle recording (background exe)
+├── Timetracker.slnx                 # XML solution (app + add-ins + tests)
 └── Timetracker.Tests/               # NUnit tests with AwesomeAssertions + FakeItEasy
     ├── TrackerViewModelTests.cs
     ├── JsonTrackerRepositoryTests.cs
     ├── WeekViewModelTests.cs
+    ├── AzureDevOpsTests.cs
+    ├── ActivityMonitorTests.cs
     └── TestDoubles.cs
 ```
 

@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Timetracker.ActivityMonitor;
 using Timetracker.ViewModels;
 
 namespace Timetracker.Views;
@@ -19,6 +20,9 @@ public sealed class WeekTabView : UserControl
     private readonly Button _nextButton = new();
     private readonly Button _currentButton = new();
     private readonly CheckBox _groupByBookingElementCheck = new();
+    private readonly Button _installMonitorButton = new();
+    private readonly Button _uninstallMonitorButton = new();
+    private readonly Label _monitorStateLabel = new();
 
     public WeekTabView(WeekViewModel week)
     {
@@ -36,11 +40,12 @@ public sealed class WeekTabView : UserControl
             Dock = DockStyle.Fill,
             Padding = new Padding(12, 10, 12, 10),
             ColumnCount = 1,
-            RowCount = 3,
+            RowCount = 4,
         };
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                  // 0 header row
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                  // 1 buttons
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));              // 2 grid
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                  // 2 monitor row
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));              // 3 grid
 
         var headerRow = new TableLayoutPanel
         {
@@ -107,6 +112,60 @@ public sealed class WeekTabView : UserControl
 
         buttonRow.Controls.Add(_groupByBookingElementCheck, 3, 0);
 
+        var monitorRow = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            ColumnCount = 3,
+            RowCount = 1,
+            Margin = new Padding(0),
+        };
+        monitorRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        monitorRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        monitorRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        monitorRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+
+        _installMonitorButton.Text = "⏻ Install PC activity monitor";
+        _installMonitorButton.AutoSize = true;
+        _installMonitorButton.MinimumSize = new Size(200, 30);
+        _installMonitorButton.Margin = new Padding(0, 0, 8, 6);
+
+        _uninstallMonitorButton.Text = "⏻ Remove PC activity monitor";
+        _uninstallMonitorButton.AutoSize = true;
+        _uninstallMonitorButton.MinimumSize = new Size(210, 30);
+        _uninstallMonitorButton.Margin = new Padding(0, 0, 8, 6);
+
+        _monitorStateLabel.AutoSize = true;
+        _monitorStateLabel.ForeColor = Color.DimGray;
+        _monitorStateLabel.Dock = DockStyle.Fill;
+        _monitorStateLabel.TextAlign = ContentAlignment.MiddleLeft;
+        _monitorStateLabel.Margin = new Padding(0, 6, 0, 6);
+
+        monitorRow.Controls.Add(_installMonitorButton, 0, 0);
+        monitorRow.Controls.Add(_uninstallMonitorButton, 1, 0);
+        monitorRow.Controls.Add(_monitorStateLabel, 2, 0);
+
+        _installMonitorButton.Click += (_, _) =>
+        {
+            var message = ActivityMonitorInstaller.Install()
+                ? "The PC activity monitor will start with Windows."
+                : "Installation failed. Make sure \"" + ActivityMonitorInstaller.MonitorExePath
+                    + "\" exists next to the app.";
+            MessageBox.Show(this, message, "PC activity monitor",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            UpdateMonitorButtons();
+        };
+
+        _uninstallMonitorButton.Click += (_, _) =>
+        {
+            var message = ActivityMonitorInstaller.Uninstall()
+                ? "The PC activity monitor autostart was removed."
+                : "Removing the autostart entry failed.";
+            MessageBox.Show(this, message, "PC activity monitor",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            UpdateMonitorButtons();
+        };
+
         _grid.Dock = DockStyle.Fill;
         _grid.ReadOnly = true;
         _grid.AllowUserToAddRows = false;
@@ -141,7 +200,8 @@ public sealed class WeekTabView : UserControl
         }
 
         // Dock order matters: the fill control is added first, the top bands after.
-        layout.Controls.Add(_grid, 0, 2);
+        layout.Controls.Add(_grid, 0, 3);
+        layout.Controls.Add(monitorRow, 0, 2);
         layout.Controls.Add(buttonRow, 0, 1);
         layout.Controls.Add(headerRow, 0, 0);
 
@@ -161,6 +221,18 @@ public sealed class WeekTabView : UserControl
         _week.PropertyChanged += OnWeekPropertyChanged;
         _week.Days.ListChanged += (_, _) => UpdateGrid();
         UpdateGrid();
+        UpdateMonitorButtons();
+    }
+
+    /// <summary>Enables exactly the button that matches the autostart state.</summary>
+    private void UpdateMonitorButtons()
+    {
+        var installed = ActivityMonitorInstaller.IsInstalled;
+        _installMonitorButton.Enabled = !installed;
+        _uninstallMonitorButton.Enabled = installed;
+        _monitorStateLabel.Text = installed
+            ? "Monitoring is installed (starts with Windows)."
+            : "The monitor is not installed; PC activity is only recorded while it runs.";
     }
 
     private void OnWeekPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -180,10 +252,12 @@ public sealed class WeekTabView : UserControl
         _titleLabel.Text = _week.WeekTitle;
         _totalLabel.Text = _week.WeekTotalText;
 
-        // Single row whose cells hold the per-day bookings; column headers show the dates.
+        // Two rows: bookings per day on top, the PC activity line below.
         if (_grid.Rows.Count == 0)
         {
             _grid.Rows.Add();
+            _grid.Rows.Add();
+            _grid.Rows[1].ReadOnly = true;
         }
 
         for (var i = 0; i < 7; i++)
@@ -191,12 +265,19 @@ public sealed class WeekTabView : UserControl
             var day = _week.Days[i];
             _grid.Columns[i].HeaderText = day.Header;
             _grid.Rows[0].Cells[i].Value = day.EntriesText;
+            _grid.Rows[1].Cells[i].Value = day.ActivityText;
 
             // Highlight the today column.
             _grid.Columns[i].DefaultCellStyle.BackColor = day.IsToday
                 ? Color.Moccasin
                 : SystemColors.Window;
         }
+
+        // Style the activity row as a compact summary line.
+        _grid.Rows[1].DefaultCellStyle.ForeColor = Color.DimGray;
+        _grid.Rows[1].DefaultCellStyle.Font = new Font(
+            _grid.Font, FontStyle.Italic);
+        _grid.Rows[1].Height = 24;
 
         // No cell should look pre-selected when the tab opens.
         _grid.ClearSelection();

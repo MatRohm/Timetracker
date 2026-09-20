@@ -1,4 +1,5 @@
 using System.Globalization;
+using Timetracker.ActivityMonitor;
 using Timetracker.Models;
 
 namespace Timetracker.ViewModels;
@@ -64,6 +65,65 @@ public sealed class WeekDayViewModel : ObservableObject
         IsToday = date.Date == DateTimeOffset.Now.Date;
         OnPropertyChanged(nameof(Date));
     }
+
+    /// <summary>
+    /// Sets the PC activity line for this day: the sum of active and idle spans
+    /// overlapping this date, e.g. "PC 7:15 active". Empty when no data exists.
+    /// </summary>
+    public void UpdateActivity(IEnumerable<ActivitySpan> spans)
+    {
+        var daySpans = spans
+            .Select(s => (Span: s, From: s.Start, To: s.End))
+            .ToList();
+
+        var activeSeconds = 0.0;
+        var idleSeconds = 0.0;
+        foreach (var (span, from, to) in daySpans)
+        {
+            // Clamps a span to this day; spans crossing midnight count on both
+            // days with their respective parts.
+            var dayStart = Date.Date;
+            var dayEnd = dayStart.AddDays(1);
+            var overlapStart = from > dayStart ? from : dayStart;
+            var overlapEnd = to < dayEnd ? to : dayEnd;
+            if (overlapEnd <= overlapStart)
+            {
+                continue;
+            }
+
+            var seconds = (overlapEnd - overlapStart).TotalSeconds;
+            if (span.Kind == "active")
+            {
+                activeSeconds += seconds;
+            }
+            else
+            {
+                idleSeconds += seconds;
+            }
+        }
+
+        if (activeSeconds <= 0 && idleSeconds <= 0)
+        {
+            ActivityText = "";
+            return;
+        }
+
+        var result = "PC " + HoursMinutes(activeSeconds) + " active";
+        if (idleSeconds > 0)
+        {
+            result += " · " + HoursMinutes(idleSeconds) + " idle";
+        }
+        ActivityText = result;
+    }
+
+    /// <summary>PC activity line for this day, e.g. "PC 7:15 active · 1:20 idle".</summary>
+    public string ActivityText
+    {
+        get => _activityText;
+        private set => SetProperty(ref _activityText, value);
+    }
+
+    private string _activityText = "";
 
     /// <summary>Falls back to "(without)" when the group key is empty (no booking element set).</summary>
     private static string GroupLabel(IGrouping<string, TrackerEntry> group, bool groupByBookingElement)
