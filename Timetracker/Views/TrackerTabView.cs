@@ -60,17 +60,16 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
             Dock = DockStyle.Fill,
             Padding = new Padding(12, 10, 12, 10),
             ColumnCount = 1,
-            RowCount = 8,
+            RowCount = 7,
         };
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 0 label
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 1 task box
         _suggestionRowStyle = new RowStyle(SizeType.Absolute, 0);              // 2 suggestions (hidden)
         layout.RowStyles.Add(_suggestionRowStyle);
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 3 buttons
-        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 4 status
-        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 5 azure devops
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));             // 6 grid
-        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 7 pager
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));             // 4 grid
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 5 pager
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 6 status
 
         var taskLabel = new Label
         {
@@ -94,10 +93,11 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         {
             Dock = DockStyle.Top,
             AutoSize = true,
-            ColumnCount = 3,
+            ColumnCount = 4,
             RowCount = 1,
             Margin = new Padding(0),
         };
+        buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -119,9 +119,13 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         _elapsedLabel.Dock = DockStyle.Fill;
         _elapsedLabel.Margin = new Padding(0, 0, 0, 4);
 
+        var azureDevOpsPanel = new AzureDevOpsPanel(
+            new AzureDevOpsService(), this);
+
         buttonRow.Controls.Add(_startButton, 0, 0);
         buttonRow.Controls.Add(_stopButton, 1, 0);
-        buttonRow.Controls.Add(_elapsedLabel, 2, 0);
+        buttonRow.Controls.Add(azureDevOpsPanel, 2, 0);
+        buttonRow.Controls.Add(_elapsedLabel, 3, 0);
 
         _statusLabel.Dock = DockStyle.Top;
         _statusLabel.AutoEllipsis = true;
@@ -163,14 +167,10 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         ConfigureGrid();
         BuildColumns();
 
-        var azureDevOpsPanel = new AzureDevOpsPanel(
-            new AzureDevOpsService(), this);
-
         // Dock order matters: the fill control is added first, the top bands after.
-        layout.Controls.Add(_pagerRow, 0, 7);
-        layout.Controls.Add(_grid, 0, 6);
-        layout.Controls.Add(azureDevOpsPanel, 0, 5);
-        layout.Controls.Add(_statusLabel, 0, 4);
+        layout.Controls.Add(_statusLabel, 0, 6);
+        layout.Controls.Add(_pagerRow, 0, 5);
+        layout.Controls.Add(_grid, 0, 4);
         layout.Controls.Add(buttonRow, 0, 3);
         layout.Controls.Add(_suggestionList, 0, 2);
         layout.Controls.Add(_taskBox, 0, 1);
@@ -563,8 +563,20 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
     void ITrackerUiHost.SetBookingElement(string bookingElement)
     {
         // Staging into the first row would persist nothing; the value is picked up
-        // when the user starts tracking (BuildEntry inherits the task's element),
-        // so it is shown as a status hint instead of a silent row edit.
+        // when the user starts tracking (BuildEntry inherits the task's element).
         _vm.PreviewBookingElement = bookingElement;
+    }
+
+    void ITrackerUiHost.ShowStatus(string message, TrackerStatusKind kind)
+    {
+        // Shared one-line status at the bottom of the tab, next to the tracker's
+        // own messages (same color mapping as the view model statuses).
+        _statusLabel.Text = message;
+        _statusLabel.ForeColor = kind switch
+        {
+            TrackerStatusKind.Success => Color.ForestGreen,
+            TrackerStatusKind.Error => Color.Firebrick,
+            _ => Color.DimGray,
+        };
     }
 }

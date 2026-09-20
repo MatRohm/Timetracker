@@ -4,7 +4,8 @@ namespace Timetracker.AzureDevOps;
 /// Add-in control for the tracker tab: a single button with the Azure DevOps
 /// favicon. Clicking it opens a small popup where the user types the issue
 /// number; fetching runs asynchronously and results are pushed into the tracker
-/// inputs through <see cref="ITrackerUiHost"/>. View-only.
+/// inputs and the shared status line through <see cref="ITrackerUiHost"/>.
+/// View-only.
 /// </summary>
 public sealed class AzureDevOpsPanel : UserControl
 {
@@ -12,7 +13,6 @@ public sealed class AzureDevOpsPanel : UserControl
     private readonly ITrackerUiHost _host;
 
     private readonly Button _importButton = new();
-    private readonly Label _statusLabel = new();
 
     /// <summary>Suppresses concurrent apply attempts while a request is running.</summary>
     private bool _busy;
@@ -45,53 +45,34 @@ public sealed class AzureDevOpsPanel : UserControl
         Dock = DockStyle.Fill;
 
         BuildUi();
-        UpdateStatusHint();
     }
 
     private void BuildUi()
     {
-        var layout = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            AutoSize = true,
-            ColumnCount = 4,
-            RowCount = 1,
-            Margin = new Padding(0),
-        };
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-
         _importButton.Image = AzureIcon.ToBitmap();
         _importButton.ImageAlign = ContentAlignment.MiddleLeft;
         _importButton.TextImageRelation = TextImageRelation.ImageBeforeText;
         _importButton.Text = "Azure DevOps import";
         _importButton.AutoSize = true;
         _importButton.MinimumSize = new Size(170, 30);
-        _importButton.Margin = new Padding(0, 2, 8, 0);
+        _importButton.Margin = new Padding(0);
 
-        _statusLabel.AutoSize = true;
-        _statusLabel.ForeColor = Color.DimGray;
-        _statusLabel.TextAlign = ContentAlignment.MiddleLeft;
-        _statusLabel.Dock = DockStyle.Fill;
-        _statusLabel.Margin = new Padding(0, 5, 0, 0);
-
-        layout.Controls.Add(_importButton, 0, 0);
-        layout.Controls.Add(_statusLabel, 1, 0);
+        // Config hint goes to the tooltip; status messages live in the host's
+        // shared status line at the bottom of the tab.
+        UpdateToolTip();
 
         _importButton.Click += async (_, _) => await ShowImportPopupAsync();
 
-        Controls.Add(layout);
+        Controls.Add(_importButton);
     }
 
-    private void UpdateStatusHint()
+    private void UpdateToolTip()
     {
-        _statusLabel.ForeColor = Color.DimGray;
-        _statusLabel.Text = _service.IsConfigured
+        var toolTip = new ToolTip();
+        toolTip.SetToolTip(_importButton, _service.IsConfigured
             ? "Fetches issue number, title and AZE-Element into the fields."
             : "Not configured - create " + _service.ConfigFilePath
-                + " (url, project, pat) and restart.";
+                + " (url, project, pat) and restart.");
     }
 
     private async Task ShowImportPopupAsync()
@@ -104,22 +85,18 @@ public sealed class AzureDevOpsPanel : UserControl
         // Without a usable config the popup cannot succeed; explain instead.
         if (!_service.IsConfigured)
         {
+            _host.ShowStatus("Azure DevOps is not configured - create "
+                + _service.ConfigFilePath + " (url, project, pat).",
+                TrackerStatusKind.Error);
             MessageBox.Show(this, _service.ConfigurationHint,
                 "Azure DevOps import", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
         using var popup = new ImportPopup(PopupIcon);
-        switch (popup.ShowDialog(FindForm()))
+        if (popup.ShowDialog(FindForm()) == DialogResult.OK)
         {
-            case DialogResult.OK:
-                await ApplyAsync(popup.IssueNumber);
-                break;
-            case DialogResult.Retry:
-                // Same as OK; the retry result keeps the popup's Enter-to-submit
-                // behavior distinct from a cancel for future extensions.
-                await ApplyAsync(popup.IssueNumber);
-                break;
+            await ApplyAsync(popup.IssueNumber);
         }
     }
 
@@ -134,26 +111,15 @@ public sealed class AzureDevOpsPanel : UserControl
         try
         {
             var result = await _service.ApplyIssueAsync(issueNumber, _host);
-            ShowResult(result);
+            if (!result.Success)
+            {
+                _host.ShowStatus("✗ " + result.Error, TrackerStatusKind.Error);
+            }
         }
         finally
         {
             _busy = false;
             _importButton.Enabled = true;
-        }
-    }
-
-    private void ShowResult(AzureDevOpsService.ApplyResult result)
-    {
-        if (result.Success)
-        {
-            _statusLabel.ForeColor = Color.ForestGreen;
-            _statusLabel.Text = "✓ Applied \"" + result.TaskName + "\"";
-        }
-        else
-        {
-            _statusLabel.ForeColor = Color.Firebrick;
-            _statusLabel.Text = "✗ " + result.Error;
         }
     }
 

@@ -84,6 +84,9 @@ public sealed class AzureDevOpsService : IDisposable
         var taskName = $"{workItem.Id} {workItem.Title}".Trim();
         host.SetTaskName(taskName);
         host.SetBookingElement(workItem.AzeElement);
+        host.ShowStatus($"✓ Applied \"{taskName}\""
+            + (workItem.AzeElement.Length > 0 ? $" ({workItem.AzeElement})" : ""),
+            TrackerStatusKind.Success);
 
         var result = ApplyResult.Successful(taskName, workItem.AzeElement);
         return result;
