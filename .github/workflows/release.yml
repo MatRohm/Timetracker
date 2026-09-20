@@ -48,8 +48,8 @@ jobs:
         shell: pwsh
         run: |
           $v = "${{ github.event.inputs.version }}"
-          Compress-Archive -Path "bin/Release/net10.0-windows/win-x64/publish/Timetracker.exe" -DestinationPath "Timetracker-$v-win-x64.zip"
-          Compress-Archive -Path "bin/Release/net10.0-windows/win-x86/publish/Timetracker.exe" -DestinationPath "Timetracker-$v-win-x86.zip"
+          Compress-Archive -Path "Timetracker/bin/Release/net10.0-windows/win-x64/publish/Timetracker.exe" -DestinationPath "Timetracker-$v-win-x64.zip"
+          Compress-Archive -Path "Timetracker/bin/Release/net10.0-windows/win-x86/publish/Timetracker.exe" -DestinationPath "Timetracker-$v-win-x86.zip"
 
       - name: Create GitHub Release
         shell: bash
