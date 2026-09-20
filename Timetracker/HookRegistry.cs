@@ -45,6 +45,7 @@ public static class HookRegistry
 
         // PC activity monitor: activity log, per-day lines, installer UI.
         services.AddSingleton<ActivityMonitor.ActivityLog>();
+        services.AddSingleton<ActivityMonitor.IActivityMonitorInstaller, ActivityMonitor.ActivityMonitorInstaller>();
         services.AddSingleton<IWeekDayContributor, ActivityMonitor.ActivityWeekDayContributor>();
         services.AddSingleton<IUiContributor, ActivityMonitor.MonitorSetupUiContributor>();
         services.AddSingleton<Plugins.IWeekStatusHost, ActivityMonitor.WeekStatusHostAdapter>();
