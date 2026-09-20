@@ -29,6 +29,19 @@ public sealed class AzureDevOpsService : IDisposable
     public string ConfigFilePath => AzureDevOpsConfig.DefaultFilePath;
 
     /// <summary>
+    /// Message shown when the import is used without a usable config: the expected
+    /// file path plus a sample configuration to copy.
+    /// </summary>
+    public string ConfigurationHint => "Azure DevOps is not configured.\n\n" +
+        "Create a configuration file at\n" + AzureDevOpsConfig.DefaultFilePath + "\n\n" +
+        "Example content:\n" +
+        "{\n" +
+        "  \"url\": \"https://dev.azure.com/your-organization\",\n" +
+        "  \"project\": \"YourProject\",\n" +
+        "  \"pat\": \"your-personal-access-token\"\n" +
+        "}";
+
+    /// <summary>
     /// Looks up the work item and fills the host inputs. Returns false when the
     /// issue number is invalid, the config is missing, or the request failed.
     /// The view model is not touched from here; the host decides what to do with
