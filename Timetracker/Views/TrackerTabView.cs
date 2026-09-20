@@ -62,6 +62,9 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
             ColumnCount = 1,
             RowCount = 7,
         };
+        // One fixed-width column: AutoSize would let long status texts push the
+        // whole layout wider than the window and clip the timer and grid.
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 0 label
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 1 task box
         _suggestionRowStyle = new RowStyle(SizeType.Absolute, 0);              // 2 suggestions (hidden)
@@ -114,9 +117,11 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
 
         _elapsedLabel.Text = "00:00:00";
         _elapsedLabel.Font = new Font("Consolas", 15.75F, FontStyle.Bold);
-        _elapsedLabel.AutoSize = true;
-        _elapsedLabel.TextAlign = ContentAlignment.MiddleRight;
+        // Fixed size in the percent column: AutoSize would feed the measured text
+        // back into the layout and can push the row wider than the window.
+        _elapsedLabel.AutoSize = false;
         _elapsedLabel.Dock = DockStyle.Fill;
+        _elapsedLabel.TextAlign = ContentAlignment.MiddleRight;
         _elapsedLabel.Margin = new Padding(0, 0, 0, 4);
 
         var azureDevOpsPanel = new AzureDevOpsPanel(
@@ -130,7 +135,10 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         _statusLabel.Dock = DockStyle.Top;
         _statusLabel.AutoEllipsis = true;
         _statusLabel.ForeColor = Color.DimGray;
-        _statusLabel.AutoSize = true;
+        // Fixed height instead of AutoSize: a long status text must widen the
+        // cell (AutoEllipsis shows "..." instead) or it clips the whole layout.
+        _statusLabel.AutoSize = false;
+        _statusLabel.Height = 22;
         _statusLabel.Margin = new Padding(0, 2, 0, 4);
 
         var pagerRow = new TableLayoutPanel
