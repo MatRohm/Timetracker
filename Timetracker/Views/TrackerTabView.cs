@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Timetracker.AzureDevOps;
 using Timetracker.Services;
 using Timetracker.ViewModels;
 
@@ -9,7 +10,7 @@ namespace Timetracker.Views;
 /// the sortable, inline-editable history grid. View-only; logic lives in
 /// <see cref="TrackerViewModel"/>.
 /// </summary>
-public sealed class TrackerTabView : UserControl
+public sealed class TrackerTabView : UserControl, ITrackerUiHost
 {
     private readonly TrackerViewModel _vm;
 
@@ -59,7 +60,7 @@ public sealed class TrackerTabView : UserControl
             Dock = DockStyle.Fill,
             Padding = new Padding(12, 10, 12, 10),
             ColumnCount = 1,
-            RowCount = 7,
+            RowCount = 8,
         };
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 0 label
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 1 task box
@@ -67,8 +68,9 @@ public sealed class TrackerTabView : UserControl
         layout.RowStyles.Add(_suggestionRowStyle);
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 3 buttons
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 4 status
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));             // 5 grid
-        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 6 pager
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 5 azure devops
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));             // 6 grid
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 7 pager
 
         var taskLabel = new Label
         {
@@ -161,9 +163,13 @@ public sealed class TrackerTabView : UserControl
         ConfigureGrid();
         BuildColumns();
 
+        var azureDevOpsPanel = new AzureDevOpsPanel(
+            new AzureDevOpsService(), this);
+
         // Dock order matters: the fill control is added first, the top bands after.
-        layout.Controls.Add(_pagerRow, 0, 6);
-        layout.Controls.Add(_grid, 0, 5);
+        layout.Controls.Add(_pagerRow, 0, 7);
+        layout.Controls.Add(_grid, 0, 6);
+        layout.Controls.Add(azureDevOpsPanel, 0, 5);
         layout.Controls.Add(_statusLabel, 0, 4);
         layout.Controls.Add(buttonRow, 0, 3);
         layout.Controls.Add(_suggestionList, 0, 2);
@@ -546,5 +552,19 @@ public sealed class TrackerTabView : UserControl
         MessageBox.Show(this, "Please enter a task name first.", "Timetracker",
             MessageBoxButtons.OK, MessageBoxIcon.Warning);
         _taskBox.Focus();
+    }
+
+    void ITrackerUiHost.SetTaskName(string taskName)
+    {
+        // The binding pushes the value into the view model (and suggestions).
+        _taskBox.Text = taskName;
+    }
+
+    void ITrackerUiHost.SetBookingElement(string bookingElement)
+    {
+        // Staging into the first row would persist nothing; the value is picked up
+        // when the user starts tracking (BuildEntry inherits the task's element),
+        // so it is shown as a status hint instead of a silent row edit.
+        _vm.PreviewBookingElement = bookingElement;
     }
 }

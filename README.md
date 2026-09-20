@@ -89,6 +89,39 @@ the whole range from the previously selected row, and **CTRL+CLICK** adds or
 removes single rows from the selection. Pressing **Del** removes every selected
 row together.
 
+## Azure DevOps integration
+
+The tracker can fetch task names from Azure DevOps work items. The integration
+lives in its own project (`Timetracker.AzureDevOps`) and adds an
+**Azure DevOps issue** band to the tracker tab: enter an issue number and press
+**⇩ Apply** (or **Enter**).
+
+The task name is filled as `<issue number> <title>` and the **booking element**
+is taken from the work item's custom field **AZE-Element** (`Custom.AZEElement`),
+which is used for the next started session on that task.
+
+### Configuration
+
+Create **`%USERPROFILE%\timetracker-azdo.json`** (the app shows the expected path
+in the panel's status hint when it is missing). An example file lives at
+`Timetracker.AzureDevOps/timetracker-azdo.example.json`:
+
+```json
+{
+  "url": "https://dev.azure.com/your-organization",
+  "project": "YourProject",
+  "pat": "your-personal-access-token"
+}
+```
+
+- `url` — organization/collection URL
+- `project` — project the work items live in
+- `pat` — personal access token (sent as Basic password; only "Read work items"
+  permission is needed)
+
+If the file is missing, broken, or incomplete, the panel shows a hint and apply
+attempts fail with a clear message; the tracker works normally without it.
+
 ## Data file
 
 Entries are stored at `%USERPROFILE%\timetracker.json`
