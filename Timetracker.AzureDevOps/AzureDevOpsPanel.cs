@@ -42,7 +42,6 @@ public sealed class AzureDevOpsPanel : UserControl
     {
         _service = service;
         _host = host;
-        Dock = DockStyle.Fill;
         // Size the panel to its button; the default UserControl size (200x100)
         // would clip the caption and inflate the button row's height.
         AutoSize = true;
@@ -60,9 +59,9 @@ public sealed class AzureDevOpsPanel : UserControl
         _importButton.TextImageRelation = TextImageRelation.ImageBeforeText;
         _importButton.Text = "Azure DevOps import";
         _importButton.AutoSize = true;
-        _importButton.MinimumSize = new Size(170, 30);
+        // Same height as Start/Stop; width grows with the caption.
+        _importButton.MinimumSize = new Size(170, 36);
         _importButton.Margin = new Padding(0);
-        _importButton.Dock = DockStyle.Fill;
 
         // Config hint goes to the tooltip; status messages live in the host's
         // shared status line at the bottom of the tab.
