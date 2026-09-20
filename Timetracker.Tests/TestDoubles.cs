@@ -1,6 +1,4 @@
-using AwesomeAssertions;
 using FakeItEasy;
-using NUnit.Framework;
 using Timetracker.Models;
 using Timetracker.Services;
 using Timetracker.ViewModels;

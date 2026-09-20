@@ -71,6 +71,7 @@ dotnet_sort_system_directives_using_first = true:suggestion
 
 # using directives inside namespaces not used here; keep imports tidy
 dotnet_remove_unnecessary_suppression_exclusions = none
+dotnet_diagnostic.IDE0005.severity = error   # unnecessary using directives
 
 # Quality rules surfaced as build warnings
 dotnet_diagnostic.CA2007.severity = none    # Do not directly await a Task - not applicable, app is sync-driven UI

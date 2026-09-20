@@ -1,5 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
-using Timetracker.Plugins;
 using Timetracker.ViewModels;
 
 namespace Timetracker.Views;
