@@ -30,7 +30,7 @@
   -->
   <Target Name="PublishActivityMonitor" AfterTargets="Publish">
     <PropertyGroup>
-      <ActivityMonitorPublishDir>$(MSBuildThisFileDirectory)..\Timetracker.ActivityMonitor\bin\Release\$(TargetFramework)\win-x64\publish\</ActivityMonitorPublishDir>
+      <ActivityMonitorPublishDir>$(MSBuildThisFileDirectory)..\Timetracker.ActivityMonitor\bin\Release\$(TargetFramework)\$(RuntimeIdentifier)\publish\</ActivityMonitorPublishDir>
       <ActivityMonitorPublishDir Condition="!Exists('$(ActivityMonitorPublishDir)')">$(MSBuildThisFileDirectory)..\Timetracker.ActivityMonitor\bin\Release\$(TargetFramework)\</ActivityMonitorPublishDir>
     </PropertyGroup>
     <Copy SourceFiles="$(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" Condition="Exists('$(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe')" />
