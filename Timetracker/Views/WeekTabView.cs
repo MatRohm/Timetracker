@@ -127,8 +127,8 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
         _currentButton.MinimumSize = new Size(130, 30);
 
         buttonRow.Controls.Add(_prevButton, 0, 0);
-        buttonRow.Controls.Add(_nextButton, 1, 0);
-        buttonRow.Controls.Add(_currentButton, 2, 0);
+        buttonRow.Controls.Add(_currentButton, 1, 0);
+        buttonRow.Controls.Add(_nextButton, 2, 0);
 
         _groupByBookingElementCheck.Text = "Group by booking element";
         _groupByBookingElementCheck.AutoSize = true;
