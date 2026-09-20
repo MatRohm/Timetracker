@@ -72,7 +72,7 @@ public sealed class AzureDevOpsTests
                   "id": 42,
                   "fields": {
                     "System.Title": "Fix login bug",
-                    "Custom.AZEElement": "Quarterly figures"
+                    "Custom.2c1e4e3f-b6ad-4004-a072-a65e75547971": "10831 Genesis Abschnitte"
                   }
                 }
                 """, System.Text.Encoding.UTF8, "application/json"),
@@ -84,7 +84,30 @@ public sealed class AzureDevOpsTests
         workItem.Should().NotBeNull();
         workItem!.Id.Should().Be(42);
         workItem.Title.Should().Be("Fix login bug");
-        workItem.AzeElement.Should().Be("Quarterly figures");
+        workItem.AzeElement.Should().Be("10831 Genesis Abschnitte",
+            "the AZE-Element field uses a GUID-based reference name in Azure DevOps");
+    }
+
+    [Test]
+    public async Task Client_falls_back_to_the_friendly_aze_element_field_name()
+    {
+        var http = FakeHttp.Create((request) => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""
+                {
+                  "id": 42,
+                  "fields": {
+                    "System.Title": "Fix login bug",
+                    "Custom.AZEElement": "Quarterly figures"
+                  }
+                }
+                """, System.Text.Encoding.UTF8, "application/json"),
+        });
+        using var client = new AzureDevOpsClient(Config(), http);
+
+        var workItem = await client.GetWorkItemAsync(42);
+
+        workItem!.AzeElement.Should().Be("Quarterly figures");
     }
 
     [Test]

@@ -18,8 +18,15 @@ public sealed record WorkItemInfo(int Id, string Title, string AzeElement)
 /// </summary>
 public sealed class AzureDevOpsClient : IDisposable
 {
-    /// <summary>Reference name of the custom field holding the booking element.</summary>
-    public const string AzeElementField = "Custom.AZEElement";
+    /// <summary>
+    /// Reference name of the custom field holding the booking element ("AZE-Element").
+    /// Fields created in Azure DevOps get a GUID-based reference name; the friendly
+    /// variant is kept as a fallback for organizations where it exists.
+    /// </summary>
+    public const string AzeElementField = "Custom.2c1e4e3f-b6ad-4004-a072-a65e75547971";
+
+    /// <summary>Fallback reference name of the AZE-Element field.</summary>
+    public const string AzeElementFallbackField = "Custom.AZEElement";
 
     private const string ApiVersion = "api-version=7.1";
 
@@ -76,6 +83,10 @@ public sealed class AzureDevOpsClient : IDisposable
 
         var title = ReadField(payload.Fields, "System.Title");
         var azeElement = ReadField(payload.Fields, AzeElementField);
+        if (azeElement.Length == 0)
+        {
+            azeElement = ReadField(payload.Fields, AzeElementFallbackField);
+        }
 
         var result = new WorkItemInfo(payload.Id, title, azeElement);
         return result;
