@@ -23,6 +23,7 @@ public sealed class WeekTabView : UserControl
     private readonly Button _installMonitorButton = new();
     private readonly Button _uninstallMonitorButton = new();
     private readonly Label _monitorStateLabel = new();
+    private readonly Label _statusLabel = new();
 
     public WeekTabView(WeekViewModel week)
     {
@@ -40,12 +41,16 @@ public sealed class WeekTabView : UserControl
             Dock = DockStyle.Fill,
             Padding = new Padding(12, 10, 12, 10),
             ColumnCount = 1,
-            RowCount = 4,
+            RowCount = 5,
         };
+        // One fixed-width column: AutoSize would let long texts push the layout
+        // wider than the window (same clipping problem as in the tracker tab).
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                  // 0 header row
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                  // 1 buttons
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                  // 2 monitor row
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));              // 3 grid
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                  // 4 status
 
         var headerRow = new TableLayoutPanel
         {
@@ -135,11 +140,20 @@ public sealed class WeekTabView : UserControl
         _uninstallMonitorButton.MinimumSize = new Size(210, 30);
         _uninstallMonitorButton.Margin = new Padding(0, 0, 8, 6);
 
-        _monitorStateLabel.AutoSize = true;
+        _monitorStateLabel.AutoSize = false;
         _monitorStateLabel.ForeColor = Color.DimGray;
         _monitorStateLabel.Dock = DockStyle.Fill;
         _monitorStateLabel.TextAlign = ContentAlignment.MiddleLeft;
         _monitorStateLabel.Margin = new Padding(0, 6, 0, 6);
+
+        _statusLabel.Dock = DockStyle.Top;
+        _statusLabel.AutoEllipsis = true;
+        _statusLabel.ForeColor = Color.DimGray;
+        // Fixed height instead of AutoSize: a long text must not widen the
+        // layout column (AutoEllipsis shows "..." instead).
+        _statusLabel.AutoSize = false;
+        _statusLabel.Height = 22;
+        _statusLabel.Margin = new Padding(0, 4, 0, 0);
 
         monitorRow.Controls.Add(_installMonitorButton, 0, 0);
         monitorRow.Controls.Add(_uninstallMonitorButton, 1, 0);
@@ -147,22 +161,20 @@ public sealed class WeekTabView : UserControl
 
         _installMonitorButton.Click += (_, _) =>
         {
-            var message = ActivityMonitorInstaller.Install()
-                ? "The PC activity monitor will start with Windows."
-                : "Installation failed. Make sure \"" + ActivityMonitorInstaller.MonitorExePath
-                    + "\" exists next to the app.";
-            MessageBox.Show(this, message, "PC activity monitor",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            var success = ActivityMonitorInstaller.Install();
+            ShowStatus(success
+                ? "✓ The PC activity monitor will start with Windows."
+                : "✗ Installation failed. Make sure \"" + ActivityMonitorInstaller.MonitorExePath
+                    + "\" exists next to the app.", success);
             UpdateMonitorButtons();
         };
 
         _uninstallMonitorButton.Click += (_, _) =>
         {
-            var message = ActivityMonitorInstaller.Uninstall()
-                ? "The PC activity monitor autostart was removed."
-                : "Removing the autostart entry failed.";
-            MessageBox.Show(this, message, "PC activity monitor",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            var success = ActivityMonitorInstaller.Uninstall();
+            ShowStatus(success
+                ? "✓ The PC activity monitor autostart was removed."
+                : "✗ Removing the autostart entry failed.", success);
             UpdateMonitorButtons();
         };
 
@@ -200,12 +212,20 @@ public sealed class WeekTabView : UserControl
         }
 
         // Dock order matters: the fill control is added first, the top bands after.
+        layout.Controls.Add(_statusLabel, 0, 4);
         layout.Controls.Add(_grid, 0, 3);
         layout.Controls.Add(monitorRow, 0, 2);
         layout.Controls.Add(buttonRow, 0, 1);
         layout.Controls.Add(headerRow, 0, 0);
 
         Controls.Add(layout);
+    }
+
+    /// <summary>One-line status at the bottom, styled like the tracker's status line.</summary>
+    private void ShowStatus(string message, bool success)
+    {
+        _statusLabel.Text = message;
+        _statusLabel.ForeColor = success ? Color.ForestGreen : Color.Firebrick;
     }
 
     private void BindViewModel()
