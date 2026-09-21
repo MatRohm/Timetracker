@@ -92,7 +92,12 @@ or explicitly state that validation could not be performed.
 
 ### Commit messages: Conventional Commits
 
-All commit messages follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/):
+**All commit messages MUST follow the [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/)
+specification.** This is a hard requirement, not a preference: never commit a
+message that does not conform. If a message would not parse as a Conventional
+Commit, fix the message before committing.
+
+The message MUST be structured as:
 
     <type>[optional scope]: <description>
 
@@ -100,20 +105,24 @@ All commit messages follow [Conventional Commits 1.0.0](https://www.conventional
 
     [optional footer(s)]
 
+Requirements:
+
+- The message MUST start with a type, followed by an optional scope, an
+  optional `!`, and a mandatory `: ` (colon and space).
 - Use `feat` for a new feature and `fix` for a bug fix. These map to MINOR
   and PATCH releases respectively.
 - Other allowed types: `build`, `chore`, `ci`, `docs`, `style`, `refactor`,
   `perf`, `test`, and `revert`.
 - A scope is optional and names the affected part of the codebase, e.g.
   `fix(week-view): ...`. Prefer the project or feature name in lowercase.
-- The description is a short summary, lowercase is preferred; it immediately
-  follows the colon and space.
-- Separate the body from the description with a blank line; the body is free
-  form and explains what and why.
-- Mark a breaking change with `!` after the type/scope
+- The description MUST immediately follow the colon and space; it is a short
+  summary, lowercase is preferred.
+- A body MAY follow the description, separated by one blank line; the body is
+  free form and explains what and why.
+- Breaking changes MUST be indicated with `!` after the type/scope
   (`feat!: ...`) and/or a `BREAKING CHANGE: <description>` footer.
-- Footers use a `Token: value` form (e.g. `Refs: #123`); `BREAKING CHANGE`
-  must be uppercase.
+- Footers MUST use the `Token: value` form (e.g. `Refs: #123`); the
+  `BREAKING CHANGE` token MUST be uppercase.
 
 Examples:
 
