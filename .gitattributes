@@ -1,0 +1,24 @@
+# Line-ending and text normalization.
+#
+# The repository stores text as LF, but .editorconfig requires CRLF in the
+# working tree on every platform. Without these rules a Linux checkout would be
+# LF, so `dotnet format` reports ENDOFLINE errors on every file.
+#
+# `text=auto` lets Git decide what is text; `eol=crlf` makes the checkout CRLF
+# on all platforms (and is harmless on Windows, where it is the default anyway).
+* text=auto eol=crlf
+
+# Shell scripts must keep LF or they fail to execute.
+*.sh text eol=lf
+
+# Binary assets are never normalized.
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.svg binary
+*.dll binary
+*.exe binary
+*.so binary
+*.dylib binary
