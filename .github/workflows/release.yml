@@ -36,20 +36,20 @@ jobs:
 
       - name: Publish linux-x64
         run: >
-          dotnet publish Timetracker/Timetracker.csproj -c Release -r linux-x64 --self-contained true
+          dotnet publish Timetracker.App/Timetracker.App.csproj -c Release -r linux-x64 --self-contained true
           -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
 
       - name: Publish win-x64
         run: >
-          dotnet publish Timetracker/Timetracker.csproj -c Release -r win-x64 --self-contained true
+          dotnet publish Timetracker.App/Timetracker.App.csproj -c Release -r win-x64 --self-contained true
           -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
 
       - name: Package (tar.gz / zip)
         shell: bash
         run: |
           VERSION="${{ github.event.inputs.version }}"
-          LINUX_DIR="Timetracker/bin/Release/net10.0/linux-x64/publish"
-          WIN_DIR="Timetracker/bin/Release/net10.0/win-x64/publish"
+          LINUX_DIR="Timetracker.App/bin/Release/net10.0/linux-x64/publish"
+          WIN_DIR="Timetracker.App/bin/Release/net10.0/win-x64/publish"
 
           tar -czf "Timetracker-$VERSION-linux-x64.tar.gz" \
             -C "$LINUX_DIR" Timetracker Timetracker.ActivityMonitor

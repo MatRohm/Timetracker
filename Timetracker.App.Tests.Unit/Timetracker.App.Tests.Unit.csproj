@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Timetracker\Timetracker.csproj" />
+    <ProjectReference Include="..\Timetracker.App\Timetracker.App.csproj" />
   </ItemGroup>
 
 </Project>
