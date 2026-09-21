@@ -97,6 +97,13 @@ specification.** This is a hard requirement, not a preference: never commit a
 message that does not conform. If a message would not parse as a Conventional
 Commit, fix the message before committing.
 
+The rule is enforced by the shared `commit-msg` hook in `.githooks/`; a
+conforming subject is required or the commit is rejected (bypass only in an
+emergency with `git commit --no-verify`). Git cannot install hooks from a
+clone automatically, so enable it once per clone:
+
+    git config core.hooksPath .githooks
+
 The message MUST be structured as:
 
     <type>[optional scope]: <description>
