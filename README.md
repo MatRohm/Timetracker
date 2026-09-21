@@ -201,7 +201,7 @@ reference the main app project (they get hosts via `UiHostAccessor`).
 
 ```
 Timetracker/
-├── Timetracker/                     # Application project (named after the csproj)
+├── Timetracker.App/                 # Application project (named after the csproj)
 │   ├── HookRegistry.cs              # DI container: every component registers here
 │   ├── Models/
 │   │   └── TrackerEntry.cs          # One finished time entry
@@ -225,18 +225,22 @@ Timetracker/
 │   │   └── AvaloniaUiTimer.cs       # Avalonia timer implementation
 │   ├── App.cs                       # Composition root: container, hooks, error handling
 │   ├── Program.cs                   # Entry point (Avalonia bootstrap)
-│   └── Timetracker.csproj
+│   └── Timetracker.App.csproj
 ├── Timetracker.Plugins/             # Hook interfaces + UI host accessor (no logic)
 ├── Timetracker.AzureDevOps/         # Add-in: work item import (issue number → fields)
 ├── Timetracker.ActivityMonitor/     # Add-in: PC active/idle recording (background exe)
 ├── Timetracker.slnx                 # XML solution (app + add-ins + tests)
-├── Timetracker.Tests.Unit/          # App unit tests (view models, services)
-├── Timetracker.Tests.UI/            # App UI tests (headless Avalonia view rendering)
+├── Timetracker.App.Tests.Unit/      # App unit tests (view models, services)
+├── Timetracker.App.Tests.UI/        # App UI tests (headless Avalonia view rendering)
 ├── Timetracker.Plugins.Tests.Unit/  # Plugins unit tests (UI host accessor)
 ├── Timetracker.AzureDevOps.Tests.Unit/  # Azure DevOps unit tests (config, client, service)
 ├── Timetracker.AzureDevOps.Tests.UI/    # Azure DevOps UI tests (panel rendering)
 └── Timetracker.ActivityMonitor.Tests.Unit/  # Activity monitor unit tests
 ```
+
+The app project keeps the assembly name `Timetracker`, so the shipped executable
+is still `Timetracker` (`Timetracker.exe` on Windows). Only the project folder and
+file changed. C# namespaces remain `Timetracker.*` for the same reason.
 
 Test projects follow the `<ProjectName>.Tests.<TestType>` convention and are
 kept next to the project they cover (one test project per source project where
@@ -263,22 +267,22 @@ dotnet test
 Windows (single-file, portable):
 
 ```pwsh
-dotnet publish Timetracker/Timetracker.csproj -c Release -r win-x64 --self-contained true `
+dotnet publish Timetracker.App/Timetracker.App.csproj -c Release -r win-x64 --self-contained true `
   -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
 ```
 
 Linux:
 
 ```sh
-dotnet publish Timetracker/Timetracker.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
+dotnet publish Timetracker.App/Timetracker.App.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
 ```
 
-The standalone executable ends up under `Timetracker/bin/Release/net10.0/<rid>/publish/`
+The standalone executable ends up under `Timetracker.App/bin/Release/net10.0/<rid>/publish/`
 and runs without installing .NET.
 
 ## App icon
 
-The app icon (a fist smashing a clock) lives at `Timetracker/Timetracker.png`
+The app icon (a fist smashing a clock) lives at `Timetracker.App/Timetracker.png`
 (the ICO `Timetracker.ico` is kept for Windows builds) and is shown in the title
 bar, taskbar and Alt-Tab view. The Azure DevOps favicon is likewise embedded as a
 PNG (`Timetracker.AzureDevOps/azure-favicon.png`).
