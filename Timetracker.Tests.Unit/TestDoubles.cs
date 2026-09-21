@@ -3,7 +3,7 @@ using Timetracker.Models;
 using Timetracker.Services;
 using Timetracker.ViewModels;
 
-namespace Timetracker.Tests;
+namespace Timetracker.Tests.Unit;
 
 /// <summary>
 /// Manual fake for the UI timer abstraction: <see cref="IUiTimer.Tick"/> is an
@@ -11,7 +11,7 @@ namespace Timetracker.Tests;
 /// (expression trees may not contain assignments). The repository fakes below
 /// use FakeItEasy.
 /// </summary>
-internal sealed class FakeTimer : IUiTimer
+public sealed class FakeTimer : IUiTimer
 {
     private Action? _tick;
 
@@ -31,7 +31,7 @@ internal sealed class FakeTimer : IUiTimer
 }
 
 /// <summary>FakeItEasy fake wrapping an in-memory list as repository.</summary>
-internal static class RepositoryFake
+public static class RepositoryFake
 {
     public static (ITrackerRepository Repo, string Path) Create(params TrackerEntry[] seed)
     {

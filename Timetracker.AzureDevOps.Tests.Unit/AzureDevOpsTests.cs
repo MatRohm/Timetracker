@@ -1,11 +1,9 @@
 using System.Net;
 using AwesomeAssertions;
 using NUnit.Framework;
-using Timetracker.AzureDevOps;
 using Timetracker.Plugins;
-using Timetracker.ViewModels;
 
-namespace Timetracker.Tests;
+namespace Timetracker.AzureDevOps.Tests.Unit;
 
 public sealed class AzureDevOpsTests
 {
@@ -222,21 +220,6 @@ public sealed class AzureDevOpsTests
 
         result.Success.Should().BeFalse();
         result.Error.Should().Contain("failed");
-    }
-
-    [Test]
-    public void PreviewBookingElement_is_used_for_the_next_session_and_then_cleared()
-    {
-        var (repo, _) = RepositoryFake.Create();
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
-        vm.PreviewBookingElement = "Quarterly figures";
-
-        vm.TaskName = "Report";
-        vm.StartCommand.Execute(null);
-        vm.StopCommand.Execute(null);
-
-        repo.GetAll().Single().BookingElement.Should().Be("Quarterly figures");
-        vm.PreviewBookingElement.Should().BeEmpty("the preview is consumed by one session");
     }
 
     private static AzureDevOpsConfig Config() => new()

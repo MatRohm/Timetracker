@@ -1,11 +1,11 @@
 using Avalonia;
 using Avalonia.Headless;
 using Avalonia.Themes.Fluent;
-using Timetracker.Tests;
+using Timetracker.Tests.UI;
 
 [assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]
 
-namespace Timetracker.Tests;
+namespace Timetracker.Tests.UI;
 
 /// <summary>
 /// Headless Avalonia application used by the UI tests: no windowing system is

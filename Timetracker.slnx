@@ -3,5 +3,10 @@
   <Project Path="Timetracker.AzureDevOps/Timetracker.AzureDevOps.csproj" />
   <Project Path="Timetracker.ActivityMonitor/Timetracker.ActivityMonitor.csproj" />
   <Project Path="Timetracker.Plugins/Timetracker.Plugins.csproj" />
-  <Project Path="Timetracker.Tests/Timetracker.Tests.csproj" />
+  <Project Path="Timetracker.Tests.Unit/Timetracker.Tests.Unit.csproj" />
+  <Project Path="Timetracker.Tests.UI/Timetracker.Tests.UI.csproj" />
+  <Project Path="Timetracker.Plugins.Tests.Unit/Timetracker.Plugins.Tests.Unit.csproj" />
+  <Project Path="Timetracker.AzureDevOps.Tests.Unit/Timetracker.AzureDevOps.Tests.Unit.csproj" />
+  <Project Path="Timetracker.AzureDevOps.Tests.UI/Timetracker.AzureDevOps.Tests.UI.csproj" />
+  <Project Path="Timetracker.ActivityMonitor.Tests.Unit/Timetracker.ActivityMonitor.Tests.Unit.csproj" />
 </Solution>

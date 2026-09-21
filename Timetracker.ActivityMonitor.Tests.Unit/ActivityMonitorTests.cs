@@ -1,9 +1,8 @@
 using AwesomeAssertions;
 using NUnit.Framework;
-using Timetracker.ActivityMonitor;
 using Timetracker.Plugins;
 
-namespace Timetracker.Tests;
+namespace Timetracker.ActivityMonitor.Tests.Unit;
 
 public sealed class ActivityMonitorTests
 {
