@@ -5,7 +5,7 @@ using Timetracker.Models;
 using Timetracker.Services;
 using Timetracker.ViewModels;
 
-namespace Timetracker.Tests;
+namespace Timetracker.Tests.Unit;
 
 public sealed class TrackerViewModelTests
 {

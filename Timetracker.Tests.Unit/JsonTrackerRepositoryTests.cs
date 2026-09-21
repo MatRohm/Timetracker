@@ -3,7 +3,7 @@ using AwesomeAssertions;
 using Timetracker.Models;
 using Timetracker.Services;
 
-namespace Timetracker.Tests;
+namespace Timetracker.Tests.Unit;
 
 public sealed class JsonTrackerRepositoryTests
 {

@@ -230,14 +230,20 @@ Timetracker/
 ├── Timetracker.AzureDevOps/         # Add-in: work item import (issue number → fields)
 ├── Timetracker.ActivityMonitor/     # Add-in: PC active/idle recording (background exe)
 ├── Timetracker.slnx                 # XML solution (app + add-ins + tests)
-└── Timetracker.Tests/               # NUnit tests with AwesomeAssertions + FakeItEasy
-    ├── TrackerViewModelTests.cs
-    ├── JsonTrackerRepositoryTests.cs
-    ├── WeekViewModelTests.cs
-    ├── AzureDevOpsTests.cs
-    ├── ActivityMonitorTests.cs
-    └── TestDoubles.cs
+├── Timetracker.Tests.Unit/          # App unit tests (view models, services)
+├── Timetracker.Tests.UI/            # App UI tests (headless Avalonia view rendering)
+├── Timetracker.Plugins.Tests.Unit/  # Plugins unit tests (UI host accessor)
+├── Timetracker.AzureDevOps.Tests.Unit/  # Azure DevOps unit tests (config, client, service)
+├── Timetracker.AzureDevOps.Tests.UI/    # Azure DevOps UI tests (panel rendering)
+└── Timetracker.ActivityMonitor.Tests.Unit/  # Activity monitor unit tests
 ```
+
+Test projects follow the `<ProjectName>.Tests.<TestType>` convention and are
+kept next to the project they cover (one test project per source project where
+tests are needed). Unit tests use NUnit with AwesomeAssertions + FakeItEasy;
+UI tests use the Avalonia headless NUnit platform. Each UI test assembly needs
+at least one test fixture marked with an explicit `[TestFixture]`, otherwise the
+NUnit adapter does not discover the headless tests.
 
 The view model knows nothing about Avalonia; the view contains no business logic.
 They communicate via data bindings, `ICommand`s, and view-model events.

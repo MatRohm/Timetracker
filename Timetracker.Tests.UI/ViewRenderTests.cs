@@ -10,16 +10,19 @@ using NUnit.Framework;
 using Timetracker.Models;
 using Timetracker.Plugins;
 using Timetracker.Services;
+using Timetracker.Tests.Unit;
 using Timetracker.ViewModels;
 using Timetracker.Views;
 
-namespace Timetracker.Tests;
+namespace Timetracker.Tests.UI;
 
 /// <summary>
-/// UI smoke tests: build the real views on a headless Avalonia instance and
-/// assert that they render the expected content. These catch binding and theme
-/// mistakes that pure view-model tests cannot (e.g. a missing DataGrid theme).
+/// UI smoke tests for the main application views: build the real views on a
+/// headless Avalonia instance and assert that they render the expected content.
+/// These catch binding and theme mistakes that pure view-model tests cannot
+/// (e.g. a missing DataGrid theme).
 /// </summary>
+[TestFixture]
 public sealed class ViewRenderTests
 {
     [AvaloniaTest]
@@ -158,20 +161,6 @@ public sealed class ViewRenderTests
 
         var grid = FindAllControls<Grid>(view).Single(g => g.ColumnDefinitions.Count == 7);
         grid.ColumnDefinitions.Should().HaveCount(7, "Monday through Sunday");
-    }
-
-    [AvaloniaTest]
-    public void Azure_devops_panel_loads_its_embedded_icon_and_button()
-    {
-        var services = BuildServices(RepositoryFake.Create().Repo);
-        var host = services.GetRequiredService<ITrackerUiHost>();
-        var service = new AzureDevOps.AzureDevOpsService(configFilePath: "/nonexistent");
-        var panel = new AzureDevOps.AzureDevOpsPanel(service, host);
-
-        panel.ImportButton.Should().NotBeNull();
-        var icon = AzureDevOps.AzureDevOpsPanel.LoadBitmap(
-            "Timetracker.AzureDevOps.azure-favicon.png", 16);
-        icon.Should().NotBeNull("the favicon is embedded as a PNG resource");
     }
 
     private static TrackerEntry Entry(string task, string bookingElement) => new()

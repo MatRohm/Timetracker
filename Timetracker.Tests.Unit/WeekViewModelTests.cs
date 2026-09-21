@@ -3,7 +3,7 @@ using NUnit.Framework;
 using Timetracker.Models;
 using Timetracker.ViewModels;
 
-namespace Timetracker.Tests;
+namespace Timetracker.Tests.Unit;
 
 public sealed class WeekViewModelTests
 {

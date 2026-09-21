@@ -3,7 +3,7 @@ using NUnit.Framework;
 using Timetracker.Models;
 using Timetracker.ViewModels;
 
-namespace Timetracker.Tests;
+namespace Timetracker.Tests.Unit;
 
 /// <summary>
 /// Integration between the per-item editor and the tracker: saving an edited item

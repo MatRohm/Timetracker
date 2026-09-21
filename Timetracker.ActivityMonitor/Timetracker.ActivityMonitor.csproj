@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Timetracker.Tests" />
+    <InternalsVisibleTo Include="Timetracker.ActivityMonitor.Tests.Unit" />
   </ItemGroup>
 
   <ItemGroup>
