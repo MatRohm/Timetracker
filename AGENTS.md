@@ -90,6 +90,40 @@ or explicitly state that validation could not be performed.
 - **Do not push to remotes without explicit permission from the user** —
   pushing happens only when the user asks for it.
 
+### Commit messages: Conventional Commits
+
+All commit messages follow [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/):
+
+    <type>[optional scope]: <description>
+
+    [optional body]
+
+    [optional footer(s)]
+
+- Use `feat` for a new feature and `fix` for a bug fix. These map to MINOR
+  and PATCH releases respectively.
+- Other allowed types: `build`, `chore`, `ci`, `docs`, `style`, `refactor`,
+  `perf`, `test`, and `revert`.
+- A scope is optional and names the affected part of the codebase, e.g.
+  `fix(week-view): ...`. Prefer the project or feature name in lowercase.
+- The description is a short summary, lowercase is preferred; it immediately
+  follows the colon and space.
+- Separate the body from the description with a blank line; the body is free
+  form and explains what and why.
+- Mark a breaking change with `!` after the type/scope
+  (`feat!: ...`) and/or a `BREAKING CHANGE: <description>` footer.
+- Footers use a `Token: value` form (e.g. `Refs: #123`); `BREAKING CHANGE`
+  must be uppercase.
+
+Examples:
+
+    feat: add a per-item editor for tracking entries
+    fix(activity-monitor): stop writing a duplicate span on shutdown
+    docs: describe the line-ending setup
+    refactor!: rename the app project to Timetracker.App
+
+    BREAKING CHANGE: the assembly name changed, update references.
+
 ## Before creating new code
 
 Before creating a new:
