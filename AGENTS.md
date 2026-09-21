@@ -85,9 +85,9 @@ or explicitly state that validation could not be performed.
 
 ## Git
 
-- Committing finished work in sensible, separate commits is allowed and
-  expected.
-- **Never push to remotes without an explicit request from the user** —
+- Whenever a coding task is finished, you are allowed to commit the work
+  in sensible, separate commits.
+- **Do not push to remotes without explicit permission from the user** —
   pushing happens only when the user asks for it.
 
 ## Before creating new code
