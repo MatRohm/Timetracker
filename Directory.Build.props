@@ -1,0 +1,17 @@
+<Project>
+
+  <!--
+    Central package versions. Avalonia is pinned to one version across every
+    project and package so the UI framework, themes and the DataGrid always
+    match. Keep Avalonia.Controls.DataGrid in sync with the core version.
+  -->
+  <PropertyGroup>
+    <AvaloniaVersion>11.3.13</AvaloniaVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Allows building the (still Windows-only) win-x64 publish from any OS. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+
+</Project>

@@ -1,4 +1,4 @@
-using System.ComponentModel;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows.Input;
 using Timetracker.ActivityMonitor;
@@ -12,7 +12,7 @@ namespace Timetracker.ViewModels;
 /// </summary>
 public sealed class WeekViewModel : ObservableObject
 {
-    private readonly BindingList<WeekDayViewModel> _days = new();
+    private readonly ObservableCollection<WeekDayViewModel> _days = new();
     private readonly RelayCommand _previousWeekCommand;
     private readonly RelayCommand _nextWeekCommand;
     private readonly RelayCommand _currentWeekCommand;
@@ -39,7 +39,7 @@ public sealed class WeekViewModel : ObservableObject
     }
 
     /// <summary>Exactly seven items, Monday first; instances are stable across rebuilds.</summary>
-    public BindingList<WeekDayViewModel> Days => _days;
+    public ObservableCollection<WeekDayViewModel> Days => _days;
 
     public string WeekTitle
     {

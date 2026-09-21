@@ -1,7 +1,15 @@
+using System.Collections.Specialized;
 using System.ComponentModel;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Templates;
+using Avalonia.Data;
+using Avalonia.Input;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Timetracker.Plugins;
-using Timetracker.Services;
 using Timetracker.ViewModels;
 
 namespace Timetracker.Views;
@@ -14,6 +22,10 @@ namespace Timetracker.Views;
 /// </summary>
 public sealed class TrackerTabView : UserControl, ITrackerUiHost
 {
+    private static readonly IBrush SuccessBrush = new SolidColorBrush(Color.FromRgb(0x22, 0x8B, 0x22));
+    private static readonly IBrush ErrorBrush = new SolidColorBrush(Color.FromRgb(0xB2, 0x22, 0x22));
+    private static readonly IBrush InfoBrush = new SolidColorBrush(Color.FromRgb(0x69, 0x69, 0x69));
+
     private readonly TrackerViewModel _vm;
     private readonly IServiceProvider _services;
     private readonly IReadOnlyList<IUiContributor> _uiContributors;
@@ -21,28 +33,20 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
     private readonly TextBox _taskBox = new();
     private readonly Button _startButton = new();
     private readonly Button _stopButton = new();
-    private readonly Label _elapsedLabel = new();
-    private readonly Label _statusLabel = new();
-    private readonly DataGridView _grid = new();
+    private readonly TextBlock _elapsedLabel = new();
+    private readonly TextBlock _statusLabel = new();
+    private readonly DataGrid _grid = new();
     private readonly ListBox _suggestionList = new();
     private readonly Button _previousPageButton = new();
-    private readonly Label _pageLabel = new();
+    private readonly TextBlock _pageLabel = new();
     private readonly Button _nextPageButton = new();
-
-    /// <summary>Pager band below the grid; only visible when the rows span several pages.</summary>
-    private TableLayoutPanel _pagerRow = null!;
-
-    /// <summary>Layout row of the suggestion list; its height toggles with visibility.</summary>
-    private RowStyle _suggestionRowStyle = null!;
+    private readonly StackPanel _pagerRow = new();
 
     /// <summary>Suppresses suggestion handling while a suggestion is being applied.</summary>
     private bool _pickingSuggestion;
 
     /// <summary>Header captions without sort indicator, keyed by column property name.</summary>
-    private Dictionary<string, string> _columnBaseNames = new();
-
-    /// <summary>Raised when IsRunning changed, so the shell can update the Enter button.</summary>
-    public event Action? RunningStateChanged;
+    private readonly Dictionary<string, string> _columnBaseNames = new();
 
     public Button StartButton => _startButton;
 
@@ -55,7 +59,6 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         _uiContributors = services.GetServices<IUiContributor>()
             .Where(c => c.TargetTab == "Tracker")
             .ToArray();
-        Dock = DockStyle.Fill;
 
         // Add-in controls resolve the host interfaces through the registry.
         UiHostAccessor.RegisterTrackerHost(this);
@@ -66,182 +69,152 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
 
     private void BuildUi()
     {
-        var layout = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            Padding = new Padding(12, 10, 12, 10),
-            ColumnCount = 1,
-            RowCount = 7,
-        };
-        // One fixed-width column: AutoSize would let long status texts push the
-        // whole layout wider than the window and clip the timer and grid.
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 0 label
-        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 1 task box
-        _suggestionRowStyle = new RowStyle(SizeType.Absolute, 0);              // 2 suggestions (hidden)
-        layout.RowStyles.Add(_suggestionRowStyle);
-        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 3 buttons
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));             // 4 grid
-        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 5 pager
-        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));                 // 6 status
-
-        var taskLabel = new Label
+        var taskLabel = new TextBlock
         {
             Text = "Task name",
-            AutoSize = true,
-            Margin = new Padding(0, 0, 0, 4),
+            Margin = new Thickness(0, 0, 0, 4),
         };
 
-        _taskBox.Dock = DockStyle.Top;
-        _taskBox.Margin = new Padding(0, 0, 0, 4);
+        _taskBox.Margin = new Thickness(0, 0, 0, 4);
+        _taskBox.KeyDown += OnTaskBoxKeyDown;
 
-        _suggestionList.Dock = DockStyle.Fill;
-        _suggestionList.BorderStyle = BorderStyle.FixedSingle;
-        _suggestionList.IntegralHeight = false;
-        _suggestionList.Visible = false;
-        _suggestionList.Margin = new Padding(0);
-        _suggestionList.DoubleClick += OnSuggestionChosen;
+        _suggestionList.IsVisible = false;
+        _suggestionList.MaxHeight = 140;
+        _suggestionList.ItemTemplate = new FuncDataTemplate<SuggestionItem>(
+            (item, _) => new TextBlock { Text = item?.DisplayText ?? "" }, true);
+        _suggestionList.DoubleTapped += OnSuggestionChosen;
         _suggestionList.KeyDown += OnSuggestionKeyDown;
 
-        var buttonRow = new TableLayoutPanel
+        var buttonRow = new StackPanel
         {
-            Dock = DockStyle.Top,
-            AutoSize = true,
-            ColumnCount = 4 + _uiContributors.Count,
-            RowCount = 1,
-            Margin = new Padding(0),
+            Orientation = Orientation.Horizontal,
+            Spacing = 8,
+            Margin = new Thickness(0, 0, 0, 4),
         };
-        buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        for (var i = 0; i < _uiContributors.Count; i++)
+
+        _startButton.Content = "▶ Start";
+        _stopButton.Content = "■ Stop";
+
+        buttonRow.Children.Add(_startButton);
+        buttonRow.Children.Add(_stopButton);
+
+        // Contributor controls go between Stop and the elapsed label.
+        foreach (var contributor in _uiContributors)
         {
-            buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            buttonRow.Children.Add(contributor.CreateControl(_services));
         }
-        buttonRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-
-        _startButton.Text = "▶ Start";
-        _startButton.AutoSize = true;
-        _startButton.MinimumSize = new Size(110, 36);
-        _startButton.Margin = new Padding(0, 0, 8, 4);
-
-        _stopButton.Text = "■ Stop";
-        _stopButton.AutoSize = true;
-        _stopButton.MinimumSize = new Size(110, 36);
-        _stopButton.Margin = new Padding(0, 0, 8, 4);
 
         _elapsedLabel.Text = "00:00:00";
-        _elapsedLabel.Font = new Font("Consolas", 15.75F, FontStyle.Bold);
-        // Fixed size in the percent column: AutoSize would feed the measured text
-        // back into the layout and can push the row wider than the window.
-        _elapsedLabel.AutoSize = false;
-        _elapsedLabel.Dock = DockStyle.Fill;
-        _elapsedLabel.TextAlign = ContentAlignment.MiddleRight;
-        _elapsedLabel.Margin = new Padding(0, 0, 0, 4);
+        _elapsedLabel.FontFamily = new FontFamily("monospace");
+        _elapsedLabel.FontSize = 20;
+        _elapsedLabel.FontWeight = FontWeight.Bold;
+        _elapsedLabel.HorizontalAlignment = HorizontalAlignment.Right;
+        _elapsedLabel.VerticalAlignment = VerticalAlignment.Center;
 
-        var azureDevOpsPanels = _uiContributors
-            .Select(c => c.CreateControl(_services))
-            .ToArray();
-
-        buttonRow.Controls.Add(_startButton, 0, 0);
-        buttonRow.Controls.Add(_stopButton, 1, 0);
-        // Contributor controls go between Stop and the elapsed label.
-        for (var i = 0; i < azureDevOpsPanels.Length; i++)
+        var elapsedRow = new StackPanel
         {
-            buttonRow.Controls.Add(azureDevOpsPanels[i], 2 + i, 0);
-        }
-        buttonRow.Controls.Add(_elapsedLabel, 2 + azureDevOpsPanels.Length, 0);
-
-        _statusLabel.Dock = DockStyle.Top;
-        _statusLabel.AutoEllipsis = true;
-        _statusLabel.ForeColor = Color.DimGray;
-        // Fixed height instead of AutoSize: a long status text must widen the
-        // cell (AutoEllipsis shows "..." instead) or it clips the whole layout.
-        _statusLabel.AutoSize = false;
-        _statusLabel.Height = 22;
-        _statusLabel.Margin = new Padding(0, 2, 0, 4);
-
-        var pagerRow = new TableLayoutPanel
-        {
-            Dock = DockStyle.Top,
-            AutoSize = true,
-            ColumnCount = 3,
-            RowCount = 1,
-            Margin = new Padding(0),
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
         };
-        pagerRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        pagerRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        pagerRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        elapsedRow.Children.Add(_elapsedLabel);
+        buttonRow.Children.Add(elapsedRow);
 
-        _previousPageButton.Text = "◀ Previous";
-        _previousPageButton.AutoSize = true;
-        _previousPageButton.MinimumSize = new Size(110, 28);
-        _previousPageButton.Margin = new Padding(0, 4, 8, 0);
+        _statusLabel.TextWrapping = TextWrapping.NoWrap;
+        _statusLabel.TextTrimming = TextTrimming.CharacterEllipsis;
+        _statusLabel.Foreground = InfoBrush;
+        _statusLabel.Margin = new Thickness(0, 2, 0, 4);
 
-        _pageLabel.AutoSize = true;
-        _pageLabel.TextAlign = ContentAlignment.MiddleLeft;
-        _pageLabel.Margin = new Padding(0, 9, 8, 0);
+        _previousPageButton.Content = "◀ Previous";
+        _nextPageButton.Content = "Next ▶";
+        _pageLabel.VerticalAlignment = VerticalAlignment.Center;
+        _pageLabel.Margin = new Thickness(8, 0, 8, 0);
 
-        _nextPageButton.Text = "Next ▶";
-        _nextPageButton.AutoSize = true;
-        _nextPageButton.MinimumSize = new Size(110, 28);
-        _nextPageButton.Margin = new Padding(0, 4, 0, 0);
-
-        pagerRow.Controls.Add(_previousPageButton, 0, 0);
-        pagerRow.Controls.Add(_pageLabel, 1, 0);
-        pagerRow.Controls.Add(_nextPageButton, 2, 0);
-        _pagerRow = pagerRow;
+        _pagerRow.Orientation = Orientation.Horizontal;
+        _pagerRow.Spacing = 8;
+        _pagerRow.Margin = new Thickness(0, 4, 0, 0);
+        _pagerRow.Children.Add(_previousPageButton);
+        _pagerRow.Children.Add(_pageLabel);
+        _pagerRow.Children.Add(_nextPageButton);
 
         ConfigureGrid();
-        BuildColumns();
 
-        // Dock order matters: the fill control is added first, the top bands after.
-        layout.Controls.Add(_statusLabel, 0, 6);
-        layout.Controls.Add(_pagerRow, 0, 5);
-        layout.Controls.Add(_grid, 0, 4);
-        layout.Controls.Add(buttonRow, 0, 3);
-        layout.Controls.Add(_suggestionList, 0, 2);
-        layout.Controls.Add(_taskBox, 0, 1);
-        layout.Controls.Add(taskLabel, 0, 0);
+        var root = new DockPanel { Margin = new Thickness(12, 10, 12, 10) };
 
-        Controls.Add(layout);
+        var topPanel = new StackPanel { Spacing = 4 };
+        topPanel.Children.Add(taskLabel);
+        topPanel.Children.Add(_taskBox);
+        topPanel.Children.Add(_suggestionList);
+        topPanel.Children.Add(buttonRow);
+
+        DockPanel.SetDock(topPanel, Dock.Top);
+        root.Children.Add(topPanel);
+
+        var bottomPanel = new StackPanel { Spacing = 2 };
+        bottomPanel.Children.Add(_pagerRow);
+        bottomPanel.Children.Add(_statusLabel);
+        DockPanel.SetDock(bottomPanel, Dock.Bottom);
+        root.Children.Add(bottomPanel);
+
+        root.Children.Add(_grid);
+        Content = root;
     }
 
     private void BindViewModel()
     {
         // Base header captions, so the sort indicator can be added and removed again.
-        _columnBaseNames = _grid.Columns.Cast<DataGridViewColumn>()
-            .ToDictionary(c => c.DataPropertyName, c => c.HeaderText);
+        foreach (var column in _grid.Columns)
+        {
+            if (!string.IsNullOrEmpty(column.SortMemberPath))
+            {
+                _columnBaseNames[column.SortMemberPath] = column.Header?.ToString() ?? "";
+            }
+        }
 
-        _taskBox.DataBindings.Add(nameof(TextBox.Text), _vm, nameof(TrackerViewModel.TaskName),
-            formattingEnabled: false, DataSourceUpdateMode.OnPropertyChanged);
-        _taskBox.DataBindings.Add(nameof(TextBox.ReadOnly), _vm, nameof(TrackerViewModel.IsRunning));
-
-        _elapsedLabel.DataBindings.Add(nameof(Label.Text), _vm, nameof(TrackerViewModel.ElapsedTimeText));
-        _statusLabel.DataBindings.Add(nameof(Label.Text), _vm, nameof(TrackerViewModel.StatusText));
-
-        _grid.DataSource = _vm.Entries;
-        _suggestionList.DataSource = _vm.Suggestions;
-        _suggestionList.DisplayMember = nameof(SuggestionItem.DisplayText);
-
-        _pageLabel.DataBindings.Add(nameof(Label.Text), _vm, nameof(TrackerViewModel.PageText),
-            formattingEnabled: false);
-
+        _taskBox.Bind(TextBox.TextProperty, new Binding
+        {
+            Source = _vm,
+            Path = nameof(TrackerViewModel.TaskName),
+            Mode = BindingMode.TwoWay,
+        });
+        _taskBox.Bind(TextBox.IsReadOnlyProperty, new Binding
+        {
+            Source = _vm,
+            Path = nameof(TrackerViewModel.IsRunning),
+        });
         _taskBox.TextChanged += OnTaskBoxTextChanged;
-        _taskBox.KeyDown += OnTaskBoxKeyDown;
 
-        _grid.ColumnHeaderMouseClick += OnGridColumnHeaderClick;
-        _grid.CellDoubleClick += OnGridCellDoubleClick;
+        _elapsedLabel.Bind(TextBlock.TextProperty, new Binding
+        {
+            Source = _vm,
+            Path = nameof(TrackerViewModel.ElapsedTimeText),
+        });
+        _statusLabel.Bind(TextBlock.TextProperty, new Binding
+        {
+            Source = _vm,
+            Path = nameof(TrackerViewModel.StatusText),
+        });
+
+        _grid.ItemsSource = _vm.Entries;
+        _suggestionList.ItemsSource = _vm.Suggestions;
+
+        _pageLabel.Bind(TextBlock.TextProperty, new Binding
+        {
+            Source = _vm,
+            Path = nameof(TrackerViewModel.PageText),
+        });
+
+        _grid.Sorting += OnGridSorting;
+        _grid.DoubleTapped += OnGridCellDoubleClick;
         _grid.KeyDown += OnGridKeyDown;
-        _grid.CellValidating += OnGridCellValidating;
-        _grid.CellEndEdit += OnGridCellEndEdit;
-        _grid.DataError += OnGridDataError;
+        _grid.CellEditEnded += OnGridCellEditEnded;
 
-        CommandBindings.Bind(_startButton, _vm.StartCommand);
-        CommandBindings.Bind(_stopButton, _vm.StopCommand);
-        CommandBindings.Bind(_previousPageButton, _vm.PreviousPageCommand);
-        CommandBindings.Bind(_nextPageButton, _vm.NextPageCommand);
+        BindCommand(_startButton, _vm.StartCommand);
+        BindCommand(_stopButton, _vm.StopCommand);
+        BindCommand(_previousPageButton, _vm.PreviousPageCommand);
+        BindCommand(_nextPageButton, _vm.NextPageCommand);
 
         _vm.PropertyChanged += OnViewModelPropertyChanged;
+        _vm.Suggestions.CollectionChanged += OnSuggestionsChanged;
         _vm.InvalidTaskName += OnInvalidTaskName;
 
         UpdateSortGlyphs();
@@ -251,126 +224,109 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
 
     private void ConfigureGrid()
     {
-        _grid.Dock = DockStyle.Fill;
-        _grid.ReadOnly = false;
-        _grid.AllowUserToAddRows = false;
-        _grid.AllowUserToDeleteRows = false;
-        _grid.AllowUserToResizeRows = false;
-        _grid.RowHeadersVisible = false;
-        // Row-based multi-selection: click selects a row, SHIFT+CLICK selects the
-        // range from the anchor row, CTRL+CLICK adds or removes single rows. Del
-        // then deletes every selected row together.
-        _grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-        _grid.MultiSelect = true;
         _grid.AutoGenerateColumns = false;
-        _grid.BackgroundColor = SystemColors.Window;
-        _grid.BorderStyle = BorderStyle.None;
-        _grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+        // Sorting is applied by the view model (so the glyph and the order stay in
+        // sync); the header click must still be allowed to raise Sorting.
+        _grid.CanUserSortColumns = true;
+        _grid.CanUserReorderColumns = false;
+        _grid.HeadersVisibility = DataGridHeadersVisibility.Column;
+        _grid.SelectionMode = DataGridSelectionMode.Extended;
+        _grid.GridLinesVisibility = DataGridGridLinesVisibility.None;
+        _grid.BorderThickness = new Thickness(0);
+        _grid.HorizontalAlignment = HorizontalAlignment.Stretch;
+        _grid.VerticalAlignment = VerticalAlignment.Stretch;
+
+        _grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "Task",
+            Width = new DataGridLength(28, DataGridLengthUnitType.Star),
+            SortMemberPath = nameof(EntryRow.Task),
+            Binding = new Binding(nameof(EntryRow.Task)),
+            IsReadOnly = false,
+        });
+        _grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "Booking element",
+            Width = new DataGridLength(28, DataGridLengthUnitType.Star),
+            Binding = new Binding(nameof(EntryRow.BookingElement)),
+            // Not sortable: the original app never sorted by booking element.
+            CanUserSort = false,
+            IsReadOnly = false,
+        });
+        _grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "Started",
+            Width = new DataGridLength(18, DataGridLengthUnitType.Star),
+            SortMemberPath = nameof(EntryRow.StartText),
+            Binding = new Binding(nameof(EntryRow.StartText)),
+            IsReadOnly = true,
+        });
+        _grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "Ended",
+            Width = new DataGridLength(18, DataGridLengthUnitType.Star),
+            SortMemberPath = nameof(EntryRow.EndText),
+            Binding = new Binding(nameof(EntryRow.EndText)),
+            IsReadOnly = true,
+        });
+        _grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "Duration",
+            Width = new DataGridLength(8, DataGridLengthUnitType.Star),
+            MinWidth = 80,
+            SortMemberPath = nameof(EntryRow.Duration),
+            Binding = new Binding(nameof(EntryRow.Duration)),
+            IsReadOnly = true,
+        });
     }
 
-    private void BuildColumns()
+    private static void BindCommand(Button button, System.Windows.Input.ICommand command)
     {
-        var taskColumn = new DataGridViewTextBoxColumn
-        {
-            DataPropertyName = nameof(EntryRow.Task),
-            HeaderText = "Task",
-            AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
-            FillWeight = 28,
-            SortMode = DataGridViewColumnSortMode.Programmatic,
-        };
-
-        var bookingElementColumn = new DataGridViewTextBoxColumn
-        {
-            DataPropertyName = nameof(EntryRow.BookingElement),
-            HeaderText = "Booking element",
-            AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
-            FillWeight = 28,
-            SortMode = DataGridViewColumnSortMode.NotSortable,
-        };
-
-        var startedColumn = new DataGridViewTextBoxColumn
-        {
-            DataPropertyName = nameof(EntryRow.StartText),
-            HeaderText = "Started",
-            AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
-            FillWeight = 18,
-            SortMode = DataGridViewColumnSortMode.Programmatic,
-        };
-
-        var endedColumn = new DataGridViewTextBoxColumn
-        {
-            DataPropertyName = nameof(EntryRow.EndText),
-            HeaderText = "Ended",
-            AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
-            FillWeight = 18,
-            SortMode = DataGridViewColumnSortMode.Programmatic,
-        };
-
-        var durationColumn = new DataGridViewTextBoxColumn
-        {
-            DataPropertyName = nameof(EntryRow.Duration),
-            HeaderText = "Duration",
-            AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
-            FillWeight = 8,
-            MinimumWidth = 80,
-            SortMode = DataGridViewColumnSortMode.Programmatic,
-        };
-        durationColumn.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-
-        _grid.Columns.AddRange(taskColumn, bookingElementColumn, startedColumn, endedColumn, durationColumn);
-
-        // Only Task and BookingElement are editable; started/ended/duration stay read-only.
-        taskColumn.ReadOnly = false;
-        bookingElementColumn.ReadOnly = false;
-        startedColumn.ReadOnly = true;
-        endedColumn.ReadOnly = true;
-        durationColumn.ReadOnly = true;
+        button.Command = command;
     }
 
-    private void OnTaskBoxTextChanged(object? sender, EventArgs e)
+    private void OnTaskBoxTextChanged(object? sender, TextChangedEventArgs e)
     {
         if (_pickingSuggestion)
             return;
+
+        // The binding pushes the text into the view model; suggestions update with it.
         UpdateSuggestions();
     }
 
     private void OnTaskBoxKeyDown(object? sender, KeyEventArgs e)
     {
-        if (_suggestionList.Visible && _suggestionList.Items.Count > 0)
+        if (_suggestionList.IsVisible && _vm.Suggestions.Count > 0)
         {
-            if (e.KeyCode == Keys.Down)
+            if (e.Key == Key.Down)
             {
                 // Hand focus to the list so Arrow/Enter can pick a suggestion.
-                _suggestionList.Focus();
                 _suggestionList.SelectedIndex = 0;
+                _suggestionList.Focus();
                 e.Handled = true;
-                e.SuppressKeyPress = true;
             }
-            else if (e.KeyCode == Keys.Escape)
+            else if (e.Key == Key.Escape)
             {
                 HideSuggestions();
                 e.Handled = true;
-                e.SuppressKeyPress = true;
             }
         }
     }
 
-    private void OnSuggestionChosen(object? sender, EventArgs e) => ApplySelectedSuggestion();
+    private void OnSuggestionChosen(object? sender, TappedEventArgs e) => ApplySelectedSuggestion();
 
     private void OnSuggestionKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.KeyCode == Keys.Enter)
+        if (e.Key == Key.Enter)
         {
             ApplySelectedSuggestion();
             e.Handled = true;
-            e.SuppressKeyPress = true;
         }
-        else if (e.KeyCode == Keys.Escape)
+        else if (e.Key == Key.Escape)
         {
             HideSuggestions();
             _taskBox.Focus();
             e.Handled = true;
-            e.SuppressKeyPress = true;
         }
     }
 
@@ -396,90 +352,121 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
 
     private void UpdateSuggestions()
     {
-        var show = !_pickingSuggestion && _vm.Suggestions.Count > 0;
-        _suggestionList.Visible = show;
-        _suggestionRowStyle.Height = show ? 100 : 0;
+        var show = !_pickingSuggestion && _vm.ShowSuggestions;
+        _suggestionList.IsVisible = show;
     }
 
-    private void UpdatePager()
-    {
-        // Paging only appears when there is more than one page of rows.
-        _pagerRow.Visible = _vm.HasMultiplePages;
-    }
+    private void UpdatePager() => _pagerRow.IsVisible = _vm.HasMultiplePages;
 
-    private void HideSuggestions()
-    {
-        _suggestionList.Visible = false;
-        _suggestionRowStyle.Height = 0;
-    }
+    private void HideSuggestions() => _suggestionList.IsVisible = false;
 
-    private void OnGridColumnHeaderClick(object? sender, DataGridViewCellMouseEventArgs e)
+    private void OnGridSorting(object? sender, DataGridColumnEventArgs e)
     {
-        if (e.ColumnIndex >= 0)
+        var path = e.Column.SortMemberPath;
+        if (string.IsNullOrEmpty(path))
         {
-            _vm.ApplySort(_grid.Columns[e.ColumnIndex].DataPropertyName);
+            return;
         }
+
+        // The view model owns the sort state; suppress the grid's own sorting so it
+        // cannot fight the view-model order (which also spans all pages).
+        e.Handled = true;
+        _vm.ApplySort(path);
     }
 
     /// <summary>Double-clicking a row starts the timer for that task.</summary>
-    private void OnGridCellDoubleClick(object? sender, DataGridViewCellEventArgs e)
+    private void OnGridCellDoubleClick(object? sender, TappedEventArgs e)
     {
-        // Ignore header clicks; a running timer is left untouched.
-        if (e.RowIndex < 0 || e.RowIndex >= _vm.Entries.Count)
-            return;
-
-        _vm.StartFromRow(_vm.Entries[e.RowIndex]);
+        if (_grid.SelectedItem is EntryRow row)
+        {
+            _vm.StartFromRow(row);
+        }
     }
 
-    private void OnGridKeyDown(object? sender, KeyEventArgs e)
+    private async void OnGridKeyDown(object? sender, KeyEventArgs e)
     {
         // Edit mode now lives on F2 only (double-click starts the timer instead).
-        if (e.KeyCode == Keys.F2
-            && _grid.CurrentCell is { } cell
-            && _grid.Columns[cell.ColumnIndex].ReadOnly == false)
+        if (e.Key == Key.F2)
         {
-            _grid.BeginEdit(true);
+            _grid.BeginEdit();
             e.Handled = true;
             return;
         }
 
         // Delete removes the selected entries (with confirmation).
-        if (e.KeyCode == Keys.Delete && !_grid.IsCurrentCellInEditMode)
+        if (e.Key == Key.Delete)
         {
-            DeleteSelectedEntries();
             e.Handled = true;
+            await DeleteSelectedEntriesAsync();
         }
     }
 
-    /// <summary>Rows currently selected in the grid (distinct, in list order).</summary>
-    private List<EntryRow> SelectedRows() => _grid.SelectedCells.Cast<DataGridViewCell>()
-        .Where(c => c.RowIndex >= 0 && c.RowIndex < _vm.Entries.Count)
-        .Select(c => _vm.Entries[c.RowIndex])
-        .Distinct()
-        .ToList();
-
-    private void DeleteSelectedEntries()
+    private async Task DeleteSelectedEntriesAsync()
     {
-        var rows = SelectedRows();
+        var rows = _grid.SelectedItems?.OfType<EntryRow>().ToList() ?? [];
         if (rows.Count == 0)
         {
             return;
         }
 
-        _vm.DeleteEntries(rows, ConfirmDelete);
+        var summary = TrackerViewModel.BuildDeleteSummary(rows);
+        var confirmed = await ConfirmDeleteAsync(summary);
+        if (confirmed)
+        {
+            _vm.DeleteEntries(rows, _ => true);
+        }
     }
 
-    private bool ConfirmDelete(string summary) => MessageBox.Show(this,
-        $"Delete {summary}?\n\nThis removes the sessions from the JSON file and cannot be undone.",
-        "Timetracker", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes;
+    private async Task<bool> ConfirmDeleteAsync(string summary)
+    {
+        if (TopLevel.GetTopLevel(this) is not Window owner)
+        {
+            return false;
+        }
+
+        var dialog = new Window
+        {
+            Title = "Timetracker",
+            Width = 380,
+            Height = 180,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+        };
+
+        var message = new TextBlock
+        {
+            Text = $"Delete {summary}?\n\nThis removes the sessions from the JSON file and cannot be undone.",
+            TextWrapping = TextWrapping.Wrap,
+        };
+
+        var yes = new Button { Content = "Yes" };
+        yes.Click += (_, _) => dialog.Close(true);
+        var no = new Button { Content = "No", IsCancel = true };
+        no.Click += (_, _) => dialog.Close(false);
+
+        dialog.Content = new StackPanel
+        {
+            Margin = new Thickness(16),
+            Spacing = 12,
+            Children =
+            {
+                message,
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    Spacing = 8,
+                    Children = { no, yes },
+                },
+            },
+        };
+
+        return await dialog.ShowDialog<bool>(owner);
+    }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(TrackerViewModel.IsRunning))
-        {
-            RunningStateChanged?.Invoke();
-        }
-        else if (e.PropertyName == nameof(TrackerViewModel.Suggestions))
+        if (e.PropertyName == nameof(TrackerViewModel.Suggestions))
         {
             UpdateSuggestions();
         }
@@ -493,117 +480,101 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         }
         else if (e.PropertyName == nameof(TrackerViewModel.Status))
         {
-            _statusLabel.ForeColor = _vm.Status switch
+            _statusLabel.Foreground = _vm.Status switch
             {
-                TrackerStatus.Success => Color.ForestGreen,
-                TrackerStatus.Error => Color.Firebrick,
-                _ => Color.DimGray,
+                TrackerStatus.Success => SuccessBrush,
+                TrackerStatus.Error => ErrorBrush,
+                _ => InfoBrush,
             };
         }
     }
 
+    private void OnSuggestionsChanged(object? sender, NotifyCollectionChangedEventArgs e) =>
+        UpdateSuggestions();
+
     private void UpdateSortGlyphs()
     {
-        foreach (DataGridViewColumn column in _grid.Columns)
+        foreach (var column in _grid.Columns)
         {
-            // WinForms forbids sort glyphs on NotSortable columns (e.g. BookingElement);
-            // touching them would throw an InvalidOperationException.
-            if (column.SortMode == DataGridViewColumnSortMode.NotSortable)
-                continue;
-
-            if (!_columnBaseNames.TryGetValue(column.DataPropertyName, out var baseName))
-                continue;
-
-            if (column.DataPropertyName == _vm.SortColumn)
+            if (string.IsNullOrEmpty(column.SortMemberPath))
             {
-                // Prominent direction icon right in the header text (▲ ascending / ▼ descending).
-                column.HeaderText = (_vm.SortAscending ? "▲ " : "▼ ") + baseName;
-                column.HeaderCell.SortGlyphDirection =
-                    _vm.SortAscending ? SortOrder.Ascending : SortOrder.Descending;
+                continue;
+            }
+            if (!_columnBaseNames.TryGetValue(column.SortMemberPath, out var baseName))
+            {
+                continue;
+            }
+
+            if (column.SortMemberPath == _vm.SortColumn)
+            {
+                // Prominent direction icon right in the header text.
+                column.Header = (_vm.SortAscending ? "▲ " : "▼ ") + baseName;
             }
             else
             {
-                column.HeaderText = baseName;
-                column.HeaderCell.SortGlyphDirection = SortOrder.None;
+                column.Header = baseName;
             }
         }
     }
 
-    /// <summary>Rejects edits that would leave an empty task name or touch an empty row.</summary>
-    private void OnGridCellValidating(object? sender, DataGridViewCellValidatingEventArgs e)
+    private void OnGridCellEditEnded(object? sender, DataGridCellEditEndedEventArgs e)
     {
-        var columnName = _grid.Columns[e.ColumnIndex].DataPropertyName;
+        var columnName = e.Column.SortMemberPath;
         if (columnName is not (nameof(EntryRow.Task) or nameof(EntryRow.BookingElement)))
             return;
 
-        if (e.RowIndex < 0 || e.RowIndex >= _vm.Entries.Count)
-        {
-            e.Cancel = true;
-            return;
-        }
-
-        // Reject empty task names up front (booking elements may be empty).
-        if (columnName == nameof(EntryRow.Task) && string.IsNullOrWhiteSpace(e.FormattedValue?.ToString()))
-        {
-            e.Cancel = true;
-        }
-    }
-
-    private void OnGridCellEndEdit(object? sender, DataGridViewCellEventArgs e)
-    {
-        var columnName = _grid.Columns[e.ColumnIndex].DataPropertyName;
-        if (columnName is not (nameof(EntryRow.Task) or nameof(EntryRow.BookingElement)))
+        if (e.Row.DataContext is not EntryRow row)
             return;
 
-        if (e.RowIndex < 0 || e.RowIndex >= _vm.Entries.Count)
-            return;
-        var row = _vm.Entries[e.RowIndex];
-
-        // The binding has pushed the new text into EntryRow by now. Commit deferred,
-        // so a re-sort inside the view model cannot reenter the grid event pipeline.
-        BeginInvoke(() => _vm.UpdateEntryText(row, row.Task, row.BookingElement));
-    }
-
-    private void OnGridDataError(object? sender, DataGridViewDataErrorEventArgs e)
-    {
-        // Never crash on binding/format issues in editable cells; log instead.
-        if (e.Exception is not null)
-        {
-            ErrorLog.Log("Grid binding", e.Exception);
-        }
-        e.ThrowException = false;
+        // Commit deferred, so a re-sort inside the view model cannot reenter the grid.
+        Dispatcher.UIThread.Post(() => _vm.UpdateEntryText(row, row.Task, row.BookingElement));
     }
 
     private void OnInvalidTaskName()
     {
-        MessageBox.Show(this, "Please enter a task name first.", "Timetracker",
-            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        var owner = TopLevel.GetTopLevel(this) as Window;
+        if (owner is null)
+        {
+            return;
+        }
+
+        var dialog = new Window
+        {
+            Title = "Timetracker",
+            Width = 300,
+            Height = 140,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+        };
+        var ok = new Button { Content = "OK", IsDefault = true };
+        ok.Click += (_, _) => dialog.Close();
+        dialog.Content = new StackPanel
+        {
+            Margin = new Thickness(16),
+            Spacing = 12,
+            Children =
+            {
+                new TextBlock { Text = "Please enter a task name first." },
+                ok,
+            },
+        };
+        _ = dialog.ShowDialog(owner);
         _taskBox.Focus();
     }
 
-    void ITrackerUiHost.SetTaskName(string taskName)
-    {
-        // The binding pushes the value into the view model (and suggestions).
-        _taskBox.Text = taskName;
-    }
+    void ITrackerUiHost.SetTaskName(string taskName) => _taskBox.Text = taskName;
 
-    void ITrackerUiHost.SetBookingElement(string bookingElement)
-    {
-        // Staging into the first row would persist nothing; the value is picked up
-        // when the user starts tracking (BuildEntry inherits the task's element).
+    void ITrackerUiHost.SetBookingElement(string bookingElement) =>
         _vm.PreviewBookingElement = bookingElement;
-    }
 
     void ITrackerUiHost.ShowStatus(string message, TrackerStatusKind kind)
     {
-        // Shared one-line status at the bottom of the tab, next to the tracker's
-        // own messages (same color mapping as the view model statuses).
         _statusLabel.Text = message;
-        _statusLabel.ForeColor = kind switch
+        _statusLabel.Foreground = kind switch
         {
-            TrackerStatusKind.Success => Color.ForestGreen,
-            TrackerStatusKind.Error => Color.Firebrick,
-            _ => Color.DimGray,
+            TrackerStatusKind.Success => SuccessBrush,
+            TrackerStatusKind.Error => ErrorBrush,
+            _ => InfoBrush,
         };
     }
 }

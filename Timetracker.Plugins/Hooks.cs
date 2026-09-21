@@ -1,3 +1,5 @@
+using Avalonia.Controls;
+
 namespace Timetracker.Plugins;
 
 /// <summary>
@@ -33,6 +35,6 @@ public interface IAppHook
     /// <summary>Called after the composition root built the container.</summary>
     void OnAppStarted(IServiceProvider services);
 
-    /// <summary>Called when the main form is closing; the app exits afterwards.</summary>
+    /// <summary>Called when the main window is closing; the app exits afterwards.</summary>
     void OnAppClosing();
 }

@@ -1,9 +1,9 @@
 namespace Timetracker.ActivityMonitor;
 
 /// <summary>
-/// Abstraction over the activity monitor's autostart installation. The real
-/// implementation reads/writes the per-user HKCU Run key; tests use an
-/// in-memory fake so they never touch the Windows registry.
+/// Abstraction over the activity monitor's autostart installation per operating
+/// system. Windows uses the per-user HKCU Run key; Linux uses a freedesktop
+/// autostart <c>.desktop</c> file. Tests use an in-memory fake instead.
 /// </summary>
 public interface IActivityMonitorInstaller
 {
@@ -18,4 +18,14 @@ public interface IActivityMonitorInstaller
 
     /// <summary>Removes the autostart entry. Returns false when it failed.</summary>
     bool Uninstall();
+}
+
+/// <summary>Selects the autostart installer for the current operating system.</summary>
+public static class ActivityMonitorInstallerFactory
+{
+    /// <summary>The installer matching the current platform.</summary>
+    public static IActivityMonitorInstaller CreateForCurrentPlatform() =>
+        OperatingSystem.IsWindows()
+            ? new WindowsActivityMonitorInstaller()
+            : new LinuxActivityMonitorInstaller();
 }

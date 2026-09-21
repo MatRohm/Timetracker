@@ -1,3 +1,6 @@
+using Avalonia.Controls;
+using Avalonia.Layout;
+using Avalonia.Threading;
 using Timetracker.Plugins;
 
 namespace Timetracker.ActivityMonitor;
@@ -6,112 +9,49 @@ namespace Timetracker.ActivityMonitor;
 /// Setup band for the week view: install/remove buttons for the per-user
 /// autostart of the activity monitor. The current state and the results are
 /// reported through the shared week status line at the bottom of the view.
-/// Registered via <see cref="MonitorSetupUiContributor"/>.
+/// Registered via <see cref="MonitorSetupUiContributor"/>. View-only; state and
+/// button rules live in <see cref="MonitorSetupViewModel"/>.
 /// </summary>
 public sealed class MonitorSetupPanel : UserControl
 {
-    private readonly IActivityMonitorInstaller _installer;
-    private readonly IWeekStatusHost _statusHost;
-
+    private readonly MonitorSetupViewModel _viewModel;
     private readonly Button _installButton = new();
     private readonly Button _uninstallButton = new();
 
-    /// <summary>Exposed so tests can assert the button state without a window handle.</summary>
-    internal bool InstallEnabled => _installButton.Enabled;
+    /// <summary>Exposed so tests can assert the button state.</summary>
+    public Button InstallButton => _installButton;
 
-    /// <summary>Exposed so tests can assert the button state without a window handle.</summary>
-    internal bool UninstallEnabled => _uninstallButton.Enabled;
+    /// <summary>Exposed so tests can assert the button state.</summary>
+    public Button UninstallButton => _uninstallButton;
 
     public MonitorSetupPanel(IActivityMonitorInstaller installer, IWeekStatusHost statusHost)
     {
-        _installer = installer;
-        _statusHost = statusHost;
-        // Size the panel to its buttons; the default UserControl size would
-        // clip the remove button in the auto-sized contributor row.
-        AutoSize = true;
-        AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        Margin = new Padding(0);
-        Padding = new Padding(0);
+        _viewModel = new MonitorSetupViewModel(installer, statusHost);
 
-        BuildUi();
-        UpdateButtons();
-    }
+        _installButton.Content = "⏻ Install PC activity monitor";
+        _installButton.Click += (_, _) => _viewModel.Install();
 
-    /// <summary>Reports the current monitor state once the view is actually shown.</summary>
-    protected override void OnHandleCreated(EventArgs e)
-    {
-        base.OnHandleCreated(e);
-        ReportState();
-    }
+        _uninstallButton.Content = "⏻ Remove PC activity monitor";
+        _uninstallButton.Click += (_, _) => _viewModel.Uninstall();
 
-    private void BuildUi()
-    {
-        var layout = new TableLayoutPanel
+        Content = new StackPanel
         {
-            AutoSize = true,
-            AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            ColumnCount = 2,
-            RowCount = 1,
-            Margin = new Padding(0),
+            Orientation = Orientation.Horizontal,
+            Spacing = 8,
+            Children = { _installButton, _uninstallButton },
         };
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
 
-        _installButton.Text = "⏻ Install PC activity monitor";
-        _installButton.AutoSize = true;
-        _installButton.MinimumSize = new Size(200, 30);
-        _installButton.Margin = new Padding(0, 0, 8, 6);
+        _installButton.Bind(IsEnabledProperty, GetBinding(nameof(MonitorSetupViewModel.InstallEnabled)));
+        _uninstallButton.Bind(IsEnabledProperty, GetBinding(nameof(MonitorSetupViewModel.UninstallEnabled)));
 
-        _uninstallButton.Text = "⏻ Remove PC activity monitor";
-        _uninstallButton.AutoSize = true;
-        _uninstallButton.MinimumSize = new Size(210, 30);
-        _uninstallButton.Margin = new Padding(0, 0, 0, 6);
-
-        layout.Controls.Add(_installButton, 0, 0);
-        layout.Controls.Add(_uninstallButton, 1, 0);
-
-        _installButton.Click += OnInstallClicked;
-        _uninstallButton.Click += OnUninstallClicked;
-
-        Controls.Add(layout);
+        // Report the current state once the view is actually attached.
+        AttachedToVisualTree += (_, _) =>
+            Dispatcher.UIThread.Post(_viewModel.ReportState, DispatcherPriority.Background);
     }
 
-    private void OnInstallClicked(object? sender, EventArgs e)
+    private Avalonia.Data.Binding GetBinding(string propertyName) => new()
     {
-        var success = _installer.Install();
-        _statusHost.ShowStatus(success
-            ? "✓ The PC activity monitor will start with Windows."
-            : "✗ Installation failed. Make sure \"" + _installer.MonitorExePath
-                + "\" exists next to the app.",
-            success ? WeekStatusKind.Success : WeekStatusKind.Error);
-        UpdateButtons();
-    }
-
-    private void OnUninstallClicked(object? sender, EventArgs e)
-    {
-        var success = _installer.Uninstall();
-        _statusHost.ShowStatus(success
-            ? "✓ The PC activity monitor autostart was removed."
-            : "✗ Removing the autostart entry failed.",
-            success ? WeekStatusKind.Success : WeekStatusKind.Error);
-        UpdateButtons();
-    }
-
-    /// <summary>Enables exactly the button that matches the autostart state.</summary>
-    private void UpdateButtons()
-    {
-        var installed = _installer.IsInstalled;
-        _installButton.Enabled = !installed;
-        _uninstallButton.Enabled = installed;
-    }
-
-    /// <summary>Shows the current monitor state in the shared status line at the bottom.</summary>
-    private void ReportState()
-    {
-        var installed = _installer.IsInstalled;
-        _statusHost.ShowStatus(installed
-            ? "Monitoring is installed (starts with Windows)."
-            : "The monitor is not installed; PC activity is only recorded while it runs.",
-            installed ? WeekStatusKind.Success : WeekStatusKind.Info);
-    }
+        Source = _viewModel,
+        Path = propertyName,
+    };
 }

@@ -88,6 +88,24 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
+    public void Stop_called_twice_does_not_write_a_second_span()
+    {
+        // Both the polling loop and ProcessExit call Stop; only one span may result.
+        var path = TempPath("log-stop-twice.json");
+        File.Delete(path);
+        var log = new ActivityLog(path);
+        var now = At(8, 0);
+        var tracker = new TrackerForTests(log, () => now, path + ".state.json");
+
+        tracker.Start();
+        now = At(12, 0);
+        tracker.Stop();
+        tracker.Stop();
+
+        log.GetAll().Should().ContainSingle("Stop must be idempotent");
+    }
+
+    [Test]
     public void Start_closes_the_span_left_open_by_the_previous_run()
     {
         var path = TempPath("log-restart.json");
@@ -107,20 +125,61 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    [Apartment(ApartmentState.STA)]
-    public void SetupPanel_enables_the_button_that_matches_the_installer_state()
+    public void Setup_offers_install_when_the_monitor_is_not_installed()
     {
-        var notInstalled = new InMemoryInstaller { IsInstalled = false };
-        var panel = new MonitorSetupPanel(notInstalled, new FakeWeekStatusHost());
+        var viewModel = new MonitorSetupViewModel(
+            new InMemoryInstaller { IsInstalled = false }, new FakeWeekStatusHost());
 
-        panel.InstallEnabled.Should().BeTrue("not installed yet, so Install is offered");
-        panel.UninstallEnabled.Should().BeFalse();
+        viewModel.InstallEnabled.Should().BeTrue("not installed yet, so Install is offered");
+        viewModel.UninstallEnabled.Should().BeFalse();
+    }
 
-        var installed = new InMemoryInstaller { IsInstalled = true };
-        var installedPanel = new MonitorSetupPanel(installed, new FakeWeekStatusHost());
+    [Test]
+    public void Setup_offers_remove_when_the_monitor_is_installed()
+    {
+        var viewModel = new MonitorSetupViewModel(
+            new InMemoryInstaller { IsInstalled = true }, new FakeWeekStatusHost());
 
-        installedPanel.InstallEnabled.Should().BeFalse();
-        installedPanel.UninstallEnabled.Should().BeTrue("already installed, so Remove is offered");
+        viewModel.InstallEnabled.Should().BeFalse();
+        viewModel.UninstallEnabled.Should().BeTrue("already installed, so Remove is offered");
+    }
+
+    [Test]
+    public void Setup_install_flips_the_button_state_and_reports_success()
+    {
+        var statusHost = new FakeWeekStatusHost();
+        var viewModel = new MonitorSetupViewModel(
+            new InMemoryInstaller { IsInstalled = false }, statusHost);
+
+        viewModel.Install();
+
+        viewModel.UninstallEnabled.Should().BeTrue("the install succeeded");
+        statusHost.LastKind.Should().Be(WeekStatusKind.Success);
+    }
+
+    [Test]
+    public void Setup_uninstall_flips_the_button_state_and_reports_success()
+    {
+        var statusHost = new FakeWeekStatusHost();
+        var viewModel = new MonitorSetupViewModel(
+            new InMemoryInstaller { IsInstalled = true }, statusHost);
+
+        viewModel.Uninstall();
+
+        viewModel.InstallEnabled.Should().BeTrue("the autostart was removed");
+        statusHost.LastKind.Should().Be(WeekStatusKind.Success);
+    }
+
+    [Test]
+    public void Installer_reports_that_it_is_installed_after_installing()
+    {
+        // Exercises the platform installer contract through the in-memory fake.
+        var installer = new InMemoryInstaller { IsInstalled = false };
+
+        installer.Install();
+
+        installer.IsInstalled.Should().BeTrue();
+        installer.MonitorExePath.Should().NotBeNullOrWhiteSpace();
     }
 
     private static DateTimeOffset At(int hour, int minute) =>
@@ -152,7 +211,8 @@ public sealed class ActivityMonitorTests
     /// <summary>In-memory installer so tests never touch the real HKCU Run key.</summary>
     private sealed class InMemoryInstaller : IActivityMonitorInstaller
     {
-        public string MonitorExePath => @"C:\fake\Timetracker.ActivityMonitor.exe";
+        public string MonitorExePath => Path.Combine(
+            Path.GetTempPath(), "Timetracker.ActivityMonitor");
 
         public bool IsInstalled { get; set; }
 
@@ -169,11 +229,17 @@ public sealed class ActivityMonitorTests
         }
     }
 
-    /// <summary>Status sink that discards messages; the setup panel only writes to it.</summary>
+    /// <summary>Status sink that records the last message; the setup view model only writes to it.</summary>
     private sealed class FakeWeekStatusHost : IWeekStatusHost
     {
+        public string? LastMessage { get; private set; }
+
+        public WeekStatusKind LastKind { get; private set; }
+
         public void ShowStatus(string message, WeekStatusKind kind)
         {
+            LastMessage = message;
+            LastKind = kind;
         }
     }
 }

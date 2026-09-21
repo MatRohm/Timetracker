@@ -2,15 +2,14 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
-    <UseWindowsForms>true</UseWindowsForms>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>Timetracker</AssemblyName>
     <RootNamespace>Timetracker</RootNamespace>
-    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
-    <ApplicationIcon>Timetracker.ico</ApplicationIcon>
     <Version>1.0.0</Version>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,22 +19,47 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Avalonia" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="11.3.13" />
+    <!-- Transitive via Avalonia.FreeDesktop; pinned above the vulnerable 0.21.2. -->
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.3" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
   </ItemGroup>
 
+  <ItemGroup>
+    <AvaloniaResource Include="Timetracker.png" />
+  </ItemGroup>
+
   <!--
-    Copy the activity monitor exe next to the published single-file app: the
-    monitor must stay a separate process (it outlives the tracker and starts
-    with Windows), so the installer looks for it in AppContext.BaseDirectory.
+    Copy the activity monitor executable next to the published app: the monitor
+    must stay a separate process (it outlives the tracker and starts at logon),
+    so the installer looks for it in AppContext.BaseDirectory. The file name is
+    platform-specific (no extension on Linux).
   -->
+  <PropertyGroup>
+    <ActivityMonitorFileName Condition="'$(RuntimeIdentifier)' == ''">Timetracker.ActivityMonitor</ActivityMonitorFileName>
+    <ActivityMonitorFileName Condition="$(RuntimeIdentifier.StartsWith('win'))">Timetracker.ActivityMonitor.exe</ActivityMonitorFileName>
+    <ActivityMonitorFileName Condition="'$(ActivityMonitorFileName)' == ''">Timetracker.ActivityMonitor</ActivityMonitorFileName>
+  </PropertyGroup>
+
   <Target Name="PublishActivityMonitor" AfterTargets="Publish">
     <PropertyGroup>
-      <ActivityMonitorPublishDir>$(MSBuildThisFileDirectory)..\Timetracker.ActivityMonitor\bin\Release\$(TargetFramework)\$(RuntimeIdentifier)\publish\</ActivityMonitorPublishDir>
-      <ActivityMonitorPublishDir Condition="!Exists('$(ActivityMonitorPublishDir)')">$(MSBuildThisFileDirectory)..\Timetracker.ActivityMonitor\bin\Release\$(TargetFramework)\</ActivityMonitorPublishDir>
+      <ActivityMonitorOutputDir>$(MSBuildThisFileDirectory)..\Timetracker.ActivityMonitor\bin\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\publish\</ActivityMonitorOutputDir>
+      <ActivityMonitorPublishOut>$(PublishDir)</ActivityMonitorPublishOut>
     </PropertyGroup>
-    <Copy SourceFiles="$(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" Condition="Exists('$(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe')" />
-    <Message Text="Published activity monitor: $(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe -&gt; $(PublishDir)" Importance="high" Condition="Exists('$(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe')" />
-    <Warning Text="Timetracker.ActivityMonitor.exe was not found to publish; the install button will not find the monitor." Condition="!Exists('$(ActivityMonitorPublishDir)Timetracker.ActivityMonitor.exe')" />
+
+    <!-- Publish the monitor for the same RID so its single-file exe sits next to the app. -->
+    <MSBuild
+      Projects="$(MSBuildThisFileDirectory)..\Timetracker.ActivityMonitor\Timetracker.ActivityMonitor.csproj"
+      Targets="Publish"
+      Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=$(SelfContained);PublishSingleFile=$(PublishSingleFile);EnableCompressionInSingleFile=$(EnableCompressionInSingleFile);PublishDir=$(ActivityMonitorOutputDir)" />
+
+    <Copy SourceFiles="$(ActivityMonitorOutputDir)$(ActivityMonitorFileName)" DestinationFolder="$(ActivityMonitorPublishOut)" SkipUnchangedFiles="true" Condition="Exists('$(ActivityMonitorOutputDir)$(ActivityMonitorFileName)')" />
+    <Message Text="Published activity monitor: $(ActivityMonitorOutputDir)$(ActivityMonitorFileName) -&gt; $(ActivityMonitorPublishOut)" Importance="high" Condition="Exists('$(ActivityMonitorOutputDir)$(ActivityMonitorFileName)')" />
+    <Warning Text="$(ActivityMonitorFileName) was not found to publish; the install button will not find the monitor." Condition="!Exists('$(ActivityMonitorOutputDir)$(ActivityMonitorFileName)')" />
   </Target>
 
 </Project>
