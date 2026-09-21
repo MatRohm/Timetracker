@@ -1,5 +1,7 @@
 using AwesomeAssertions;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -33,7 +35,87 @@ public sealed class ViewRenderTests
         var grid = FindControl<DataGrid>(view);
         grid.Should().NotBeNull("the history grid is part of the tracker view");
         grid!.ItemsSource.Should().BeSameAs(viewModel.Entries);
-        grid.Columns.Should().HaveCount(5);
+        // Edit-action column plus Task, Booking element, Started, Ended, Duration.
+        grid.Columns.Should().HaveCount(6);
+    }
+
+    [AvaloniaTest]
+    public void Tracker_grid_offers_a_per_row_edit_action()
+    {
+        var (view, viewModel) = BuildTrackerView(Entry("Writing report", "Project X"));
+
+        var grid = FindControl<DataGrid>(view);
+        grid.Should().NotBeNull();
+
+        // The first column is the edit action; it carries no sort path.
+        var editColumn = grid!.Columns[0];
+        editColumn.Should().BeOfType<DataGridTemplateColumn>();
+        editColumn.SortMemberPath.Should().BeNullOrEmpty();
+        grid.Columns[1].SortMemberPath.Should().Be(nameof(EntryRow.Task));
+    }
+
+    [AvaloniaTest]
+    public void Edit_entries_dialog_save_button_produces_the_edited_sessions()
+    {
+        var first = Entry("Report", "Project X", 9);
+        var item = new EntryRow([first, Entry("Report", "Project X", 14)]);
+        var dialog = new EditEntriesWindow(item);
+
+        // Realize the dialog, then find and press the Save button by its caption.
+        var saveButton = FindAllControls<Button>(dialog)
+            .Single(b => b.Content?.ToString() == "Save");
+        saveButton.IsEnabled.Should().BeTrue();
+        saveButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+
+        dialog.Result.Should().NotBeNull("pressing Save accepts the dialog");
+        dialog.Result!.Should().HaveCount(2);
+    }
+
+    [AvaloniaTest]
+    public void Clicking_the_row_edit_icon_opens_the_editor_for_that_item()
+    {
+        var (view, _) = BuildTrackerView(
+            Entry("Writing report", "Quarterly figures"),
+            Entry("Code review", "Project X"));
+
+        var window = RealizeWindow(view);
+        var editButton = FindAllControls<Button>(window)
+            .First(b => b.Content?.ToString() == "✎");
+
+        // A real pointer click on the pencil (headless input, not a synthetic event).
+        var center = editButton.TranslatePoint(
+            new Avalonia.Point(editButton.Bounds.Width / 2, editButton.Bounds.Height / 2),
+            window)!.Value;
+        window.MouseDown(center, Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.None);
+        window.MouseUp(center, Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+
+        var dialog = window.OwnedWindows.OfType<EditEntriesWindow>().LastOrDefault();
+        dialog.Should().NotBeNull("clicking the edit icon opens the per-item editor");
+        dialog!.Title.Should().Contain("Writing report");
+    }
+
+    [AvaloniaTest]
+    public void Edit_entries_dialog_lists_each_session_of_the_item()
+    {
+        var item = new EntryRow([
+            Entry("Report", "Project X", 9),
+            Entry("Report", "Project X", 14),
+        ]);
+
+        var dialog = new EditEntriesWindow(item);
+        var grid = FindControl<DataGrid>(dialog);
+        grid.Should().NotBeNull("the dialog shows the item's sessions in a grid");
+        grid!.ItemsSource.Should().BeOfType<System.Collections.ObjectModel.ObservableCollection<SessionEditRow>>();
+        ((System.Collections.ObjectModel.ObservableCollection<SessionEditRow>)grid.ItemsSource!)
+            .Should().HaveCount(2);
+
+        // Start/End are editable via pickers; a delete action column is present.
+        var headers = grid.Columns.Select(c => c.Header?.ToString() ?? "").ToList();
+        headers.Should().Contain("Start");
+        headers.Should().Contain("End");
+        headers.Should().Contain("Duration");
+        grid.Columns.Count.Should().Be(6);
     }
 
     [AvaloniaTest]
@@ -102,6 +184,16 @@ public sealed class ViewRenderTests
         DurationSeconds = 3600,
     };
 
+    /// <summary>A second session of the same task, starting at the given hour.</summary>
+    private static TrackerEntry Entry(string task, string bookingElement, int startHour)
+    {
+        var entry = Entry(task, bookingElement);
+        var start = new DateTimeOffset(2026, 9, 21, startHour, 0, 0, TimeSpan.FromHours(2));
+        entry.Start = start;
+        entry.End = start.AddHours(1);
+        return entry;
+    }
+
     private static (TrackerTabView View, TrackerViewModel ViewModel) BuildTrackerView(
         params TrackerEntry[] entries)
     {
@@ -128,6 +220,13 @@ public sealed class ViewRenderTests
     private static T? FindControl<T>(Control root) where T : Control =>
         FindAllControls<T>(root).FirstOrDefault();
 
+    /// <summary>Realizes a control in a window and returns that window.</summary>
+    private static Window RealizeWindow(Control root)
+    {
+        Realize(root);
+        return HostWindows.Last();
+    }
+
     private static IReadOnlyList<T> FindAllControls<T>(Control root) where T : Control
     {
         Realize(root);
@@ -136,7 +235,8 @@ public sealed class ViewRenderTests
 
     /// <summary>
     /// Attaches the control to a window once so its visual tree is built and laid
-    /// out; the window is kept alive for the duration of the test process.
+    /// out; the window is kept alive for the duration of the test process. A window
+    /// (like the editor dialog) is shown directly instead of being wrapped.
     /// </summary>
     private static void Realize(Control root)
     {
@@ -145,11 +245,20 @@ public sealed class ViewRenderTests
             return;
         }
 
-        var window = new Window { Content = root, Width = 900, Height = 600 };
-        window.Show();
+        if (root is Window window)
+        {
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            HostWindows.Add(window);
+            return;
+        }
+
+        var host = new Window { Content = root, Width = 900, Height = 600 };
+        host.Show();
         Dispatcher.UIThread.RunJobs();
-        window.UpdateLayout();
-        HostWindows.Add(window);
+        host.UpdateLayout();
+        HostWindows.Add(host);
     }
 
     private sealed class FakeTrackerHost : ITrackerUiHost
