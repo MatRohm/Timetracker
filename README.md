@@ -262,6 +262,15 @@ dotnet build
 dotnet test
 ```
 
+### Git hooks
+
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
+and are enforced by the shared `commit-msg` hook. Enable it once per clone:
+
+```sh
+git config core.hooksPath .githooks
+```
+
 ### Self-contained publish
 
 Windows (single-file, portable):

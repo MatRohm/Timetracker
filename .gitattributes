@@ -8,8 +8,9 @@
 # on all platforms (and is harmless on Windows, where it is the default anyway).
 * text=auto eol=crlf
 
-# Shell scripts must keep LF or they fail to execute.
+# Shell scripts and git hooks must keep LF or they fail to execute.
 *.sh text eol=lf
+.githooks/* text eol=lf
 
 # Binary assets are never normalized.
 *.ico binary
