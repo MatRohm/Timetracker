@@ -89,56 +89,8 @@ or explicitly state that validation could not be performed.
   in sensible, separate commits.
 - **Do not push to remotes without explicit permission from the user** —
   pushing happens only when the user asks for it.
-
-### Commit messages: Conventional Commits
-
-**All commit messages MUST follow the [Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/)
-specification.** This is a hard requirement, not a preference: never commit a
-message that does not conform. If a message would not parse as a Conventional
-Commit, fix the message before committing.
-
-The rule is enforced by the shared `commit-msg` hook in `.githooks/`; a
-conforming subject is required or the commit is rejected (bypass only in an
-emergency with `git commit --no-verify`). Git cannot install hooks from a
-clone automatically, so enable it once per clone:
-
-    git config core.hooksPath .githooks
-
-The message MUST be structured as:
-
-    <type>[optional scope]: <description>
-
-    [optional body]
-
-    [optional footer(s)]
-
-Requirements:
-
-- The message MUST start with a type, followed by an optional scope, an
-  optional `!`, and a mandatory `: ` (colon and space).
-- Use `feat` for a new feature and `fix` for a bug fix. These map to MINOR
-  and PATCH releases respectively.
-- Other allowed types: `build`, `chore`, `ci`, `docs`, `style`, `refactor`,
-  `perf`, `test`, and `revert`.
-- A scope is optional and names the affected part of the codebase, e.g.
-  `fix(week-view): ...`. Prefer the project or feature name in lowercase.
-- The description MUST immediately follow the colon and space; it is a short
-  summary, lowercase is preferred.
-- A body MAY follow the description, separated by one blank line; the body is
-  free form and explains what and why.
-- Breaking changes MUST be indicated with `!` after the type/scope
-  (`feat!: ...`) and/or a `BREAKING CHANGE: <description>` footer.
-- Footers MUST use the `Token: value` form (e.g. `Refs: #123`); the
-  `BREAKING CHANGE` token MUST be uppercase.
-
-Examples:
-
-    feat: add a per-item editor for tracking entries
-    fix(activity-monitor): stop writing a duplicate span on shutdown
-    docs: describe the line-ending setup
-    refactor!: rename the app project to Timetracker.App
-
-    BREAKING CHANGE: the assembly name changed, update references.
+- Commit messages must follow Conventional Commits; this is enforced by the
+  shared `commit-msg` hook (see README.md for the one-time setup).
 
 ## Before creating new code
 

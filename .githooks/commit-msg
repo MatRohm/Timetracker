@@ -2,8 +2,8 @@
 #
 # commit-msg hook: enforce Conventional Commits 1.0.0.
 #
-# See AGENTS.md ("Commit messages: Conventional Commits") and
-# https://www.conventionalcommits.org/en/v1.0.0/
+# See https://www.conventionalcommits.org/en/v1.0.0/ and README.md
+# ("Git hooks").
 #
 # The hook receives one argument: the path to the file holding the proposed
 # commit message (the first line is the subject).
@@ -62,7 +62,8 @@ cat >&2 <<EOF
     docs: describe the line-ending setup
     refactor!: rename the app project to Timetracker.App
 
-  See AGENTS.md and https://www.conventionalcommits.org/en/v1.0.0/
+  See README.md ("Git hooks") and
+  https://www.conventionalcommits.org/en/v1.0.0/
   (use "git commit --no-verify" to bypass in an emergency)
 
 EOF
