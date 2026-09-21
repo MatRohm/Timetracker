@@ -253,6 +253,44 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
+    /// Persists the given sessions for an edited item (a history row's task) and
+    /// refreshes every affected view. Used by the per-item editor: it replaces all
+    /// stored sessions of that task with the edited/remaining ones.
+    /// </summary>
+    public bool ReplaceSessions(string task, IReadOnlyList<TrackerEntry> sessions)
+    {
+        var key = task.Trim();
+        var unaffected = _sessions
+            .Where(s => !s.Task.Trim().Equals(key, StringComparison.CurrentCultureIgnoreCase))
+            .Select(s => s.Clone())
+            .ToList();
+        var backup = _sessions.Select(e => e.Clone()).ToList();
+        var updated = unaffected.Concat(sessions).ToList();
+
+        try
+        {
+            _repository.Save(updated);
+
+            Status = TrackerStatus.Success;
+            StatusText = $"✓ Updated \"{key}\"";
+            RefreshEntries();
+            RevealTask(key);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _sessions = backup;
+            RefreshEntries();
+
+            ErrorLog.Log("ReplaceSessions", ex);
+            Status = TrackerStatus.Error;
+            StatusText = "✗ Update failed: " + ex.Message;
+            ErrorOccurred?.Invoke("Could not save the changes:\n" + ex.Message);
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Starts tracking the given history row (double-click in the list). Fills the
     /// task field with its name, so the new session continues that task, and starts
     /// the timer. Does nothing while the timer is already running.

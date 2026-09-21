@@ -21,17 +21,26 @@ public sealed class EntryRow : ObservableObject
     public EntryRow(IReadOnlyList<TrackerEntry> sessions)
     {
         _sessions = sessions;
-        var latest = sessions[^1];
-        _task = latest.Task;
+        var latest = sessions.Count > 0 ? sessions[^1] : null;
+        _task = latest?.Task ?? "";
         _bookingElement = sessions
             .Select(e => e.BookingElement)
             .LastOrDefault(b => !string.IsNullOrWhiteSpace(b)) ?? "";
         _committedTask = _task;
         _committedBookingElement = _bookingElement;
 
-        Start = sessions.Min(e => e.Start);
-        End = sessions.Max(e => e.End);
-        DurationSeconds = Math.Round(sessions.Sum(e => e.DurationSeconds), 1);
+        if (sessions.Count > 0)
+        {
+            Start = sessions.Min(e => e.Start);
+            End = sessions.Max(e => e.End);
+            DurationSeconds = Math.Round(sessions.Sum(e => e.DurationSeconds), 1);
+        }
+        else
+        {
+            Start = default;
+            End = default;
+            DurationSeconds = 0;
+        }
         Duration = TimeSpan.FromSeconds(DurationSeconds).ToString(@"hh\:mm\:ss");
     }
 

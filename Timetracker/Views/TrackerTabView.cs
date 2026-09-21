@@ -236,6 +236,15 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         _grid.HorizontalAlignment = HorizontalAlignment.Stretch;
         _grid.VerticalAlignment = VerticalAlignment.Stretch;
 
+        // Row action: opens the per-item editor for that task's sessions.
+        _grid.Columns.Add(new DataGridTemplateColumn
+        {
+            Header = "",
+            Width = new DataGridLength(44),
+            CellTemplate = new FuncDataTemplate<EntryRow>(
+                (row, _) => BuildEditButton(row), true),
+        });
+
         _grid.Columns.Add(new DataGridTextColumn
         {
             Header = "Task",
@@ -283,6 +292,49 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
     private static void BindCommand(Button button, System.Windows.Input.ICommand command)
     {
         button.Command = command;
+    }
+
+    /// <summary>Grid row action: a pencil button that opens the item's editor.</summary>
+    private Control BuildEditButton(EntryRow? row)
+    {
+        var button = new Button
+        {
+            Content = "✎",
+            FontSize = 14,
+            Padding = new Thickness(4, 0),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        ToolTip.SetTip(button, "Edit this item's entries");
+
+        // The row instance is captured, so no lookup through the visual tree is needed.
+        if (row is not null)
+        {
+            button.Click += (_, _) => OpenEditor(row);
+        }
+        return button;
+    }
+
+    /// <summary>
+    /// Opens the per-item editor. The dialog returns the sessions to keep; when the
+    /// user saved (result not null) they are persisted through the view model.
+    /// </summary>
+    private async void OpenEditor(EntryRow row)
+    {
+        if (TopLevel.GetTopLevel(this) is not Window owner)
+        {
+            return;
+        }
+
+        var dialog = new EditEntriesWindow(row);
+        await dialog.ShowDialog(owner);
+
+        if (dialog.Result is not { } sessions)
+        {
+            return;
+        }
+
+        _vm.ReplaceSessions(row.Task, sessions);
     }
 
     private void OnTaskBoxTextChanged(object? sender, TextChangedEventArgs e)
