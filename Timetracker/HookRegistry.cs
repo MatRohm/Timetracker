@@ -18,7 +18,7 @@ public static class HookRegistry
 
         // Framework services of the main app.
         services.AddSingleton<Services.ITrackerRepository, Services.JsonTrackerRepository>();
-        services.AddSingleton<ViewModels.IUiTimer, Views.FormsUiTimer>();
+        services.AddSingleton<ViewModels.IUiTimer, Views.AvaloniaUiTimer>();
         services.AddSingleton<ViewModels.TrackerViewModel>();
         services.AddSingleton<ViewModels.WeekViewModel>();
 
@@ -45,7 +45,8 @@ public static class HookRegistry
 
         // PC activity monitor: activity log, per-day lines, installer UI.
         services.AddSingleton<ActivityMonitor.ActivityLog>();
-        services.AddSingleton<ActivityMonitor.IActivityMonitorInstaller, ActivityMonitor.ActivityMonitorInstaller>();
+        services.AddSingleton<ActivityMonitor.IActivityMonitorInstaller>(
+            _ => ActivityMonitor.ActivityMonitorInstallerFactory.CreateForCurrentPlatform());
         services.AddSingleton<IWeekDayContributor, ActivityMonitor.ActivityWeekDayContributor>();
         services.AddSingleton<IUiContributor, ActivityMonitor.MonitorSetupUiContributor>();
         services.AddSingleton<Plugins.IWeekStatusHost, ActivityMonitor.WeekStatusHostAdapter>();

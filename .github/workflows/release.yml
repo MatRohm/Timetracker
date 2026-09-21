@@ -14,7 +14,7 @@ permissions:
 jobs:
   release:
     name: Release ${{ github.event.inputs.version }}
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -34,32 +34,27 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Publish activity monitor win-x64
+      - name: Publish linux-x64
         run: >
-          dotnet publish Timetracker.ActivityMonitor/Timetracker.ActivityMonitor.csproj -c Release -r win-x64 --self-contained true
+          dotnet publish Timetracker/Timetracker.csproj -c Release -r linux-x64 --self-contained true
           -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
 
-      - name: Publish activity monitor win-x86
-        run: >
-          dotnet publish Timetracker.ActivityMonitor/Timetracker.ActivityMonitor.csproj -c Release -r win-x86 --self-contained true
-          -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
-
-      - name: Build & publish win-x64
+      - name: Publish win-x64
         run: >
           dotnet publish Timetracker/Timetracker.csproj -c Release -r win-x64 --self-contained true
           -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
 
-      - name: Build & publish win-x86
-        run: >
-          dotnet publish Timetracker/Timetracker.csproj -c Release -r win-x86 --self-contained true
-          -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
-
-      - name: Package (zip)
-        shell: pwsh
+      - name: Package (tar.gz / zip)
+        shell: bash
         run: |
-          $v = "${{ github.event.inputs.version }}"
-          Compress-Archive -Path "Timetracker/bin/Release/net10.0-windows/win-x64/publish/Timetracker.exe", "Timetracker/bin/Release/net10.0-windows/win-x64/publish/Timetracker.ActivityMonitor.exe" -DestinationPath "Timetracker-$v-win-x64.zip"
-          Compress-Archive -Path "Timetracker/bin/Release/net10.0-windows/win-x86/publish/Timetracker.exe", "Timetracker/bin/Release/net10.0-windows/win-x86/publish/Timetracker.ActivityMonitor.exe" -DestinationPath "Timetracker-$v-win-x86.zip"
+          VERSION="${{ github.event.inputs.version }}"
+          LINUX_DIR="Timetracker/bin/Release/net10.0/linux-x64/publish"
+          WIN_DIR="Timetracker/bin/Release/net10.0/win-x64/publish"
+
+          tar -czf "Timetracker-$VERSION-linux-x64.tar.gz" \
+            -C "$LINUX_DIR" Timetracker Timetracker.ActivityMonitor
+          (cd "$WIN_DIR" && zip -q "../Timetracker-$VERSION-win-x64.zip" Timetracker.exe Timetracker.ActivityMonitor.exe) || \
+            (cd "$WIN_DIR" && tar -acf "$OLDPWD/Timetracker-$VERSION-win-x64.zip" Timetracker.exe Timetracker.ActivityMonitor.exe)
 
       - name: Create GitHub Release
         shell: bash
@@ -69,19 +64,20 @@ jobs:
           VERSION="${{ github.event.inputs.version }}"
           gh release create "$VERSION" \
             --title "Timetracker $VERSION" \
-            --notes "Timetracker $VERSION - portable Windows executables.
+            --notes "Timetracker $VERSION - portable cross-platform executables.
 
+          - Timetracker-$VERSION-linux-x64.tar.gz - for 64-bit Linux
           - Timetracker-$VERSION-win-x64.zip - for 64-bit Windows
-          - Timetracker-$VERSION-win-x86.zip - for 32-bit Windows
 
           Self-contained single-file builds: no .NET installation needed.
-          Unzip and run Timetracker.exe. Data file: %USERPROFILE%\\timetracker.json" \
-            "Timetracker-$VERSION-win-x64.zip" \
-            "Timetracker-$VERSION-win-x86.zip"
+          Unzip and run Timetracker (or Timetracker.exe), then use the week view to
+          install the PC activity monitor. Data file: timetracker.json in your user folder." \
+            "Timetracker-$VERSION-linux-x64.tar.gz" \
+            "Timetracker-$VERSION-win-x64.zip"
 
       - name: Summary
         shell: bash
         run: |
           echo "### Release ${{ github.event.inputs.version }} created" >> $GITHUB_STEP_SUMMARY
+          echo "- linux-x64 archive: attached" >> $GITHUB_STEP_SUMMARY
           echo "- win-x64 zip: attached" >> $GITHUB_STEP_SUMMARY
-          echo "- win-x86 zip: attached" >> $GITHUB_STEP_SUMMARY

@@ -1,17 +1,21 @@
 # Timetracker
 
-A tiny Windows desktop time tracker: enter a task name, press **Start**, press **Stop** —
-the finished entry is appended to a JSON file in your user folder. Entries are never deleted.
+A tiny cross-platform desktop time tracker (Linux, Windows, macOS): enter a task
+name, press **Start**, press **Stop** — the finished entry is appended to a JSON
+file in your user folder. Entries are never deleted.
+
+The UI is built with [Avalonia UI](https://avaloniaui.net/), so the same binary
+runs on Linux and Windows. The only platform-specific pieces (idle detection and
+autostart installation) are selected at runtime.
 
 ## Error handling & logging
 
 Unexpected exceptions never crash the app with a stack-trace dialog. A global
-handler catches UI-thread, AppDomain and unobserved-task exceptions, shows a
-generic error message, and writes the full details (with timestamp) to
-**`Timetracker.log`** in the application's execution directory (next to the
-`Timetracker.exe`). If that directory is not writable, the log falls back to
-`%TEMP%\Timetracker.log`. The log is append-only. Save/update failures are
-logged as well.
+handler catches AppDomain and unobserved-task exceptions, shows a generic error
+message, and writes the full details (with timestamp) to **`Timetracker.log`** in
+the application's execution directory (next to the executable). If that directory
+is not writable, the log falls back to the temp folder. The log is append-only.
+Save/update failures are logged as well.
 
 ## Usage
 
@@ -106,8 +110,8 @@ which is used for the next started session on that task.
 
 ### Configuration
 
-Create **`%USERPROFILE%\timetracker-azdo.json`** (the app shows the expected path
-in the panel's status hint when it is missing). An example file lives at
+Create **`timetracker-azdo.json`** in your user folder
+(`%USERPROFILE%` on Windows, `$HOME` on Linux). An example file lives at
 `Timetracker.AzureDevOps/timetracker-azdo.example.json`:
 
 ```json
@@ -129,14 +133,20 @@ attempts fail with a clear message; the tracker works normally without it.
 ## PC activity monitor
 
 The separate project **`Timetracker.ActivityMonitor`** records when the computer
-is actively used: it watches for idle periods, logoff and shutdown, and writes
-one JSON span per period to **`%USERPROFILE%\timetracker-activity.json`**.
+is actively used: it watches for idle periods and writes one JSON span per period
+to **`timetracker-activity.json`** in your user folder (`%USERPROFILE%` on
+Windows, `$HOME` on Linux).
 
 - **Active** spans cover periods with user input; they are always logged.
 - **Idle** spans are only logged when they last **at least one hour** — shorter
   breaks are ignored entirely.
-- Logoff/shutdown closes the open span (also across hard process kills, via a
-  small state file), and the next logon starts a new one.
+- Session end (logoff/shutdown) closes the open span (also across hard process
+  kills, via a small state file), and the next start begins a new one.
+
+Idle detection is platform-specific: Windows uses the Win32 last-input timestamp
+(`GetLastInputInfo`); Linux uses the X11 `XScreenSaver` extension. On a platform
+where neither is available the monitor still records active time, it just never
+detects idle.
 
 The week view shows the resulting **active/idle time per weekday** in the gray
 line below each day's bookings.
@@ -144,20 +154,23 @@ line below each day's bookings.
 ### Installation
 
 The week view offers **⏻ Install PC activity monitor** / **⏻ Remove PC activity
-monitor** buttons. Installing registers a per-user autostart (HKCU Run key) so
-the monitor starts with Windows — no admin rights required; a Windows service
-or scheduled task is not necessary for this. The buttons reflect the current
-state (exactly one is enabled), and removal takes effect at the next logon.
+monitor** buttons. Installing registers a per-user autostart so the monitor starts
+at logon — no admin rights required. The buttons reflect the current state
+(exactly one is enabled), and removal takes effect at the next logon.
 
-The single-file publish (`dotnet publish ... -p:PublishSingleFile=true`) copies
-`Timetracker.ActivityMonitor.exe` next to the app automatically, so the install
-button works out of the box.
+- **Windows** writes the HKCU Run key (`TimetrackerActivityMonitor`).
+- **Linux** writes a freedesktop autostart entry at
+  `~/.config/autostart/timetracker-activity-monitor.desktop`.
+
+The publish step copies the monitor executable next to the app automatically, so
+the install button works out of the box.
 
 ## Data file
 
-Entries are stored at `%USERPROFILE%\timetracker.json`
-(e.g. `C:\Users\<you>\timetracker.json`). The file is rewritten atomically after each
-stop; every existing entry is always preserved, nothing is ever removed.
+Entries are stored at `timetracker.json` in your user folder
+(`C:\Users\<you>\timetracker.json` on Windows, `~/.local/share` style `$HOME` on
+Linux). The file is rewritten atomically after each stop; every existing entry is
+always preserved, nothing is ever removed.
 
 ```json
 [
@@ -206,12 +219,12 @@ Timetracker/
 │   │   ├── IUiTimer.cs              # UI-agnostic timer abstraction
 │   │   └── TrackerStatus.cs         # Info / Success / Error status kinds
 │   ├── Views/
-│   │   ├── TrackerForm.cs           # Shell: window, tabs, title binding, close handling
+│   │   ├── TrackerWindow.cs         # Shell: window, tabs, title binding, close handling
 │   │   ├── TrackerTabView.cs        # Tracker tab: input, suggestions, timer, history grid
 │   │   ├── WeekTabView.cs           # Week view tab: weekday columns, navigation
-│   │   ├── CommandBindings.cs       # Wires Buttons to ICommands (WinForms)
-│   │   └── FormsUiTimer.cs          # WinForms timer implementation
-│   ├── Program.cs                   # Entry point + composition root
+│   │   └── AvaloniaUiTimer.cs       # Avalonia timer implementation
+│   ├── App.cs                       # Composition root: container, hooks, error handling
+│   ├── Program.cs                   # Entry point (Avalonia bootstrap)
 │   └── Timetracker.csproj
 ├── Timetracker.Plugins/             # Hook interfaces + UI host accessor (no logic)
 ├── Timetracker.AzureDevOps/         # Add-in: work item import (issue number → fields)
@@ -226,31 +239,40 @@ Timetracker/
     └── TestDoubles.cs
 ```
 
-The view model knows nothing about WinForms; the view contains no business logic.
+The view model knows nothing about Avalonia; the view contains no business logic.
 They communicate via data bindings, `ICommand`s, and view-model events.
 
 ## Build
 
-Requires the .NET SDK (10.0 or newer):
+Requires the .NET SDK (10.0 or newer). The UI targets plain `net10.0`, so it
+builds and runs on Linux, Windows and macOS:
 
-```pwsh
+```sh
 dotnet build
+dotnet test
 ```
 
-### Single-file desktop build
+### Self-contained publish
+
+Windows (single-file, portable):
 
 ```pwsh
 dotnet publish Timetracker/Timetracker.csproj -c Release -r win-x64 --self-contained true `
   -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
 ```
 
-The standalone executable ends up at
-`Timetracker\bin\Release\net10.0-windows\win-x64\publish\Timetracker.exe` and runs on any
-Windows 10/11 machine without installing .NET.
+Linux:
+
+```sh
+dotnet publish Timetracker/Timetracker.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
+```
+
+The standalone executable ends up under `Timetracker/bin/Release/net10.0/<rid>/publish/`
+and runs without installing .NET.
 
 ## App icon
 
-The app icon (a fist smashing a clock) lives at
-`Timetracker/Timetracker.ico` as a multi-size ICO (16/32/48/256 px). It is
-embedded into the exe via `ApplicationIcon` and shown in the title bar,
-taskbar and Alt-Tab view.
+The app icon (a fist smashing a clock) lives at `Timetracker/Timetracker.png`
+(the ICO `Timetracker.ico` is kept for Windows builds) and is shown in the title
+bar, taskbar and Alt-Tab view. The Azure DevOps favicon is likewise embedded as a
+PNG (`Timetracker.AzureDevOps/azure-favicon.png`).

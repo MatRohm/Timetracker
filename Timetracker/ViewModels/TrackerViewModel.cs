@@ -1,4 +1,4 @@
-using System.ComponentModel;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows.Input;
 using Timetracker.ActivityMonitor;
@@ -27,8 +27,8 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     private TrackerStatus _status = TrackerStatus.Info;
     private string _title = "Timetracker";
 
-    private readonly BindingList<EntryRow> _entries = new();
-    private readonly BindingList<SuggestionItem> _suggestions = new();
+    private readonly ObservableCollection<EntryRow> _entries = new();
+    private readonly ObservableCollection<SuggestionItem> _suggestions = new();
     private List<TrackerEntry> _sessions = [];
     private string _sortColumn = nameof(EntryRow.StartText);
     private bool _sortAscending;
@@ -122,10 +122,13 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>Tasks (grouped sessions) of the current history page; refreshed after every save.</summary>
-    public BindingList<EntryRow> Entries => _entries;
+    public ObservableCollection<EntryRow> Entries => _entries;
 
     /// <summary>Autocomplete suggestions for the current task-name input.</summary>
-    public BindingList<SuggestionItem> Suggestions => _suggestions;
+    public ObservableCollection<SuggestionItem> Suggestions => _suggestions;
+
+    /// <summary>True while the suggestion list should be shown below the task input.</summary>
+    public bool ShowSuggestions => Suggestions.Count > 0;
 
     /// <summary>Week view: seven weekday columns with week navigation.</summary>
     public WeekViewModel Week { get; } = new();
@@ -179,6 +182,16 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// <summary>Text for the pager label, e.g. "Page 2 of 5".</summary>
     public string PageText => $"Page {CurrentPage} of {TotalPages}";
 
+    /// <summary>
+    /// Human-readable description of what a delete would remove, e.g.
+    /// <c>"Report" (all 3 sessions)</c>. Exposed so the view can confirm
+    /// asynchronously without blocking the UI thread.
+    /// </summary>
+    public static string BuildDeleteSummary(IReadOnlyList<EntryRow> rows) =>
+        rows.Count == 1
+            ? $"\"{rows[0].Task}\" (all {rows[0].Sessions.Count} sessions)"
+            : $"{rows.Count} tasks ({rows.Sum(r => r.Sessions.Count)} sessions)";
+
     /// <summary>Saves the running entry (if any); called by the view when the app is closing.</summary>
     public void SaveRunningEntryOnClose()
     {
@@ -200,9 +213,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
             return false;
         }
 
-        var summary = rows.Count == 1
-            ? $"\"{rows[0].Task}\" (all {rows[0].Sessions.Count} sessions)"
-            : $"{rows.Count} tasks ({rows.Sum(r => r.Sessions.Count)} sessions)";
+        var summary = BuildDeleteSummary(rows);
         if (!confirm(summary))
         {
             return false;
@@ -464,14 +475,11 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
             .ToList();
 
         // One reset instead of a change event per row, so the grid redraws in one go.
-        Entries.RaiseListChangedEvents = false;
         Entries.Clear();
         foreach (var row in pageRows)
         {
             Entries.Add(row);
         }
-        Entries.RaiseListChangedEvents = true;
-        Entries.ResetBindings();
 
         RefreshPageCommands();
     }
@@ -519,7 +527,6 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     {
         var typed = TaskName.Trim();
 
-        Suggestions.RaiseListChangedEvents = false;
         Suggestions.Clear();
 
         if (typed.Length > 0)
@@ -538,8 +545,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
             }
         }
 
-        Suggestions.RaiseListChangedEvents = true;
-        Suggestions.ResetBindings();
+        OnPropertyChanged(nameof(ShowSuggestions));
     }
 
     private int CompareRows(EntryRow a, EntryRow b)

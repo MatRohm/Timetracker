@@ -5,9 +5,13 @@ on:
   pull_request:
 
 jobs:
-  build:
-    name: Build (win-x64)
-    runs-on: windows-latest
+  test:
+    name: Build & test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - name: Checkout
@@ -27,14 +31,40 @@ jobs:
       - name: Test
         run: dotnet test Timetracker.slnx -c Release --no-build --nologo
 
-      - name: Publish single-file executable
+  publish:
+    name: Publish single-file executables
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish linux-x64
+        run: >
+          dotnet publish Timetracker/Timetracker.csproj -c Release -r linux-x64 --self-contained true
+          -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
+
+      - name: Publish win-x64
         run: >
           dotnet publish Timetracker/Timetracker.csproj -c Release -r win-x64 --self-contained true
           -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
 
-      - name: Upload executable artifact
+      - name: Upload linux executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: Timetracker-linux-x64
+          path: Timetracker/bin/Release/net10.0/linux-x64/publish/Timetracker
+          if-no-files-found: error
+
+      - name: Upload windows executable
         uses: actions/upload-artifact@v4
         with:
           name: Timetracker-win-x64
-          path: Timetracker/bin/Release/net10.0-windows/win-x64/publish/Timetracker.exe
+          path: Timetracker/bin/Release/net10.0/win-x64/publish/Timetracker.exe
           if-no-files-found: error

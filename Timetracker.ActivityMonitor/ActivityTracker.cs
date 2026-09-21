@@ -12,20 +12,21 @@ public class ActivityTracker
     /// <summary>Idle periods shorter than this are not logged.</summary>
     public static readonly TimeSpan DefaultIdleThreshold = TimeSpan.FromHours(1);
 
-    private const string PollIntervalSeconds = "5";
-
     private readonly ActivityLog _log;
-    private readonly IdleDetector _detector;
+    private readonly IIdleTimeProvider _idleTime;
     private Func<DateTimeOffset> _now;
 
     private string _state = "active";
     private DateTimeOffset _stateStart;
 
-    public ActivityTracker(ActivityLog log, Func<DateTimeOffset>? now = null)
+    public ActivityTracker(
+        ActivityLog log,
+        Func<DateTimeOffset>? now = null,
+        IIdleTimeProvider? idleTime = null)
     {
         _log = log;
         _now = now ?? (() => DateTimeOffset.Now);
-        _detector = new IdleDetector(DefaultIdleThreshold);
+        _idleTime = idleTime ?? IdleTimeProvider.CreateForCurrentPlatform();
     }
 
     /// <summary>Path of the state file used to recover across restarts.</summary>
@@ -42,17 +43,17 @@ public class ActivityTracker
     /// <summary>Replaces the clock (tests inject fixed moments).</summary>
     protected void SetNow(Func<DateTimeOffset> now) => _now = now;
 
-    /// <summary>Test seam: polls with an injected idle duration instead of Win32.</summary>
+    /// <summary>Test seam: polls with an injected idle duration instead of the platform.</summary>
     protected void PollIdleForTest(TimeSpan idle) => PollWithIdle(idle);
 
     private void PollWithIdle(TimeSpan idle)
     {
-        if (_state == "active" && idle >= IdleDetector.Threshold)
+        if (_state == "active" && idle >= DefaultIdleThreshold)
         {
             var idleStart = _now() - idle;
             CloseAndOpen("idle", idleStart);
         }
-        else if (_state == "idle" && idle < IdleDetector.Threshold)
+        else if (_state == "idle" && idle < DefaultIdleThreshold)
         {
             CloseAndOpen("active", _now());
         }
@@ -81,11 +82,16 @@ public class ActivityTracker
     }
 
     /// <summary>Called periodically; flips active/idle when the threshold is crossed.</summary>
-    public void Poll() => PollWithIdle(_detector.CurrentIdleTime);
+    public void Poll() => PollWithIdle(_idleTime.CurrentIdleTime);
 
     /// <summary>Ends the open span (logoff/shutdown); called on session end.</summary>
     public void Stop()
     {
+        if (_state == "off")
+        {
+            return; // Already stopped; avoids writing a duplicate span.
+        }
+
         CloseSpan(_state, _stateStart, _now());
         _state = "off";
         SaveState(_state, null);
@@ -110,7 +116,7 @@ public class ActivityTracker
             return;
         }
 
-        if (state == "idle" && end - start < IdleDetector.Threshold)
+        if (state == "idle" && end - start < DefaultIdleThreshold)
         {
             return; // Short break: ignore entirely.
         }

@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using Microsoft.Win32;
 
 namespace Timetracker.ActivityMonitor;
@@ -8,7 +9,8 @@ namespace Timetracker.ActivityMonitor;
 /// and is not needed for a per-user monitor; the Run key starts the monitor at
 /// every logon without elevation.
 /// </summary>
-public sealed class ActivityMonitorInstaller : IActivityMonitorInstaller
+[SupportedOSPlatform("windows")]
+public sealed class WindowsActivityMonitorInstaller : IActivityMonitorInstaller
 {
     private const string RunKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string ValueName = "TimetrackerActivityMonitor";
@@ -26,8 +28,9 @@ public sealed class ActivityMonitorInstaller : IActivityMonitorInstaller
             // The stored value is quoted (paths with spaces); compare unquoted.
             var value = key?.GetValue(ValueName) as string;
             var path = value?.Trim().Trim('"');
-            return !string.IsNullOrEmpty(path)
+            var result = !string.IsNullOrEmpty(path)
                 && string.Equals(path, MonitorExePath, StringComparison.OrdinalIgnoreCase);
+            return result;
         }
     }
 

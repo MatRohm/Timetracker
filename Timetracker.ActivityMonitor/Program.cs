@@ -1,53 +1,42 @@
-using Microsoft.Win32;
+using Timetracker.ActivityMonitor;
 
-namespace Timetracker.ActivityMonitor;
+// Headless background monitor: starts the tracker, polls the idle state on a
+// timer and closes the open span when the process or session ends. No UI and no
+// window dependencies, so it runs the same on Windows and Linux.
 
-/// <summary>
-/// Headless background monitor: starts the tracker, polls the idle state every
-/// few seconds and closes the open span on logoff, shutdown or crash of the
-/// session (SessionEnding). No UI; runs from the tray-less tray (invisible).
-/// </summary>
-internal static class Program
+var log = new ActivityLog();
+var tracker = new ActivityTracker(log);
+tracker.Start();
+
+using var stopping = new CancellationTokenSource();
+
+// Ctrl+C: close the open span so the log stays consistent.
+Console.CancelKeyPress += (_, e) =>
 {
-    [STAThread]
-    private static void Main()
+    e.Cancel = true;
+    stopping.Cancel();
+};
+
+// SIGTERM (logoff/shutdown) ends the loop gracefully; ProcessExit closes the span.
+IDisposable? terminationSignal = null;
+if (!OperatingSystem.IsWindows())
+{
+    terminationSignal = SessionSignals.RegisterTermination(stopping);
+}
+AppDomain.CurrentDomain.ProcessExit += (_, _) => tracker.Stop();
+
+using var timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+try
+{
+    while (await timer.WaitForNextTickAsync(stopping.Token))
     {
-        var log = new ActivityLog();
-        var tracker = new ActivityTracker(log);
-        tracker.Start();
-
-        // Logoff/shutdown: close the open span so the log stays consistent.
-        SystemEvents.SessionEnding += (_, _) => tracker.Stop();
-        AppDomain.CurrentDomain.ProcessExit += (_, _) => tracker.Stop();
-
-        var timer = new System.Windows.Forms.Timer { Interval = 5000 };
-        timer.Tick += (_, _) => tracker.Poll();
-        timer.Start();
-
-        // Keep a message loop alive without a window (SystemEvents needs one).
-        Application.Run(new HiddenForm(tracker, timer));
-    }
-
-    /// <summary>Never-shown form that keeps the message loop (and timer) running.</summary>
-    private sealed class HiddenForm : Form
-    {
-        public HiddenForm(ActivityTracker tracker, System.Windows.Forms.Timer timer)
-        {
-            ShowInTaskbar = false;
-            FormBorderStyle = FormBorderStyle.None;
-            Opacity = 0;
-            WindowState = FormWindowState.Minimized;
-
-            // The form is never shown; closing ends the process.
-            FormClosing += (_, e) =>
-            {
-                if (e.CloseReason == CloseReason.ApplicationExitCall)
-                {
-                    return;
-                }
-                tracker.Stop();
-                timer.Stop();
-            };
-        }
+        tracker.Poll();
     }
 }
+catch (OperationCanceledException)
+{
+    // Normal shutdown: the spans are closed below.
+}
+
+terminationSignal?.Dispose();
+tracker.Stop();

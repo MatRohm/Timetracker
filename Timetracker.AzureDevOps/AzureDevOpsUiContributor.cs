@@ -11,7 +11,7 @@ public sealed class AzureDevOpsUiContributor : IUiContributor
 {
     public string TargetTab => "Tracker";
 
-    public Control CreateControl(IServiceProvider services) =>
+    public Avalonia.Controls.Control CreateControl(IServiceProvider services) =>
         new AzureDevOpsPanel(
             services.GetRequiredService<AzureDevOpsService>(),
             services.GetRequiredService<ITrackerUiHost>());
