@@ -21,7 +21,7 @@ public sealed class EntryRow : ObservableObject
     public EntryRow(IReadOnlyList<TrackerEntry> sessions)
     {
         _sessions = sessions;
-        var latest = sessions.Count > 0 ? sessions[^1] : null;
+        var latest = sessions.Count > 0 ? sessions.MaxBy(e => e.Start) : null;
         _task = latest?.Task ?? "";
         _bookingElement = sessions
             .Select(e => e.BookingElement)
@@ -29,10 +29,10 @@ public sealed class EntryRow : ObservableObject
         _committedTask = _task;
         _committedBookingElement = _bookingElement;
 
-        if (sessions.Count > 0)
+        if (latest is not null)
         {
-            Start = sessions.Min(e => e.Start);
-            End = sessions.Max(e => e.End);
+            Start = latest.Start;
+            End = latest.End;
             DurationSeconds = Math.Round(sessions.Sum(e => e.DurationSeconds), 1);
         }
         else
@@ -65,10 +65,10 @@ public sealed class EntryRow : ObservableObject
     /// <summary>Booking element as last persisted (staged edits are not included).</summary>
     public string CommittedBookingElement => _committedBookingElement;
 
-    /// <summary>First time any session of this task started.</summary>
+    /// <summary>Start time of the latest session of this task.</summary>
     public DateTimeOffset Start { get; }
 
-    /// <summary>Last time any session of this task ended.</summary>
+    /// <summary>End time of the latest session of this task.</summary>
     public DateTimeOffset End { get; }
 
     /// <summary>Total time of all sessions, formatted hh:mm:ss.</summary>
