@@ -100,6 +100,35 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
+    public void History_row_shows_the_latest_session_times_and_the_summed_duration()
+    {
+        var (repo, _) = RepositoryFake.Create(
+            new TrackerEntry
+            {
+                Task = "Report",
+                Start = new DateTimeOffset(2026, 9, 18, 9, 0, 0, TimeSpan.FromHours(2)),
+                End = new DateTimeOffset(2026, 9, 18, 10, 0, 0, TimeSpan.FromHours(2)),
+                Duration = "01:00:00",
+                DurationSeconds = 3600,
+            },
+            new TrackerEntry
+            {
+                Task = "Report",
+                Start = new DateTimeOffset(2026, 9, 18, 14, 0, 0, TimeSpan.FromHours(2)),
+                End = new DateTimeOffset(2026, 9, 18, 14, 30, 0, TimeSpan.FromHours(2)),
+                Duration = "00:30:00",
+                DurationSeconds = 1800,
+            });
+        using var vm = new TrackerViewModel(repo, new FakeTimer());
+
+        var row = vm.Entries.Single();
+
+        row.StartText.Should().Be("2026-09-18 14:00", "Started shows the latest session");
+        row.EndText.Should().Be("2026-09-18 14:30", "Ended shows the latest session");
+        row.Duration.Should().Be("01:30:00", "Duration sums all sessions");
+    }
+
+    [Test]
     public void BookingElement_edit_survives_adding_a_new_session()
     {
         // Regression: the booking element used to revert to empty after a new session.
