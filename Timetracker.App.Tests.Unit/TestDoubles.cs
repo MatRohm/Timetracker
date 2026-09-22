@@ -1,4 +1,5 @@
 using FakeItEasy;
+using Timetracker.ActivityMonitor;
 using Timetracker.Models;
 using Timetracker.Services;
 using Timetracker.ViewModels;
@@ -28,6 +29,15 @@ public sealed class FakeTimer : IUiTimer
     public void Stop() { }
 
     public void Dispose() { }
+}
+
+/// <summary>
+/// Idle provider for tests: the idle duration is set directly, so no real
+/// platform API is touched.
+/// </summary>
+public sealed class FakeIdleTimeProvider : IIdleTimeProvider
+{
+    public TimeSpan CurrentIdleTime { get; set; }
 }
 
 /// <summary>FakeItEasy fake wrapping an in-memory list as repository.</summary>

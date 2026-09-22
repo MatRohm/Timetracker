@@ -9,9 +9,20 @@ namespace Timetracker.ViewModels;
 
 public sealed class TrackerViewModel : ObservableObject, IDisposable
 {
+    /// <summary>
+    /// A running session is stopped automatically once there has been no keyboard
+    /// or mouse input for this long. The recorded end is back-dated to when the
+    /// idle stretch began, so idle time is not billed to the task.
+    /// </summary>
+    public static readonly TimeSpan IdleStopThreshold = TimeSpan.FromMinutes(30);
+
     private readonly ITrackerRepository _repository;
     private readonly IUiTimer _timer;
+    private readonly IIdleTimeProvider _idleTime;
     private readonly Stopwatch _watch = new();
+
+    /// <summary>Current time; replaceable so idle behavior can be tested deterministically.</summary>
+    private readonly Func<DateTimeOffset> _now;
 
     private readonly RelayCommand _startCommand;
     private readonly RelayCommand _stopCommand;
@@ -47,10 +58,14 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// <summary>Raised when saving an entry failed; the view shows the message.</summary>
     public event Action<string>? ErrorOccurred;
 
-    public TrackerViewModel(ITrackerRepository repository, IUiTimer timer)
+    public TrackerViewModel(
+        ITrackerRepository repository, IUiTimer timer, IIdleTimeProvider idleTime,
+        Func<DateTimeOffset>? now = null)
     {
         _repository = repository;
         _timer = timer;
+        _idleTime = idleTime;
+        _now = now ?? (() => DateTimeOffset.Now);
         _timer.Tick += OnTimerTick;
 
         _startCommand = new RelayCommand(Start, () => !IsRunning);
@@ -196,7 +211,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     public void SaveRunningEntryOnClose()
     {
         if (IsRunning)
-            HaltAndSave();
+            HaltAndSave(_now(), _watch.Elapsed);
     }
 
     /// <summary>Puts a suggestion's task name into the input field.</summary>
@@ -377,7 +392,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
             InvalidTaskName?.Invoke();
             return;
         }
-        _startedAt = DateTimeOffset.Now;
+        _startedAt = _now();
         _watch.Restart();
         _timer.Start();
         IsRunning = true;
@@ -395,17 +410,17 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     {
         if (!IsRunning)
             return;
-        HaltAndSave();
+        HaltAndSave(_now(), _watch.Elapsed);
     }
 
-    private void HaltAndSave()
+    private void HaltAndSave(DateTimeOffset endedAt, TimeSpan elapsed)
     {
         _timer.Stop();
         _watch.Stop();
         IsRunning = false;
         Title = "Timetracker";
 
-        Save(BuildEntry(DateTimeOffset.Now, _watch.Elapsed));
+        Save(BuildEntry(endedAt, elapsed));
         PreviewBookingElement = "";
 
         RefreshCommands();
@@ -601,10 +616,47 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
     private void OnTimerTick()
     {
-        if (_watch.IsRunning)
+        if (!_watch.IsRunning)
         {
-            ElapsedTimeText = _watch.Elapsed.ToString(@"hh\:mm\:ss");
+            return;
         }
+
+        // No input for the threshold: stop and bill only up to the last input.
+        if (_idleTime.CurrentIdleTime >= IdleStopThreshold)
+        {
+            StopForIdle();
+            return;
+        }
+
+        ElapsedTimeText = _watch.Elapsed.ToString(@"hh\:mm\:ss");
+    }
+
+    /// <summary>
+    /// Stops the running session because the machine has been idle for too long.
+    /// The entry is back-dated to the last input, so the idle stretch is not
+    /// counted as work; the status line explains what happened.
+    /// </summary>
+    private void StopForIdle()
+    {
+        var idle = _idleTime.CurrentIdleTime;
+
+        // The last input happened when the idle stretch began; the session ends
+        // there, so the idle time is not billed to the task.
+        var endedAt = _now() - idle;
+        var worked = endedAt > _startedAt ? endedAt - _startedAt : TimeSpan.Zero;
+
+        HaltAndSave(endedAt, worked);
+
+        // Replace the generic save status with an explanation of the idle stop.
+        Status = TrackerStatus.Info;
+        StatusText = $"⏸ Stopped after {FormatIdle(idle)} idle – saved {worked:hh\\:mm\\:ss}.";
+    }
+
+    private static string FormatIdle(TimeSpan idle)
+    {
+        var minutes = (int)Math.Round(idle.TotalMinutes);
+        var result = minutes == 1 ? "1 min" : $"{minutes} min";
+        return result;
     }
 
     private void RefreshCommands()

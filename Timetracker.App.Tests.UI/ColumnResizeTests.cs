@@ -11,6 +11,7 @@ using NUnit.Framework;
 using Timetracker.Models;
 using Timetracker.Plugins;
 using Timetracker.Services;
+using Timetracker.Tests.Unit;
 using Timetracker.ViewModels;
 using Timetracker.Views;
 
@@ -111,7 +112,7 @@ public sealed class ColumnResizeTests
                 Duration = "01:00:00", DurationSeconds = 3600,
             },
         ]);
-        var vm = new TrackerViewModel(repo, new FakeTimer());
+        var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         var services = new ServiceCollection();
         services.AddSingleton<ITrackerRepository>(repo);
         services.AddSingleton<IUiTimer, FakeTimer>();

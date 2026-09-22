@@ -179,7 +179,7 @@ public sealed class ViewRenderTests
     public void Week_view_renders_seven_day_columns_with_bookings()
     {
         var (repo, _) = RepositoryFake.Create();
-        using var tracker = new TrackerViewModel(repo, new FakeTimer());
+        using var tracker = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         tracker.Week.UpdateSessions([
             new TrackerEntry
             {
@@ -229,7 +229,7 @@ public sealed class ViewRenderTests
         params TrackerEntry[] entries)
     {
         var (repo, _) = RepositoryFake.Create(entries);
-        var viewModel = new TrackerViewModel(repo, new FakeTimer());
+        var viewModel = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         var services = BuildServices(repo);
         var view = new TrackerTabView(viewModel, services);
         return (view, viewModel);
