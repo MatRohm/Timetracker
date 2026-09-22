@@ -291,7 +291,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Starts tracking the given history row (double-click in the list). Fills the
+    /// Starts tracking the given history row (the row's play button). Fills the
     /// task field with its name, so the new session continues that task, and starts
     /// the timer. Does nothing while the timer is already running.
     /// </summary>

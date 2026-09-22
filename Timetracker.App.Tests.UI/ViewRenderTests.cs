@@ -38,23 +38,65 @@ public sealed class ViewRenderTests
         var grid = FindControl<DataGrid>(view);
         grid.Should().NotBeNull("the history grid is part of the tracker view");
         grid!.ItemsSource.Should().BeSameAs(viewModel.Entries);
-        // Edit-action column plus Task, Booking element, Started, Ended, Duration.
-        grid.Columns.Should().HaveCount(6);
+        // Two action columns (edit, play) plus Task, Booking element, Started,
+        // Ended and Duration.
+        grid.Columns.Should().HaveCount(7);
     }
 
     [AvaloniaTest]
-    public void Tracker_grid_offers_a_per_row_edit_action()
+    public void Tracker_grid_offers_per_row_edit_and_play_actions()
     {
         var (view, viewModel) = BuildTrackerView(Entry("Writing report", "Project X"));
 
         var grid = FindControl<DataGrid>(view);
         grid.Should().NotBeNull();
 
-        // The first column is the edit action; it carries no sort path.
-        var editColumn = grid!.Columns[0];
-        editColumn.Should().BeOfType<DataGridTemplateColumn>();
-        editColumn.SortMemberPath.Should().BeNullOrEmpty();
-        grid.Columns[1].SortMemberPath.Should().Be(nameof(EntryRow.Task));
+        // The two action columns carry no sort path; the task column follows them.
+        grid!.Columns[0].Should().BeOfType<DataGridTemplateColumn>();
+        grid.Columns[0].SortMemberPath.Should().BeNullOrEmpty();
+        grid.Columns[1].Should().BeOfType<DataGridTemplateColumn>();
+        grid.Columns[1].SortMemberPath.Should().BeNullOrEmpty();
+        grid.Columns[2].SortMemberPath.Should().Be(nameof(EntryRow.Task));
+    }
+
+    [AvaloniaTest]
+    public void Clicking_the_row_play_button_starts_timing_that_task()
+    {
+        var (view, viewModel) = BuildTrackerView(
+            Entry("Writing report", "Quarterly figures"),
+            Entry("Code review", "Project X"));
+
+        var window = RealizeWindow(view);
+        var playButton = FindAllControls<Button>(window)
+            .First(b => b.Content?.ToString() == "▶");
+
+        // A real pointer click on the play button (headless input).
+        var center = playButton.TranslatePoint(
+            new Avalonia.Point(playButton.Bounds.Width / 2, playButton.Bounds.Height / 2),
+            window)!.Value;
+        window.MouseDown(center, Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.None);
+        window.MouseUp(center, Avalonia.Input.MouseButton.Left, Avalonia.Input.RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+
+        viewModel.IsRunning.Should().BeTrue("the play button starts the timer");
+        viewModel.TaskName.Should().Be("Writing report", "it continues that row's task");
+    }
+
+    [AvaloniaTest]
+    public void Row_play_button_is_disabled_while_a_session_is_running()
+    {
+        var (view, viewModel) = BuildTrackerView(Entry("Writing report", "Project X"));
+
+        var window = RealizeWindow(view);
+        var playButton = FindAllControls<Button>(window)
+            .First(b => b.Content?.ToString() == "▶");
+        playButton.IsEnabled.Should().BeTrue("no session is running yet");
+
+        viewModel.TaskName = "Writing report";
+        viewModel.StartCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+
+        playButton.IsEnabled.Should().BeFalse("a running session must not be interrupted");
     }
 
     [AvaloniaTest]
