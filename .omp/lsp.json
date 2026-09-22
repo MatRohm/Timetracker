@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "omnisharp": {
+      "command": "/home/matthias/.local/share/omnisharp/OmniSharp",
+      "args": ["--languageserver"]
+    }
+  }
+}
