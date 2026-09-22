@@ -59,7 +59,7 @@ public sealed class SessionEditRow : ObservableObject
                 return;
             }
 
-            _startValid = TryParse(value, out var start);
+            _startValid = TryParse(value, _start.Offset, out var start);
             if (_startValid)
             {
                 // Update the value without rewriting the text the user is typing.
@@ -81,7 +81,7 @@ public sealed class SessionEditRow : ObservableObject
                 return;
             }
 
-            _endValid = TryParse(value, out var end);
+            _endValid = TryParse(value, _end.Offset, out var end);
             if (_endValid)
             {
                 _end = end;
@@ -147,8 +147,23 @@ public sealed class SessionEditRow : ObservableObject
     private static string Format(DateTimeOffset moment) =>
         moment.ToString(StampFormat, CultureInfo.InvariantCulture);
 
-    private static bool TryParse(string text, out DateTimeOffset moment) =>
-        DateTimeOffset.TryParseExact(
-            text.Trim(), StampFormat, CultureInfo.InvariantCulture,
-            DateTimeStyles.AssumeLocal, out moment);
+    /// <summary>
+    /// Parses typed wall-clock text ("yyyy-MM-dd HH:mm") in the session's own
+    /// <paramref name="offset"/>. Using the stored offset instead of the machine's
+    /// current local offset keeps an edit from shifting the recorded instant when
+    /// the app happens to run in another timezone.
+    /// </summary>
+    private static bool TryParse(string text, TimeSpan offset, out DateTimeOffset moment)
+    {
+        if (!DateTime.TryParseExact(
+                text.Trim(), StampFormat, CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out var wallClock))
+        {
+            moment = default;
+            return false;
+        }
+
+        moment = new DateTimeOffset(wallClock, offset);
+        return true;
+    }
 }
