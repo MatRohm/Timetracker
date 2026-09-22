@@ -13,7 +13,7 @@ public sealed class TrackerViewModelTests
     public void Start_with_task_name_starts_the_timer()
     {
         var (repo, _) = RepositoryFake.Create();
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
@@ -25,7 +25,7 @@ public sealed class TrackerViewModelTests
     public void Start_without_task_name_is_rejected_and_raises_invalid_task_name()
     {
         var (repo, _) = RepositoryFake.Create();
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         var invalidNameRaised = false;
         vm.InvalidTaskName += () => invalidNameRaised = true;
 
@@ -48,7 +48,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
 
@@ -62,7 +62,7 @@ public sealed class TrackerViewModelTests
     public void Stop_appends_a_session_and_resets_the_running_state()
     {
         var (repo, path) = RepositoryFake.Create();
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
 
@@ -88,7 +88,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
         vm.StartFromRow(vm.Entries.Single(r => r.Task == "Report"));
         Thread.Sleep(50);
@@ -119,7 +119,7 @@ public sealed class TrackerViewModelTests
                 Duration = "00:30:00",
                 DurationSeconds = 1800,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
         var row = vm.Entries.Single();
 
@@ -142,7 +142,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         var row = vm.Entries[0];
         row.BookingElement = "edited via grid"; // binding stages first, as in the real grid
         vm.UpdateEntryText(row, row.Task, row.BookingElement).Should().BeTrue();
@@ -166,7 +166,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         var row = vm.Entries[0];
 
         var result = vm.UpdateEntryText(row, "   ", row.BookingElement);
@@ -195,7 +195,7 @@ public sealed class TrackerViewModelTests
                 Duration = "00:30:00",
                 DurationSeconds = 1800,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
         vm.TaskName = "rep";
 
@@ -218,7 +218,7 @@ public sealed class TrackerViewModelTests
                 Duration = "00:30:00",
                 DurationSeconds = 1800,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         vm.TaskName = "mee";
 
         vm.AcceptSuggestion(vm.Suggestions.Single());
@@ -238,7 +238,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
         vm.ApplySort(nameof(EntryRow.BookingElement));
 
@@ -258,7 +258,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
         vm.ApplySort(nameof(EntryRow.Task));
         vm.SortAscending.Should().BeTrue();
@@ -280,7 +280,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
         vm.StartFromRow(vm.Entries[0]);
 
@@ -294,7 +294,7 @@ public sealed class TrackerViewModelTests
         var repo = A.Fake<ITrackerRepository>();
         A.CallTo(() => repo.FilePath).Returns(Path.Combine(Path.GetTempPath(), "does-not-matter.json"));
         A.CallTo(() => repo.Add(A<TrackerEntry>._)).Throws(new IOException("disk full"));
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         string? reported = null;
         vm.ErrorOccurred += m => reported = m;
         vm.TaskName = "Report";
@@ -311,7 +311,7 @@ public sealed class TrackerViewModelTests
     public void With_more_than_ten_tasks_the_grid_shows_the_first_page_only()
     {
         var repo = SeedTasks(25);
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
         vm.Entries.Should().HaveCount(10);
         vm.TotalPages.Should().Be(3);
@@ -323,7 +323,7 @@ public sealed class TrackerViewModelTests
     public void At_most_ten_tasks_need_no_paging()
     {
         var repo = SeedTasks(10);
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
         vm.Entries.Should().HaveCount(10);
         vm.TotalPages.Should().Be(1);
@@ -336,7 +336,7 @@ public sealed class TrackerViewModelTests
     public void Next_and_previous_page_commands_page_through_all_rows()
     {
         var repo = SeedTasks(25);
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
         vm.PreviousPageCommand.CanExecute(null).Should().BeFalse("page 1 is the first page");
         vm.NextPageCommand.Execute(null);
@@ -360,7 +360,7 @@ public sealed class TrackerViewModelTests
     public void Suggestions_come_from_all_tasks_not_only_the_current_page()
     {
         var repo = SeedTasks(25); // "Task 00" is the oldest row → page 3
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
         vm.TaskName = "task 0";
 
@@ -372,7 +372,7 @@ public sealed class TrackerViewModelTests
     public void Saving_a_new_session_reveals_the_task_row_even_on_another_page()
     {
         var repo = SeedTasks(25);
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         vm.NextPageCommand.Execute(null);
         vm.TaskName = "Brand new task";
 

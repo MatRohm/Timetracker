@@ -19,6 +19,9 @@ public static class HookRegistry
         // Framework services of the main app.
         services.AddSingleton<Services.ITrackerRepository, Services.JsonTrackerRepository>();
         services.AddSingleton<ViewModels.IUiTimer, Views.AvaloniaUiTimer>();
+        // Idle detection comes from the monitor project's platform-specific provider.
+        services.AddSingleton<ActivityMonitor.IIdleTimeProvider>(
+            _ => ActivityMonitor.IdleTimeProvider.CreateForCurrentPlatform());
         services.AddSingleton<ViewModels.TrackerViewModel>();
         services.AddSingleton<ViewModels.WeekViewModel>();
 

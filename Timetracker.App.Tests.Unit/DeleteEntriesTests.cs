@@ -14,7 +14,7 @@ public sealed class DeleteEntriesTests
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 9), Entry("Meeting", 11), Entry("Review", 13));
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         var row = vm.Entries.Single(r => r.Task == "Meeting");
 
         var deleted = vm.DeleteEntries([row], _ => true);
@@ -30,7 +30,7 @@ public sealed class DeleteEntriesTests
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 9), Entry("Report", 14), Entry("Meeting", 11));
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         var row = vm.Entries.Single(r => r.Task == "Report");
 
         vm.DeleteEntries([row], _ => true);
@@ -44,7 +44,7 @@ public sealed class DeleteEntriesTests
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 9), Entry("Meeting", 11), Entry("Review", 13));
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
         var rows = vm.Entries.Where(r => r.Task != "Meeting").ToList();
         var deleted = vm.DeleteEntries(rows, _ => true);
@@ -58,7 +58,7 @@ public sealed class DeleteEntriesTests
     public void Delete_does_nothing_when_the_user_declines()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9), Entry("Meeting", 11));
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         var row = vm.Entries.Single(r => r.Task == "Report");
 
         var declined = vm.DeleteEntries([row], _ => false);
@@ -73,7 +73,7 @@ public sealed class DeleteEntriesTests
     public void Delete_with_no_rows_is_a_noop()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9));
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
         vm.DeleteEntries([], _ => true).Should().BeFalse();
         vm.DeleteEntries(null!, _ => true).Should().BeFalse();
@@ -89,7 +89,7 @@ public sealed class DeleteEntriesTests
         A.CallTo(() => repo.FilePath).Returns("unused.json");
         A.CallTo(() => repo.GetAll()).Returns([Entry("Report", 9), Entry("Meeting", 11)]);
         A.CallTo(() => repo.Save(A<IReadOnlyList<TrackerEntry>>._)).Throws(new IOException("disk full"));
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         string? reported = null;
         vm.ErrorOccurred += m => reported = m;
         var row = vm.Entries.Single(r => r.Task == "Report");
@@ -115,7 +115,7 @@ public sealed class DeleteEntriesTests
               { "task": "Meeting", "bookingElement": "", "start": "2026-09-19T11:00:00+02:00", "end": "2026-09-19T11:30:00+02:00", "duration": "00:30:00", "durationSeconds": 1800 }
             ]
             """);
-        using var vm = new TrackerViewModel(new JsonTrackerRepository(path), new FakeTimer());
+        using var vm = new TrackerViewModel(new JsonTrackerRepository(path), new FakeTimer(), new FakeIdleTimeProvider());
         var row = vm.Entries.Single(r => r.Task == "Report");
 
         vm.DeleteEntries([row], _ => true);

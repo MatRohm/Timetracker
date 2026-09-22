@@ -17,7 +17,7 @@ public sealed class EditEntriesIntegrationTests
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 18, 9, 30), Entry("Meeting", 18, 11, 60));
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         var item = vm.Entries.Single(r => r.Task == "Report");
 
         var editor = new EditEntriesViewModel(item);
@@ -39,7 +39,7 @@ public sealed class EditEntriesIntegrationTests
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 18, 9, 30), Entry("Meeting", 18, 11, 60));
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         var item = vm.Entries.Single(r => r.Task == "Report");
         var editor = new EditEntriesViewModel(item);
         editor.Sessions.Single().SetEnd(editor.Sessions.Single().End.AddMinutes(15));
@@ -55,7 +55,7 @@ public sealed class EditEntriesIntegrationTests
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 18, 9, 30), Entry("Meeting", 18, 11, 60));
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         var item = vm.Entries.Single(r => r.Task == "Report");
         var editor = new EditEntriesViewModel(item);
 
@@ -71,7 +71,7 @@ public sealed class EditEntriesIntegrationTests
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 18, 9, 30), Entry("Report", 18, 14, 60));
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         var item = vm.Entries.Single(r => r.Task == "Report");
         item.Sessions.Should().HaveCount(2);
         var editor = new EditEntriesViewModel(item);
@@ -100,7 +100,7 @@ public sealed class EditEntriesIntegrationTests
             DurationSeconds = 1800,
         };
         var (repo, _) = RepositoryFake.Create(entry);
-        using var vm = new TrackerViewModel(repo, new FakeTimer());
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         var item = vm.Entries.Single();
         var editor = new EditEntriesViewModel(item);
         var row = editor.Sessions.Single();

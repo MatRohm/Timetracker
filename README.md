@@ -26,6 +26,18 @@ Save/update failures are logged as well.
 If you close the app while the timer is running, that entry is saved automatically.
 Pressing **Enter** in the text field starts the timer; while running, **Enter** stops it.
 
+### Idle auto-stop
+
+If there is no keyboard or mouse input for **30 minutes**, a running timer stops
+by itself. The entry ends at the moment of the last input, so the idle stretch is
+not billed to the task, and the status line reports what happened
+(e.g. `⏸ Stopped after 30 min idle – saved 00:15:00`). Starting again afterwards
+works normally.
+
+Idle detection is platform-specific: Windows uses the Win32 last-input timestamp;
+Linux uses the X11 `XScreenSaver` extension. Where neither is available the app
+never auto-stops, but keeps tracking as before.
+
 Inline edits of **Task** apply to every session of that task, which also merges
 (or splits) its group in the list.
 
