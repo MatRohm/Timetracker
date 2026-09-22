@@ -101,6 +101,31 @@ public sealed class EditEntriesViewModelTests
     }
 
     [Test]
+    public void Editing_keeps_the_sessions_stored_offset_instead_of_the_machine_timezone()
+    {
+        // The session was recorded at +10:00; editing must not reinterpret the typed
+        // wall clock in whatever offset the machine running the tests happens to have.
+        var offset = TimeSpan.FromHours(10);
+        var session = new TrackerEntry
+        {
+            Task = "Report",
+            Start = new DateTimeOffset(2026, 9, 18, 9, 0, 0, offset),
+            End = new DateTimeOffset(2026, 9, 18, 9, 30, 0, offset),
+            Duration = "00:30:00",
+            DurationSeconds = 1800,
+        };
+        var editor = new EditEntriesViewModel(Item("Report", session));
+        var row = editor.Sessions.Single();
+
+        row.StartText = "2026-09-18 08:15";
+
+        row.Start.Offset.Should().Be(offset);
+        row.Start.Hour.Should().Be(8);
+        row.Start.Minute.Should().Be(15);
+        row.StartText.Should().Be("2026-09-18 08:15");
+    }
+
+    [Test]
     public void Saving_applies_the_edited_times_to_the_underlying_session()
     {
         var session = Session("Report", day: 18, hour: 9, minutes: 30);
