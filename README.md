@@ -84,9 +84,9 @@ selected cell, type, and press **Enter** to commit (Esc cancels). Changes are
 persisted to the JSON file immediately; an empty task name is rejected, the
 booking element is optional. Started/Ended/Duration stay read-only.
 
-**Double-click a row to start tracking that task immediately**: the timer starts
-with the row's task name (a running session is never interrupted; editing stays
-on F2).
+**Use the play button on a row to start tracking that task immediately**: the
+timer starts with the row's task name (a running session is never interrupted; the
+button is disabled while one runs). Editing stays on F2.
 
 **Press Del to delete the selected entries**: a confirmation dialog shows what
 will be removed (task names / session counts). Deletion removes all sessions of

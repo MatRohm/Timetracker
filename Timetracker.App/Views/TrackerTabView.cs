@@ -204,7 +204,6 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         });
 
         _grid.Sorting += OnGridSorting;
-        _grid.DoubleTapped += OnGridCellDoubleClick;
         _grid.KeyDown += OnGridKeyDown;
         _grid.CellEditEnded += OnGridCellEditEnded;
 
@@ -236,13 +235,20 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         _grid.HorizontalAlignment = HorizontalAlignment.Stretch;
         _grid.VerticalAlignment = VerticalAlignment.Stretch;
 
-        // Row action: opens the per-item editor for that task's sessions.
+        // Row actions: start timing this task, and open the per-item editor.
         _grid.Columns.Add(new DataGridTemplateColumn
         {
             Header = "",
             Width = new DataGridLength(44),
             CellTemplate = new FuncDataTemplate<EntryRow>(
                 (row, _) => BuildEditButton(row), true),
+        });
+        _grid.Columns.Add(new DataGridTemplateColumn
+        {
+            Header = "",
+            Width = new DataGridLength(44),
+            CellTemplate = new FuncDataTemplate<EntryRow>(
+                (row, _) => BuildPlayButton(row), true),
         });
 
         _grid.Columns.Add(new DataGridTextColumn
@@ -312,6 +318,36 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         {
             button.Click += (_, _) => OpenEditor(row);
         }
+        return button;
+    }
+
+    /// <summary>
+    /// Grid row action: a play button that starts timing the row's task. It follows
+    /// the edit button's style and is disabled while a session is already running.
+    /// </summary>
+    private Control BuildPlayButton(EntryRow? row)
+    {
+        var button = new Button
+        {
+            Content = "▶",
+            FontSize = 14,
+            Padding = new Thickness(4, 0),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        ToolTip.SetTip(button, "Start timing this task");
+
+        if (row is not null)
+        {
+            button.Click += (_, _) => _vm.StartFromRow(row);
+        }
+
+        // A running session is never interrupted, so the action is unavailable then.
+        button.Bind(Button.IsEnabledProperty, new Binding
+        {
+            Source = _vm,
+            Path = "!" + nameof(TrackerViewModel.IsRunning),
+        });
         return button;
     }
 
@@ -426,18 +462,9 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         _vm.ApplySort(path);
     }
 
-    /// <summary>Double-clicking a row starts the timer for that task.</summary>
-    private void OnGridCellDoubleClick(object? sender, TappedEventArgs e)
-    {
-        if (_grid.SelectedItem is EntryRow row)
-        {
-            _vm.StartFromRow(row);
-        }
-    }
-
     private async void OnGridKeyDown(object? sender, KeyEventArgs e)
     {
-        // Edit mode now lives on F2 only (double-click starts the timer instead).
+        // Edit mode now lives on F2 only; starting a task uses the play button.
         if (e.Key == Key.F2)
         {
             _grid.BeginEdit();
