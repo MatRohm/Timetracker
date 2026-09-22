@@ -228,6 +228,8 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         // sync); the header click must still be allowed to raise Sorting.
         _grid.CanUserSortColumns = true;
         _grid.CanUserReorderColumns = false;
+        // Columns can be resized by dragging the separator between headers.
+        _grid.CanUserResizeColumns = true;
         _grid.HeadersVisibility = DataGridHeadersVisibility.Column;
         _grid.SelectionMode = DataGridSelectionMode.Extended;
         _grid.GridLinesVisibility = DataGridGridLinesVisibility.None;
@@ -236,10 +238,12 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         _grid.VerticalAlignment = VerticalAlignment.Stretch;
 
         // Row actions: start timing this task, and open the per-item editor.
+        // These stay at a fixed width, so resizing is disabled for them.
         _grid.Columns.Add(new DataGridTemplateColumn
         {
             Header = "",
             Width = new DataGridLength(44),
+            CanUserResize = false,
             CellTemplate = new FuncDataTemplate<EntryRow>(
                 (row, _) => BuildEditButton(row), true),
         });
@@ -247,6 +251,7 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         {
             Header = "",
             Width = new DataGridLength(44),
+            CanUserResize = false,
             CellTemplate = new FuncDataTemplate<EntryRow>(
                 (row, _) => BuildPlayButton(row), true),
         });

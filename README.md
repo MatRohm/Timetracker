@@ -73,6 +73,8 @@ Click a column header to sort by it; clicking the same header again toggles the
 direction. Sortable columns: **Task** (A–Z), **Started**, **Ended** (newest first
 on first click) and **Duration** (sorted numerically). Sorting state lives in the
 view model (`SortColumn` / `SortAscending`); the grid only shows sort glyphs.
+Drag the separator between two headers to resize the columns; the two row-action
+columns keep their fixed width.
 
 **Pagination**: the grid shows ten tasks per page. When the history spans more
 than one page, **◀ Previous / Next ▶** controls with a page indicator appear
