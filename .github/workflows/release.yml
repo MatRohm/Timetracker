@@ -62,11 +62,16 @@ jobs:
           VERSION="$RELEASE_VERSION"
           LINUX_DIR="Timetracker.App/bin/Release/net10.0/linux-x64/publish"
           WIN_DIR="Timetracker.App/bin/Release/net10.0/win-x64/publish"
+          LINUX_ARCHIVE="Timetracker-$VERSION-linux-x64.tar.gz"
+          WIN_ARCHIVE="Timetracker-$VERSION-win-x64.zip"
 
-          tar -czf "Timetracker-$VERSION-linux-x64.tar.gz" \
+          # Both archives are written to the workspace root, where the release step
+          # below (and gh) expects to find them. Running zip from $WIN_DIR would
+          # otherwise drop the zip next to the publish folder and break the release.
+          tar -czf "$LINUX_ARCHIVE" \
             -C "$LINUX_DIR" Timetracker Timetracker.ActivityMonitor
-          (cd "$WIN_DIR" && zip -q "../Timetracker-$VERSION-win-x64.zip" Timetracker.exe Timetracker.ActivityMonitor.exe) || \
-            (cd "$WIN_DIR" && tar -acf "$OLDPWD/Timetracker-$VERSION-win-x64.zip" Timetracker.exe Timetracker.ActivityMonitor.exe)
+          (cd "$WIN_DIR" && zip -q "$OLDPWD/$WIN_ARCHIVE" Timetracker.exe Timetracker.ActivityMonitor.exe) || \
+            (cd "$WIN_DIR" && tar -acf "$OLDPWD/$WIN_ARCHIVE" Timetracker.exe Timetracker.ActivityMonitor.exe)
 
       - name: Create GitHub Release
         shell: bash
