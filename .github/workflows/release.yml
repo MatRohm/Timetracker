@@ -16,6 +16,10 @@ jobs:
     name: Release ${{ github.event.inputs.version }}
     runs-on: ubuntu-latest
 
+    env:
+      # Tag as entered (e.g. v1.0.0), used for the release and the archives.
+      RELEASE_VERSION: ${{ github.event.inputs.version }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,11 +27,19 @@ jobs:
       - name: Validate version input
         shell: bash
         run: |
-          VERSION="${{ github.event.inputs.version }}"
+          VERSION="$RELEASE_VERSION"
           if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
             echo "::error::Version must look like v1.0.0 (optionally with suffix like -beta.1), got: '$VERSION'"
             exit 1
           fi
+
+      - name: Derive build version
+        shell: bash
+        run: |
+          # MSBuild's Version property rejects the tag's leading "v"; the SDK then
+          # derives AssemblyVersion, FileVersion and InformationalVersion from it
+          # (also stripping a prerelease suffix where required).
+          echo "BUILD_VERSION=${RELEASE_VERSION#v}" >> "$GITHUB_ENV"
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -37,17 +49,17 @@ jobs:
       - name: Publish linux-x64
         run: >
           dotnet publish Timetracker.App/Timetracker.App.csproj -c Release -r linux-x64 --self-contained true
-          -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
+          -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:Version=$BUILD_VERSION
 
       - name: Publish win-x64
         run: >
           dotnet publish Timetracker.App/Timetracker.App.csproj -c Release -r win-x64 --self-contained true
-          -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
+          -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:Version=$BUILD_VERSION
 
       - name: Package (tar.gz / zip)
         shell: bash
         run: |
-          VERSION="${{ github.event.inputs.version }}"
+          VERSION="$RELEASE_VERSION"
           LINUX_DIR="Timetracker.App/bin/Release/net10.0/linux-x64/publish"
           WIN_DIR="Timetracker.App/bin/Release/net10.0/win-x64/publish"
 
@@ -61,7 +73,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          VERSION="${{ github.event.inputs.version }}"
+          VERSION="$RELEASE_VERSION"
           gh release create "$VERSION" \
             --title "Timetracker $VERSION" \
             --notes "Timetracker $VERSION - portable cross-platform executables.
@@ -78,6 +90,6 @@ jobs:
       - name: Summary
         shell: bash
         run: |
-          echo "### Release ${{ github.event.inputs.version }} created" >> $GITHUB_STEP_SUMMARY
+          echo "### Release $RELEASE_VERSION created" >> $GITHUB_STEP_SUMMARY
           echo "- linux-x64 archive: attached" >> $GITHUB_STEP_SUMMARY
           echo "- win-x64 zip: attached" >> $GITHUB_STEP_SUMMARY
