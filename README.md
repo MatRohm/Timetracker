@@ -276,6 +276,14 @@ dotnet build
 dotnet test
 ```
 
+### Build process cleanup
+
+`Directory.Build.rsp` sets `/nodeReuse:false` for all command-line builds. MSBuild
+otherwise leaves its worker processes running for 15 minutes; repeated builds stack
+them up until the machine runs out of memory (no swap on the current dev box, so it
+freezes outright). The file is read automatically by `dotnet build`, `test`,
+`format` and `publish` — pass `-noAutoResponse` to bypass it for one command.
+
 ### Git hooks
 
 Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)

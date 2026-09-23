@@ -1,0 +1,13 @@
+# MSBuild response file. MSBuild reads it automatically for `dotnet` command-line
+# builds in this repository (`build`, `test`, `format`, `publish`); Visual Studio
+# ignores it, which is fine because the IDE manages its own build processes.
+#
+# /nodeReuse:false makes MSBuild's worker processes exit when a command finishes
+# instead of lingering for 15 minutes to speed up the next build. Without it each
+# run leaves ~9 idle workers (up to ~200 MB each) that stack up across repeated
+# builds until the machine is out of memory. This box has no swap, so that ends in
+# a hard freeze rather than just slowness. Keeping the workers around saves a few
+# seconds per build, which is not worth the risk for a repository this size.
+#
+# To bypass this file for a single command, pass -noAutoResponse (-noautorsp).
+/nodeReuse:false
