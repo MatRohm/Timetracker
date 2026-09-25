@@ -41,9 +41,6 @@ public sealed class SessionEditRow : ObservableObject
     /// <summary>Task name, shown for context (not editable here).</summary>
     public string Task => _entry.Task;
 
-    /// <summary>Booking element, shown for context (not editable here).</summary>
-    public string BookingElement => _entry.BookingElement;
-
     public DateTimeOffset Start => _start;
 
     public DateTimeOffset End => _end;
