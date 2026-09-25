@@ -2,3 +2,7 @@ bin/
 obj/
 *.user
 .vs/
+
+# Beads workspace operation gate lock lives beside .beads/ (repo root), so it is
+# not covered by .beads/.gitignore. It is runtime-only and must not be committed.
+.beads.gate.lock
