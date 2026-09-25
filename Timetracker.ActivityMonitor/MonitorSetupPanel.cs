@@ -1,7 +1,8 @@
+using Timetracker.ActivityMonitor.Interfaces;
+using Timetracker.Plugins.Interfaces;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Threading;
-using Timetracker.Plugins;
 
 namespace Timetracker.ActivityMonitor;
 

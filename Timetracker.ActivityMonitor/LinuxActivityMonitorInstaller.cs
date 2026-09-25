@@ -1,3 +1,5 @@
+using Timetracker.ActivityMonitor.Interfaces;
+
 namespace Timetracker.ActivityMonitor;
 
 /// <summary>

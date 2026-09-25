@@ -1,4 +1,4 @@
-using Timetracker.Plugins;
+using Timetracker.Plugins.Interfaces;
 
 namespace Timetracker.ActivityMonitor;
 

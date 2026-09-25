@@ -1,4 +1,4 @@
-namespace Timetracker.ActivityMonitor;
+namespace Timetracker.ActivityMonitor.Interfaces;
 
 /// <summary>
 /// Abstraction over the activity monitor's autostart installation per operating
@@ -18,14 +18,4 @@ public interface IActivityMonitorInstaller
 
     /// <summary>Removes the autostart entry. Returns false when it failed.</summary>
     bool Uninstall();
-}
-
-/// <summary>Selects the autostart installer for the current operating system.</summary>
-public static class ActivityMonitorInstallerFactory
-{
-    /// <summary>The installer matching the current platform.</summary>
-    public static IActivityMonitorInstaller CreateForCurrentPlatform() =>
-        OperatingSystem.IsWindows()
-            ? new WindowsActivityMonitorInstaller()
-            : new LinuxActivityMonitorInstaller();
 }

@@ -1,5 +1,6 @@
+using Timetracker.ActivityMonitor.Interfaces;
+using Timetracker.Plugins.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
-using Timetracker.Plugins;
 
 namespace Timetracker.ActivityMonitor;
 

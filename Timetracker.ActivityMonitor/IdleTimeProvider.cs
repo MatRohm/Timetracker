@@ -1,13 +1,7 @@
 using System.Runtime.InteropServices;
+using Timetracker.ActivityMonitor.Interfaces;
 
 namespace Timetracker.ActivityMonitor;
-
-/// <summary>Supplies the time since the last user input (keyboard/mouse).</summary>
-public interface IIdleTimeProvider
-{
-    /// <summary>Time since the last user input; <see cref="TimeSpan.Zero"/> when unknown.</summary>
-    TimeSpan CurrentIdleTime { get; }
-}
 
 /// <summary>Selects the idle-time implementation for the current operating system.</summary>
 public static class IdleTimeProvider

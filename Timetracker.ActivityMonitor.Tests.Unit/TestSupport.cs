@@ -1,3 +1,5 @@
+using Timetracker.ActivityMonitor.Interfaces;
+using Timetracker.Plugins.Interfaces;
 using Timetracker.Plugins;
 
 namespace Timetracker.ActivityMonitor.Tests.Unit;

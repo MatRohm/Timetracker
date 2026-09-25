@@ -1,6 +1,6 @@
 using Avalonia.Controls;
 
-namespace Timetracker.Plugins;
+namespace Timetracker.Plugins.Interfaces;
 
 /// <summary>
 /// A UI piece an add-in contributes to one of the application tabs. The shell

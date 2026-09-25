@@ -1,4 +1,4 @@
-namespace Timetracker.Plugins;
+namespace Timetracker.Plugins.Interfaces;
 
 /// <summary>
 /// Surface an add-in needs from the tracker tab: fill the inputs and show
@@ -17,14 +17,6 @@ public interface ITrackerUiHost
     void ShowStatus(string message, TrackerStatusKind kind);
 }
 
-/// <summary>Severity of a status message shown by the host UI.</summary>
-public enum TrackerStatusKind
-{
-    Info,
-    Success,
-    Error,
-}
-
 /// <summary>
 /// Surface an add-in needs from the week view: show one-line results in its
 /// shared status line. Implemented by the main app's week view.
@@ -33,12 +25,4 @@ public interface IWeekStatusHost
 {
     /// <summary>Shows a one-line status message; kind selects the color.</summary>
     void ShowStatus(string message, WeekStatusKind kind);
-}
-
-/// <summary>Severity of a status message shown by the week view's status line.</summary>
-public enum WeekStatusKind
-{
-    Info,
-    Success,
-    Error,
 }

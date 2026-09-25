@@ -1,5 +1,5 @@
+using Timetracker.Interfaces;
 using Avalonia.Threading;
-using Timetracker.ViewModels;
 
 namespace Timetracker.Views;
 

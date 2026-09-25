@@ -1,3 +1,4 @@
+using Timetracker.Plugins.Interfaces;
 using AwesomeAssertions;
 using Avalonia.Headless.NUnit;
 using NUnit.Framework;
