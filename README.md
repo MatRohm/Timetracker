@@ -240,8 +240,11 @@ Timetracker/
 │   ├── Models/
 │   │   └── TrackerEntry.cs          # One finished time entry
 │   ├── Services/
-│   │   ├── JsonTrackerRepository.cs # Versioned JSON persistence, v1→v2 migration (atomic writes)
-│   │   ├── TrackerFileFormat.cs     # Maps sessions to/from the one-record-per-task file shape
+│   │   ├── JsonTrackerRepository.cs # Versioned JSON persistence (atomic writes)
+│   │   ├── TrackerFileFormat.cs     # Maps sessions to/from the one-record-per-task shape
+│   │   ├── TrackerFileMigrator.cs   # Chains file upgrades, one step per version
+│   │   ├── TrackerFileMigrations.cs # The v1→v2 step (from/to version constants)
+│   │   ├── VersionOneFileFormat.cs  # Reads the old unversioned session array
 │   │   └── ErrorLog.cs              # Timestamped error log next to the executable
 │   ├── ViewModels/
 │   │   ├── TrackerViewModel.cs      # All logic: start/stop, timer, state, sorting

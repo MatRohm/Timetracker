@@ -6,20 +6,22 @@ using Timetracker.Services;
 namespace Timetracker.Tests.Unit;
 
 /// <summary>
-/// The composition root must expose the repository and its file migration as one
-/// shared instance: startup migrates the file the same object later reads.
+/// The composition root must register the migration step and its runner against the
+/// repository's file, with the runner able to reach every step.
 /// </summary>
 public sealed class HookRegistryTests
 {
     [Test]
-    public void Repository_and_migration_resolve_to_the_same_instance()
+    public void The_migrator_runner_and_steps_are_registered()
     {
         var services = Timetracker.HookRegistry.BuildServiceProvider();
 
         var repository = services.GetRequiredService<ITrackerRepository>();
-        var migration = services.GetRequiredService<ITrackerFileMigration>();
+        var runner = services.GetRequiredService<ITrackerFileMigrationRunner>();
+        var steps = services.GetServices<ITrackerFileMigration>();
 
-        migration.Should().BeSameAs(repository,
-            "one repository instance owns the file for both reading and migrating");
+        repository.Should().BeOfType<JsonTrackerRepository>();
+        runner.Should().BeOfType<TrackerFileMigrator>();
+        steps.Should().ContainSingle().Which.Should().BeOfType<VersionOneToTwoMigration>();
     }
 }

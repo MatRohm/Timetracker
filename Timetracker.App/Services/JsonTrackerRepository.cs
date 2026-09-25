@@ -1,4 +1,3 @@
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using Timetracker.Models;
 
@@ -19,33 +18,15 @@ public interface ITrackerRepository
     void Save(IReadOnlyList<TrackerEntry> entries);
 }
 
-/// <summary>Upgrades an older tracker file to the current format in place.</summary>
-public interface ITrackerFileMigration
-{
-    /// <summary>
-    /// Rewrites the file as version 2 when it still uses the unversioned format.
-    /// Returns true when the file was migrated. Safe to call when no file exists.
-    /// </summary>
-    bool MigrateIfNeeded();
-}
-
 /// <summary>
 /// JSON persistence for the time entries. The file carries a version marker
 /// (<c>version: 2</c>) and stores one record per task with an array of the times
 /// worked on it (see <see cref="TrackerFileFormat"/>). Files without a marker are
-/// the version-1 flat array; they are read transparently and upgraded to version 2
-/// either by <see cref="MigrateIfNeeded"/> at startup or by the next save.
+/// the version-1 flat array; they are read transparently here and upgraded to the
+/// current version by <see cref="TrackerFileMigrator"/> at startup.
 /// </summary>
-public sealed class JsonTrackerRepository : ITrackerRepository, ITrackerFileMigration
+public sealed class JsonTrackerRepository : ITrackerRepository
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        PropertyNameCaseInsensitive = true,
-        WriteIndented = true,
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    };
-
     private readonly string _jsonPath;
 
     private bool _fileWasCorrupt;
@@ -60,12 +41,6 @@ public sealed class JsonTrackerRepository : ITrackerRepository, ITrackerFileMigr
 
     public string FilePath => _jsonPath;
 
-    /// <summary>
-    /// Copy of the file as it was before the version-1 to version-2 migration, kept
-    /// next to the original so a migration can always be undone by hand.
-    /// </summary>
-    public string MigrationBackupPath => _jsonPath + ".v1-backup";
-
     public IReadOnlyList<TrackerEntry> GetAll() => LoadEntries();
 
     public void Add(TrackerEntry entry)
@@ -77,40 +52,10 @@ public sealed class JsonTrackerRepository : ITrackerRepository, ITrackerFileMigr
 
     public void Save(IReadOnlyList<TrackerEntry> entries) => WriteAll([.. entries]);
 
-    public bool MigrateIfNeeded()
-    {
-        if (!File.Exists(_jsonPath))
-        {
-            return false;
-        }
-
-        try
-        {
-            var text = File.ReadAllText(_jsonPath);
-            if (string.IsNullOrWhiteSpace(text) || IsCurrentFormat(text))
-            {
-                return false;
-            }
-
-            // The file uses the unversioned (version 1) format. Keep a copy first,
-            // so the migration can be undone if anything turns out wrong, then
-            // rewrite it as version 2.
-            File.Copy(_jsonPath, MigrationBackupPath, overwrite: true);
-            WriteAll(ReadEntries(text).ToList());
-            return true;
-        }
-        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
-        {
-            // A broken file must never stop startup; the normal load path reports
-            // it and the next successful save keeps a backup.
-            return false;
-        }
-    }
-
     private void WriteAll(List<TrackerEntry> entries)
     {
         var document = TrackerFileFormat.ToDocument(entries);
-        var json = JsonSerializer.Serialize(document, JsonOptions);
+        var json = JsonSerializer.Serialize(document, TrackerFileFormat.JsonOptions);
         WriteText(json);
     }
 
@@ -167,29 +112,23 @@ public sealed class JsonTrackerRepository : ITrackerRepository, ITrackerFileMigr
     }
 
     /// <summary>
-    /// Reads either format: a version-2 object, or the unversioned version-1 array
-    /// (whose per-session entries may still use the legacy "description" name).
+    /// Reads either format: the current version-2 object, or the unversioned
+    /// version-1 array, which is grouped into the current shape on the fly.
     /// </summary>
     private static IReadOnlyList<TrackerEntry> ReadEntries(string text)
     {
         using var json = JsonDocument.Parse(text);
         return json.RootElement.ValueKind switch
         {
-            JsonValueKind.Array => ReadVersionOne(json),
-            JsonValueKind.Object => ReadVersionTwo(text),
-            _ => throw new JsonException("The tracker file is neither a version 1 array nor a version 2 object."),
+            JsonValueKind.Array => VersionOneFileFormat.Read(json.RootElement),
+            JsonValueKind.Object => ReadCurrent(text),
+            _ => throw new JsonException("The tracker file is neither an array nor an object."),
         };
     }
 
-    private static List<TrackerEntry> ReadVersionOne(JsonDocument json)
+    private static List<TrackerEntry> ReadCurrent(string text)
     {
-        var entries = json.RootElement.Deserialize<List<LegacyEntryDto>>(JsonOptions) ?? [];
-        return [.. entries.Select(ToEntry)];
-    }
-
-    private static List<TrackerEntry> ReadVersionTwo(string text)
-    {
-        var document = JsonSerializer.Deserialize<TrackerDocument>(text, JsonOptions)
+        var document = JsonSerializer.Deserialize<TrackerDocument>(text, TrackerFileFormat.JsonOptions)
             ?? throw new JsonException("The tracker file is empty.");
         if (document.Version != TrackerDocument.CurrentVersion)
         {
@@ -197,38 +136,5 @@ public sealed class JsonTrackerRepository : ITrackerRepository, ITrackerFileMigr
                 $"Unsupported tracker file version {document.Version}; expected {TrackerDocument.CurrentVersion}.");
         }
         return TrackerFileFormat.ToEntries(document);
-    }
-
-    private static bool IsCurrentFormat(string text)
-    {
-        using var json = JsonDocument.Parse(text);
-        return json.RootElement.ValueKind == JsonValueKind.Object;
-    }
-
-    /// <summary>
-    /// Maps a version-1 session. Older files stored the booking element under the
-    /// JSON name "description"; that value is mapped to bookingElement so existing
-    /// data survives the rename.
-    /// </summary>
-    private static TrackerEntry ToEntry(LegacyEntryDto dto) => new()
-    {
-        Task = dto.Task,
-        BookingElement = dto.BookingElement.Length > 0 ? dto.BookingElement : dto.Description,
-        Start = dto.Start,
-        End = dto.End,
-        Duration = dto.Duration,
-        DurationSeconds = dto.DurationSeconds,
-    };
-
-    /// <summary>Load shape of a version-1 entry, tolerating both JSON field names.</summary>
-    private sealed class LegacyEntryDto
-    {
-        public string Task { get; set; } = "";
-        public string Description { get; set; } = "";
-        public string BookingElement { get; set; } = "";
-        public DateTimeOffset Start { get; set; }
-        public DateTimeOffset End { get; set; }
-        public string Duration { get; set; } = "";
-        public double DurationSeconds { get; set; }
     }
 }

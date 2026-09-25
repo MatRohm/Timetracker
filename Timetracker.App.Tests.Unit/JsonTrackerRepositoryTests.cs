@@ -181,8 +181,9 @@ public sealed class JsonTrackerRepositoryTests
             ]
             """);
         var repo = new JsonTrackerRepository(path);
+        var migrator = MigratorFor(path);
 
-        var migrated = repo.MigrateIfNeeded();
+        var migrated = migrator.MigrateIfNeeded();
 
         migrated.Should().BeTrue();
         var text = File.ReadAllText(path);
@@ -209,12 +210,12 @@ public sealed class JsonTrackerRepositoryTests
             ]
             """;
         WriteVersionOne(path, original);
-        var repo = new JsonTrackerRepository(path);
+        var migrator = MigratorFor(path);
 
-        repo.MigrateIfNeeded();
+        migrator.MigrateIfNeeded();
 
-        File.Exists(repo.MigrationBackupPath).Should().BeTrue("the original is kept");
-        File.ReadAllText(repo.MigrationBackupPath).Should().Be(original,
+        File.Exists(BackupPath(path)).Should().BeTrue("the original is kept");
+        File.ReadAllText(BackupPath(path)).Should().Be(original,
             "the backup is the untouched version-1 file");
         File.ReadAllText(path).Should().Contain("\"version\": 2");
     }
@@ -225,10 +226,11 @@ public sealed class JsonTrackerRepositoryTests
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
         repo.Add(NewEntry("Report"));
+        var migrator = MigratorFor(path);
 
-        repo.MigrateIfNeeded();
+        migrator.MigrateIfNeeded();
 
-        File.Exists(repo.MigrationBackupPath).Should().BeFalse("no migration happened");
+        File.Exists(BackupPath(path)).Should().BeFalse("no migration happened");
     }
 
     [Test]
@@ -238,8 +240,9 @@ public sealed class JsonTrackerRepositoryTests
         var repo = new JsonTrackerRepository(path);
         repo.Add(NewEntry("Report"));
         var before = File.ReadAllText(path);
+        var migrator = MigratorFor(path);
 
-        var migrated = repo.MigrateIfNeeded();
+        var migrated = migrator.MigrateIfNeeded();
 
         migrated.Should().BeFalse("the file is already version 2");
         File.ReadAllText(path).Should().Be(before);
@@ -248,9 +251,11 @@ public sealed class JsonTrackerRepositoryTests
     [Test]
     public void MigrateIfNeeded_does_nothing_when_there_is_no_file()
     {
-        var repo = new JsonTrackerRepository(TempPath());
+        var path = TempPath();
+        var migrator = MigratorFor(path);
 
-        repo.MigrateIfNeeded().Should().BeFalse();
+        migrator.MigrateIfNeeded().Should().BeFalse();
+        File.Exists(BackupPath(path)).Should().BeFalse();
     }
 
     [Test]
@@ -258,12 +263,26 @@ public sealed class JsonTrackerRepositoryTests
     {
         var path = TempPath();
         WriteVersionOne(path, "{ not valid json");
-        var repo = new JsonTrackerRepository(path);
+        var migrator = MigratorFor(path);
 
-        var migrated = repo.MigrateIfNeeded();
+        var migrated = migrator.MigrateIfNeeded();
 
         migrated.Should().BeFalse("a broken file is left for the normal load path");
         File.ReadAllText(path).Should().Be("{ not valid json");
+    }
+
+    [Test]
+    public void MigrateIfNeeded_reports_a_broken_file_through_the_log()
+    {
+        var path = TempPath();
+        WriteVersionOne(path, "{ not valid json");
+        string? loggedContext = null;
+        var migrator = new TrackerFileMigrator(
+            path, [new VersionOneToTwoMigration(path)], (context, _) => loggedContext = context);
+
+        migrator.MigrateIfNeeded();
+
+        loggedContext.Should().Be("TrackerFileMigration");
     }
 
     [Test]
@@ -302,6 +321,14 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     private static void WriteVersionOne(string path, string json) => File.WriteAllText(path, json);
+
+    /// <summary>A migrator with the production migration set (v1 → current).</summary>
+    private static TrackerFileMigrator MigratorFor(string path) =>
+        new(path, [new VersionOneToTwoMigration(path)]);
+
+    /// <summary>Where the production migration keeps the pre-migration copy.</summary>
+    private static string BackupPath(string path) =>
+        new VersionOneToTwoMigration(path).BackupPath;
 
     private static string TempPath()
     {
