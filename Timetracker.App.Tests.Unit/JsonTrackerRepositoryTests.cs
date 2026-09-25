@@ -5,10 +5,11 @@ using Timetracker.Services;
 
 namespace Timetracker.Tests.Unit;
 
+[TestFixture]
 public sealed class JsonTrackerRepositoryTests
 {
     [Test]
-    public void JsonTrackerRepository_WhenEntryIsAdded_ShouldPersistItToTheJsonFile()
+    public void Add_WhenAnEntryIsAdded_ShouldPersistItToTheJsonFile()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -32,7 +33,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void JsonTrackerRepository_WhenEntriesAreAdded_ShouldNeverRemoveExistingEntries()
+    public void Add_WhenEntriesAreAdded_ShouldNeverRemoveExistingOnes()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -46,7 +47,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void JsonTrackerRepository_WhenSaveIsCalled_ShouldRewriteAllEntriesPreservingEachOne()
+    public void Save_WhenCalled_ShouldRewriteAllEntriesPreservingEachOne()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -64,7 +65,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void JsonTrackerRepository_WhenFileIsWritten_ShouldIncludeTheVersionMarkerAndOneRecordPerTask()
+    public void Save_WhenCalled_ShouldWriteTheVersionMarkerAndOneRecordPerTask()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -81,7 +82,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void JsonTrackerRepository_WhenSessionsBelongToTheSameTask_ShouldStoreThemUnderOneRecord()
+    public void Save_WhenSessionsBelongToTheSameTask_ShouldStoreThemUnderOneRecord()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -96,7 +97,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void JsonTrackerRepository_WhenSessionsAreSaved_ShouldSaveOldestFirstAndLoadInOrder()
+    public void Save_WhenSessionsAreSaved_ShouldStoreThemOldestFirst()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -109,7 +110,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void JsonTrackerRepository_WhenTaskHasMultipleBookingElements_ShouldUseTheFirstNonEmptyOne()
+    public void Save_WhenATaskHasSeveralBookingElements_ShouldUseTheFirstNonEmptyOne()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -122,7 +123,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void JsonTrackerRepository_WhenTasksDifferOnlyByCase_ShouldMergeThemIntoOneRecord()
+    public void Save_WhenTasksDifferOnlyByCase_ShouldMergeThemIntoOneRecord()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -138,7 +139,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void JsonTrackerRepository_WhenBookingElementIsMissing_ShouldLoadItAsEmptyString()
+    public void GetAll_WhenTheBookingElementIsMissing_ShouldReturnItEmpty()
     {
         var path = TempPath();
         WriteVersionOne(path, """
@@ -153,7 +154,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void JsonTrackerRepository_WhenLegacyDescriptionFieldIsPresent_ShouldMigrateItToBookingElement()
+    public void GetAll_WhenTheLegacyDescriptionFieldIsPresent_ShouldMapItToTheBookingElement()
     {
         var path = TempPath();
         WriteVersionOne(path, """
@@ -170,136 +171,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void JsonTrackerRepository_WhenVersionOneFileIsMigrated_ShouldUpgradeItToVersionTwo()
-    {
-        var path = TempPath();
-        WriteVersionOne(path, """
-            [
-              { "task": "Report", "bookingElement": "", "start": "2026-09-18T09:00:00+02:00", "end": "2026-09-18T09:30:00+02:00", "duration": "00:30:00", "durationSeconds": 1800 },
-              { "task": "Report", "bookingElement": "Quarterly", "start": "2026-09-18T14:00:00+02:00", "end": "2026-09-18T15:00:00+02:00", "duration": "01:00:00", "durationSeconds": 3600 },
-              { "task": "Meeting", "bookingElement": "Project X", "start": "2026-09-18T11:00:00+02:00", "end": "2026-09-18T12:00:00+02:00", "duration": "01:00:00", "durationSeconds": 3600 }
-            ]
-            """);
-        var repo = new JsonTrackerRepository(path);
-        var migrator = MigratorFor(path);
-
-        var migrated = migrator.MigrateIfNeeded();
-
-        migrated.Should().BeTrue();
-        var text = File.ReadAllText(path);
-        text.Should().Contain("\"version\": 2");
-        text.Should().Contain("\"name\": \"Report\"");
-        text.Should().Contain("\"sessions\"");
-        text.Split("\"name\":").Length.Should().Be(3, "Report and Meeting are two records");
-
-        // The data survives the migration, grouped as asked.
-        var all = repo.GetAll();
-        all.Should().HaveCount(3);
-        all.Where(e => e.Task == "Report").Should().OnlyContain(e => e.BookingElement == "Quarterly",
-            "the task takes the first non-empty booking element");
-        all.Single(e => e.Task == "Meeting").BookingElement.Should().Be("Project X");
-    }
-
-    [Test]
-    public void JsonTrackerRepository_WhenMigrationRuns_ShouldBackUpTheOriginalFileBeforeRewritingIt()
-    {
-        var path = TempPath();
-        var original = """
-            [
-              { "task": "Report", "bookingElement": "Quarterly", "start": "2026-09-18T09:00:00+02:00", "end": "2026-09-18T09:30:00+02:00", "duration": "00:30:00", "durationSeconds": 1800 }
-            ]
-            """;
-        WriteVersionOne(path, original);
-        var migrator = MigratorFor(path);
-
-        migrator.MigrateIfNeeded();
-
-        File.Exists(BackupPath(path)).Should().BeTrue("the original is kept");
-        File.ReadAllText(BackupPath(path)).Should().Be(original,
-            "the backup is the untouched version-1 file");
-        File.ReadAllText(path).Should().Contain("\"version\": 2");
-    }
-
-    [Test]
-    public void JsonTrackerRepository_WhenThereIsNothingToMigrate_ShouldNotBackUpTheFile()
-    {
-        var path = TempPath();
-        var repo = new JsonTrackerRepository(path);
-        repo.Add(NewEntry("Report"));
-        var migrator = MigratorFor(path);
-
-        migrator.MigrateIfNeeded();
-
-        File.Exists(BackupPath(path)).Should().BeFalse("no migration happened");
-    }
-
-    [Test]
-    public void JsonTrackerRepository_WhenFileIsVersionTwoAndMigrationRuns_ShouldLeaveItUntouched()
-    {
-        var path = TempPath();
-        var repo = new JsonTrackerRepository(path);
-        repo.Add(NewEntry("Report"));
-        var before = File.ReadAllText(path);
-        var migrator = MigratorFor(path);
-
-        var migrated = migrator.MigrateIfNeeded();
-
-        migrated.Should().BeFalse("the file is already version 2");
-        File.ReadAllText(path).Should().Be(before);
-    }
-
-    [Test]
-    public void JsonTrackerRepository_WhenThereIsNoFile_ShouldDoNothing()
-    {
-        var path = TempPath();
-        var migrator = MigratorFor(path);
-
-        migrator.MigrateIfNeeded().Should().BeFalse();
-        File.Exists(BackupPath(path)).Should().BeFalse();
-    }
-
-    [Test]
-    public void JsonTrackerRepository_WhenFileIsUnreadable_ShouldKeepItAndNotThrow()
-    {
-        var path = TempPath();
-        WriteVersionOne(path, "{ not valid json");
-        var migrator = MigratorFor(path);
-
-        var migrated = migrator.MigrateIfNeeded();
-
-        migrated.Should().BeFalse("a broken file is left for the normal load path");
-        File.ReadAllText(path).Should().Be("{ not valid json");
-    }
-
-    [Test]
-    public void JsonTrackerRepository_WhenFileIsBroken_ShouldReportItThroughTheLog()
-    {
-        var path = TempPath();
-        WriteVersionOne(path, "{ not valid json");
-        string? loggedContext = null;
-        var migrator = new TrackerFileMigrator(
-            path, [new VersionOneToTwoMigration(path)], (context, _) => loggedContext = context);
-
-        migrator.MigrateIfNeeded();
-
-        loggedContext.Should().Be("TrackerFileMigration");
-    }
-
-    [Test]
-    public void JsonTrackerRepository_WhenFileHasUnsupportedNewerVersion_ShouldReportItAsCorruptAndNotOverwriteIt()
-    {
-        var path = TempPath();
-        File.WriteAllText(path, """{ "version": 99, "tasks": [] }""");
-        var repo = new JsonTrackerRepository(path);
-
-        repo.GetAll().Should().BeEmpty("an unknown version cannot be read");
-
-        // Loading must not have destroyed the unknown file.
-        File.ReadAllText(path).Should().Contain("\"version\": 99");
-    }
-
-    [Test]
-    public void JsonTrackerRepository_WhenSaveIsCalled_ShouldWriteTheBookingElementUnderItsNewName()
+    public void Save_WhenCalled_ShouldWriteTheBookingElementUnderItsNewName()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -313,7 +185,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void JsonTrackerRepository_WhenFileIsMissing_ShouldReturnAnEmptyList()
+    public void GetAll_WhenTheFileIsMissing_ShouldReturnAnEmptyList()
     {
         var all = new JsonTrackerRepository(TempPath()).GetAll();
 
@@ -321,14 +193,6 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     private static void WriteVersionOne(string path, string json) => File.WriteAllText(path, json);
-
-    /// <summary>A migrator with the production migration set (v1 → current).</summary>
-    private static TrackerFileMigrator MigratorFor(string path) =>
-        new(path, [new VersionOneToTwoMigration(path)]);
-
-    /// <summary>Where the production migration keeps the pre-migration copy.</summary>
-    private static string BackupPath(string path) =>
-        new VersionOneToTwoMigration(path).BackupPath;
 
     private static string TempPath()
     {

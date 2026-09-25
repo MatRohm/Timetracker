@@ -8,10 +8,11 @@ namespace Timetracker.Plugins.Tests.Unit;
 /// their host/sink, and add-ins resolve them lazily. State is process-wide, so
 /// each test re-registers its own values instead of relying on a clean slate.
 /// </summary>
+[TestFixture]
 public sealed class UiHostAccessorTests
 {
     [Test]
-    public void UiHostAccessor_WhenHostIsRegistered_ShouldReturnIt()
+    public void RegisterTrackerHost_WhenAHostIsRegistered_ShouldReturnIt()
     {
         var host = new FakeHost();
         UiHostAccessor.RegisterTrackerHost(host);
@@ -22,7 +23,7 @@ public sealed class UiHostAccessorTests
     }
 
     [Test]
-    public void UiHostAccessor_WhenAnotherTypeIsRequested_ShouldThrow()
+    public void RegisterTrackerHost_WhenAnotherTypeIsRequested_ShouldThrow()
     {
         UiHostAccessor.RegisterTrackerHost(new FakeHost());
 
@@ -33,7 +34,7 @@ public sealed class UiHostAccessorTests
     }
 
     [Test]
-    public void UiHostAccessor_WhenRegisteringNullHost_ShouldReject()
+    public void RegisterTrackerHost_WhenPassedNull_ShouldReject()
     {
         var act = () => UiHostAccessor.RegisterTrackerHost(null!);
 
@@ -41,7 +42,7 @@ public sealed class UiHostAccessorTests
     }
 
     [Test]
-    public void UiHostAccessor_WhenRegisteringNullSink_ShouldReject()
+    public void RegisterWeekStatusSink_WhenPassedNull_ShouldReject()
     {
         var act = () => UiHostAccessor.RegisterWeekStatusSink(null!);
 
@@ -49,7 +50,7 @@ public sealed class UiHostAccessorTests
     }
 
     [Test]
-    public void UiHostAccessor_WhenSinkIsRegistered_ShouldForwardWeekStatus()
+    public void ShowWeekStatus_WhenASinkIsRegistered_ShouldForwardToIt()
     {
         string? message = null;
         WeekStatusKind? kind = null;
@@ -66,7 +67,7 @@ public sealed class UiHostAccessorTests
     }
 
     [Test]
-    public void UiHostAccessor_WhenNoSinkIsRegistered_ShouldNotThrow()
+    public void ShowWeekStatus_WhenNoSinkIsRegistered_ShouldNotThrow()
     {
         // No registration in this test; the accessor must swallow the call.
         var act = () => UiHostAccessor.ShowWeekStatus("ignored", WeekStatusKind.Info);

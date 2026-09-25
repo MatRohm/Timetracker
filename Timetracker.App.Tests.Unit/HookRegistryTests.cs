@@ -9,10 +9,11 @@ namespace Timetracker.Tests.Unit;
 /// The composition root must register the migration step and its runner against the
 /// repository's file, with the runner able to reach every step.
 /// </summary>
+[TestFixture]
 public sealed class HookRegistryTests
 {
     [Test]
-    public void HookRegistry_WhenBuilt_ShouldRegisterMigratorRunnerAndSteps()
+    public void BuildServiceProvider_WhenCalled_ShouldRegisterTheMigratorRunnerAndSteps()
     {
         var services = Timetracker.HookRegistry.BuildServiceProvider();
 

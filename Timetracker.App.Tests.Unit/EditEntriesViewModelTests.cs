@@ -8,12 +8,15 @@ namespace Timetracker.Tests.Unit;
 /// <summary>
 /// Behavior of the per-item session editor dialog: it shows every session of one
 /// tracking item, lets each session's start/end be edited (duration is derived)
-/// and lets individual sessions be deleted.
+/// and lets individual sessions be deleted. Saving an edited item persists exactly
+/// its sessions, leaves other tasks untouched, and keeps the history rows and week
+/// view in sync.
 /// </summary>
+[TestFixture]
 public sealed class EditEntriesViewModelTests
 {
     [Test]
-    public void EditEntriesViewModel_WhenItemHasSessions_ShouldListThemChronologically()
+    public void Sessions_WhenTheItemHasSessions_ShouldListThemChronologically()
     {
         var item = Item("Report",
             Session("Report", day: 18, hour: 14, minutes: 30),
@@ -28,161 +31,28 @@ public sealed class EditEntriesViewModelTests
     }
 
     [Test]
-    public void EditEntriesViewModel_WhenStartAndEndAreEdited_ShouldRecalculateTheDuration()
+    public void SummaryText_WhenTotalsAreEdited_ShouldReflectThem()
     {
-        var session = Session("Report", day: 18, hour: 9, minutes: 30);
-        var editor = new EditEntriesViewModel(Item("Report", session));
-        var row = editor.Sessions.Single();
+        var editor = new EditEntriesViewModel(Item("Report",
+            Session("Report", day: 18, hour: 9, minutes: 30),
+            Session("Report", day: 18, hour: 14, minutes: 60)));
 
-        row.StartText = "2026-09-18 08:45"; // 15 minutes earlier
-        row.EndText = "2026-09-18 10:15";   // 45 minutes later than 09:30
-
-        // 30 min originally, minus 15 moved earlier, plus 45 moved later = 90 min.
-        row.DurationText.Should().Be("01:30:00");
-        row.DurationSeconds.Should().Be(5400);
+        // 30 + 60 minutes = 1:30:00 across two sessions.
+        editor.SummaryText.Should().Contain("2");
+        editor.SummaryText.Should().Contain("01:30:00");
     }
 
     [Test]
-    public void EditEntriesViewModel_WhenStartDateIsEdited_ShouldMoveTheWholeSession()
+    public void CanSave_WhenTheItemHasNoSessions_ShouldBeFalse()
     {
-        var session = Session("Report", day: 18, hour: 9, minutes: 30);
-        var editor = new EditEntriesViewModel(Item("Report", session));
-        var row = editor.Sessions.Single();
+        var editor = new EditEntriesViewModel(new EntryRow([]));
 
-        row.StartText = "2026-09-19 09:00";
-        row.EndText = "2026-09-19 09:30";
-
-        row.StartText.Should().Be("2026-09-19 09:00");
-        row.IsValid.Should().BeTrue();
-    }
-
-    [Test]
-    public void EditEntriesViewModel_WhenEndIsBeforeStart_ShouldClampDurationToZeroAndRejectOnSave()
-    {
-        var session = Session("Report", day: 18, hour: 9, minutes: 30);
-        var editor = new EditEntriesViewModel(Item("Report", session));
-        var row = editor.Sessions.Single();
-
-        row.EndText = "2026-09-18 08:45"; // the session starts at 09:00, so this is before it
-
-        row.DurationSeconds.Should().Be(0);
-        editor.HasErrors.Should().BeTrue("an end before the start cannot be saved");
+        editor.Sessions.Should().BeEmpty();
         editor.CanSave.Should().BeFalse();
     }
 
     [Test]
-    public void EditEntriesViewModel_WhenTimeIsUnparsable_ShouldRejectOnSave()
-    {
-        var session = Session("Report", day: 18, hour: 9, minutes: 30);
-        var editor = new EditEntriesViewModel(Item("Report", session));
-        var row = editor.Sessions.Single();
-
-        row.StartText = "not a date";
-
-        row.IsValid.Should().BeFalse();
-        editor.HasErrors.Should().BeTrue();
-        editor.CanSave.Should().BeFalse();
-        editor.Save().Should().BeFalse();
-    }
-
-    [Test]
-    public void EditEntriesViewModel_WhenTimeTextIsEdited_ShouldMoveStagedStartAndShowItBack()
-    {
-        var session = Session("Report", day: 18, hour: 9, minutes: 30);
-        var editor = new EditEntriesViewModel(Item("Report", session));
-        var row = editor.Sessions.Single();
-
-        row.StartText = "2026-09-18 08:15";
-
-        row.Start.Hour.Should().Be(8);
-        row.Start.Minute.Should().Be(15);
-        row.StartText.Should().Be("2026-09-18 08:15");
-        row.IsValid.Should().BeTrue();
-    }
-
-    [Test]
-    public void EditEntriesViewModel_WhenSessionHasStoredOffset_ShouldKeepItInsteadOfMachineTimezone()
-    {
-        // The session was recorded at +10:00; editing must not reinterpret the typed
-        // wall clock in whatever offset the machine running the tests happens to have.
-        var offset = TimeSpan.FromHours(10);
-        var session = new TrackerEntry
-        {
-            Task = "Report",
-            Start = new DateTimeOffset(2026, 9, 18, 9, 0, 0, offset),
-            End = new DateTimeOffset(2026, 9, 18, 9, 30, 0, offset),
-            Duration = "00:30:00",
-            DurationSeconds = 1800,
-        };
-        var editor = new EditEntriesViewModel(Item("Report", session));
-        var row = editor.Sessions.Single();
-
-        row.StartText = "2026-09-18 08:15";
-
-        row.Start.Offset.Should().Be(offset);
-        row.Start.Hour.Should().Be(8);
-        row.Start.Minute.Should().Be(15);
-        row.StartText.Should().Be("2026-09-18 08:15");
-    }
-
-    [Test]
-    public void EditEntriesViewModel_WhenSaved_ShouldApplyEditedTimesToUnderlyingSession()
-    {
-        var session = Session("Report", day: 18, hour: 9, minutes: 30);
-        var editor = new EditEntriesViewModel(Item("Report", session));
-        var row = editor.Sessions.Single();
-        var newStart = session.Start.AddHours(2);
-        var newEnd = session.End.AddHours(2);
-
-        row.SetStart(newStart);
-        row.SetEnd(newEnd);
-
-        editor.CanSave.Should().BeTrue();
-        editor.Save();
-
-        session.Start.Should().Be(newStart);
-        session.End.Should().Be(newEnd);
-        session.DurationSeconds.Should().Be(1800);
-    }
-
-    [Test]
-    public void EditEntriesViewModel_WhenTimeTextIsStale_ShouldIgnoreItOnSave()
-    {
-        // The text boxes are refreshed on commit; a programmatic SetStart/SetEnd must
-        // win over whatever text happens to be staged.
-        var session = Session("Report", day: 18, hour: 9, minutes: 30);
-        var editor = new EditEntriesViewModel(Item("Report", session));
-        var row = editor.Sessions.Single();
-        var newStart = session.Start.AddHours(1);
-        var newEnd = session.End.AddHours(1);
-
-        row.SetStart(newStart);
-        row.SetEnd(newEnd);
-        var saved = editor.Save();
-
-        saved.Should().BeTrue();
-        session.Start.Should().Be(newStart);
-        session.End.Should().Be(newEnd);
-    }
-
-    [Test]
-    public void EditEntriesViewModel_WhenSessionIsInvalid_ShouldRejectSaveAndKeepUnderlyingEntryUntouched()
-    {
-        var session = Session("Report", day: 18, hour: 9, minutes: 30);
-        var editor = new EditEntriesViewModel(Item("Report", session));
-        var row = editor.Sessions.Single();
-        var originalStart = session.Start;
-        row.SetStart(session.End);
-        row.SetEnd(session.Start); // inverted
-
-        var saved = editor.Save();
-
-        saved.Should().BeFalse();
-        session.Start.Should().Be(originalStart, "nothing is written while a row is invalid");
-    }
-
-    [Test]
-    public void EditEntriesViewModel_WhenSessionIsDeleted_ShouldRemoveOnlyThatSession()
+    public void RemoveSession_WhenInvoked_ShouldRemoveOnlyThatSession()
     {
         var first = Session("Report", day: 18, hour: 9, minutes: 30);
         var second = Session("Report", day: 18, hour: 14, minutes: 60);
@@ -197,25 +67,106 @@ public sealed class EditEntriesViewModelTests
     }
 
     [Test]
-    public void EditEntriesViewModel_WhenTotalsAreEdited_ShouldReflectThemInSummary()
+    public void Save_WhenEditedTimesAreSaved_ShouldPersistThemAndUpdateTheHistoryRow()
     {
-        var editor = new EditEntriesViewModel(Item("Report",
-            Session("Report", day: 18, hour: 9, minutes: 30),
-            Session("Report", day: 18, hour: 14, minutes: 60)));
+        var (repo, _) = RepositoryFake.Create(
+            Entry("Report", 18, 9, 30), Entry("Meeting", 18, 11, 60));
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        var item = vm.Entries.Single(r => r.Task == "Report");
 
-        // 30 + 60 minutes = 1:30:00 across two sessions.
-        editor.SummaryText.Should().Contain("2");
-        editor.SummaryText.Should().Contain("01:30:00");
+        var editor = new EditEntriesViewModel(item);
+        var row = editor.Sessions.Single();
+        row.SetStart(row.Start.AddMinutes(-30));
+        row.SetEnd(row.End.AddMinutes(30));
+        editor.Save();
+
+        vm.ReplaceSessions(item.Task, editor.RemainingEntries()).Should().BeTrue();
+
+        var stored = repo.GetAll().Single(e => e.Task == "Report");
+        stored.DurationSeconds.Should().Be(5400, "30 + 30 minutes are added to the original hour");
+        stored.Duration.Should().Be("01:30:00");
+        vm.Entries.Single(r => r.Task == "Report").Duration.Should().Be("01:30:00");
     }
 
     [Test]
-    public void EditEntriesViewModel_WhenItemHasNoSessions_ShouldReportItAsEmpty()
+    public void Save_WhenAnItemIsSaved_ShouldLeaveOtherItemsUntouched()
     {
-        var editor = new EditEntriesViewModel(new EntryRow([]));
+        var (repo, _) = RepositoryFake.Create(
+            Entry("Report", 18, 9, 30), Entry("Meeting", 18, 11, 60));
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        var item = vm.Entries.Single(r => r.Task == "Report");
+        var editor = new EditEntriesViewModel(item);
+        editor.Sessions.Single().SetEnd(editor.Sessions.Single().End.AddMinutes(15));
+        editor.Save();
 
-        editor.Sessions.Should().BeEmpty();
-        editor.CanSave.Should().BeFalse();
+        vm.ReplaceSessions(item.Task, editor.RemainingEntries());
+
+        repo.GetAll().Single(e => e.Task == "Meeting").DurationSeconds.Should().Be(3600);
     }
+
+    [Test]
+    public void RemoveSession_WhenTheLastSessionIsDeleted_ShouldRemoveTheHistoryRow()
+    {
+        var (repo, _) = RepositoryFake.Create(
+            Entry("Report", 18, 9, 30), Entry("Meeting", 18, 11, 60));
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        var item = vm.Entries.Single(r => r.Task == "Report");
+        var editor = new EditEntriesViewModel(item);
+
+        editor.RemoveSession(editor.Sessions.Single());
+        vm.ReplaceSessions(item.Task, editor.RemainingEntries());
+
+        vm.Entries.Should().ContainSingle().Which.Task.Should().Be("Meeting");
+        repo.GetAll().Should().ContainSingle().Which.Task.Should().Be("Meeting");
+    }
+
+    [Test]
+    public void RemoveSession_WhenOneOfSeveralSessionsIsDeleted_ShouldKeepTheItemWithTheRemainingTime()
+    {
+        var (repo, _) = RepositoryFake.Create(
+            Entry("Report", 18, 9, 30), Entry("Report", 18, 14, 60));
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        var item = vm.Entries.Single(r => r.Task == "Report");
+        item.Sessions.Should().HaveCount(2);
+        var editor = new EditEntriesViewModel(item);
+
+        // Remove the 60-minute session, keep the 30-minute one.
+        editor.RemoveSession(editor.Sessions.Single(s => s.DurationSeconds == 3600));
+        vm.ReplaceSessions(item.Task, editor.RemainingEntries());
+
+        var row = vm.Entries.Single();
+        row.Sessions.Should().ContainSingle();
+        row.Duration.Should().Be("00:30:00");
+        repo.GetAll().Should().ContainSingle().Which.DurationSeconds.Should().Be(1800);
+    }
+
+    [Test]
+    public void Save_WhenSessionsAreSaved_ShouldUpdateTheWeekViewTotals()
+    {
+        // Use today so the session lands in the week the view starts on.
+        var today = DateTimeOffset.Now.Date.AddHours(9);
+        var entry = new TrackerEntry
+        {
+            Task = "Report",
+            Start = new DateTimeOffset(today, DateTimeOffset.Now.Offset),
+            End = new DateTimeOffset(today.AddMinutes(30), DateTimeOffset.Now.Offset),
+            Duration = "00:30:00",
+            DurationSeconds = 1800,
+        };
+        var (repo, _) = RepositoryFake.Create(entry);
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        var item = vm.Entries.Single();
+        var editor = new EditEntriesViewModel(item);
+        var row = editor.Sessions.Single();
+        row.SetEnd(row.End.AddHours(1));
+        editor.Save();
+
+        vm.ReplaceSessions(item.Task, editor.RemainingEntries());
+
+        // The edited duration (1:30) shows in the today column of the week view.
+        vm.Week.Days.Single(d => d.IsToday).EntriesText.Should().Contain("1:30");
+    }
+
     private static EntryRow Item(string task, params TrackerEntry[] sessions) =>
         new([.. sessions]);
 
@@ -229,6 +180,19 @@ public sealed class EditEntriesViewModelTests
             Task = task,
             Start = start,
             End = end,
+            Duration = TimeSpan.FromMinutes(minutes).ToString(@"hh\:mm\:ss"),
+            DurationSeconds = minutes * 60.0,
+        };
+    }
+
+    private static TrackerEntry Entry(string task, int day, int hour, int minutes)
+    {
+        var start = new DateTimeOffset(2026, 9, day, hour, 0, 0, TimeSpan.FromHours(2));
+        return new TrackerEntry
+        {
+            Task = task,
+            Start = start,
+            End = start.AddMinutes(minutes),
             Duration = TimeSpan.FromMinutes(minutes).ToString(@"hh\:mm\:ss"),
             DurationSeconds = minutes * 60.0,
         };

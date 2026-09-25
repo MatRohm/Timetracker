@@ -298,16 +298,23 @@ at least one test fixture marked with an explicit `[TestFixture]`, otherwise the
 NUnit adapter does not discover the headless tests.
 
 **Test method names** follow
-`<ComponentTested>_When<StateCondition>_Should<ExpectedResult>`, e.g.
-`ActivityTracker_WhenIdleLastsAtLeastOneHour_ShouldLogAnIdleSpan`. The only
-underscores are the `_When` and `_Should` separators; each part is PascalCase.
+`<MethodTested>_When<StateCondition>_Should<ExpectedResult>`. For UI tests the
+first part is the tested component, e.g.
+`TrackerTabView_WhenRendered_ShouldShowHistoryRowsAndStartButton`; for unit
+tests it is the tested member, e.g.
+`Poll_WhenIdleLastsAtLeastOneHour_ShouldLogAnIdleSpan`. The only underscores are
+the `_When` and `_Should` separators; each part is PascalCase. Unit-test classes
+are named `<ClassTested>Tests` and carry `[TestFixture]`.
 
 **`Timetracker.Tests.Architecture`** enforces the structural rules and runs with
 the rest of the suite:
 
 - Only unit-test (and UI-test) projects may reference `Timetracker.App`.
 - A non-App product project may only reference `Timetracker.Plugins`.
-- Unit-test and UI-test methods must follow the naming pattern above.
+- UI-test methods must follow the naming pattern above.
+- A unit-test class must carry `[TestFixture]` and be named `<ClassTested>Tests`
+  after a production class or interface.
+- A unit-test method must be named after a real member of that production type.
 
 It checks project references against the `.csproj` files and test names through
 ArchUnitNET, so the other projects are built but not referenced (their assemblies
