@@ -5,10 +5,11 @@ using Timetracker.ViewModels;
 
 namespace Timetracker.Tests.Unit;
 
+[TestFixture]
 public sealed class WeekViewModelTests
 {
     [Test]
-    public void WeekViewModel_WhenCreated_ShouldStartOnTheCurrentWeekWithMondayFirst()
+    public void Days_WhenTheViewModelIsCreated_ShouldStartOnTheCurrentWeekWithMondayFirst()
     {
         var week = new WeekViewModel();
         var today = DateTimeOffset.Now.Date;
@@ -21,7 +22,7 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
-    public void WeekViewModel_WhenSessionsUpdated_ShouldShowSessionsOnlyInTheirOwnDayColumns()
+    public void UpdateSessions_WhenSessionsSpanDays_ShouldShowThemOnlyInTheirOwnDayColumns()
     {
         var week = new WeekViewModel();
         var monday = DateTimeOffset.Now.Date.AddDays(-(((int)DateTimeOffset.Now.DayOfWeek + 6) % 7));
@@ -35,7 +36,7 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
-    public void WeekViewModel_WhenGroupingByBookingElement_ShouldMergeEntriesAcrossTasks()
+    public void UpdateSessions_WhenGroupingByBookingElement_ShouldMergeEntriesAcrossTasks()
     {
         var week = new WeekViewModel();
         var today = DateTimeOffset.Now.Date;
@@ -56,7 +57,7 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
-    public void WeekViewModel_WhenSwitchingToTaskGrouping_ShouldShowTaskNamesAgain()
+    public void GroupByBookingElement_WhenSetToFalse_ShouldShowTaskNamesAgain()
     {
         var week = new WeekViewModel();
         var today = DateTimeOffset.Now.Date;
@@ -77,7 +78,7 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
-    public void WeekViewModel_WhenEntryHasNoBookingElement_ShouldLabelItWhenGroupingByElement()
+    public void UpdateSessions_WhenAnEntryHasNoBookingElement_ShouldLabelItWhenGroupingByElement()
     {
         var week = new WeekViewModel();
         var today = DateTimeOffset.Now.Date;
@@ -88,7 +89,7 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
-    public void WeekViewModel_WhenGroupingByTask_ShouldMergeEntriesWithTheSameTask()
+    public void UpdateSessions_WhenGroupingByTask_ShouldMergeEntriesWithTheSameTask()
     {
         var week = new WeekViewModel
         {
@@ -106,7 +107,7 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
-    public void WeekViewModel_WhenGroupingByBookingElement_ShouldCopyTaskNamesIntoEachLine()
+    public void UpdateSessions_WhenGroupingByBookingElement_ShouldCopyTaskNamesIntoEachLine()
     {
         var week = new WeekViewModel();
         var today = DateTimeOffset.Now.Date;
@@ -124,7 +125,7 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
-    public void WeekViewModel_WhenGroupingByBookingElement_ShouldGiveEachDayOneLinePerElement()
+    public void UpdateSessions_WhenGroupingByBookingElement_ShouldGiveEachDayOneLinePerElement()
     {
         var week = new WeekViewModel();
         var today = DateTimeOffset.Now.Date;
@@ -146,7 +147,7 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
-    public void WeekViewModel_WhenGroupingByTask_ShouldCopyEntryTaskNamesIntoEachLine()
+    public void UpdateSessions_WhenGroupingByTask_ShouldCopyTaskNamesIntoEachLine()
     {
         var week = new WeekViewModel();
         var today = DateTimeOffset.Now.Date;
@@ -164,7 +165,7 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
-    public void WeekViewModel_WhenDayHasNoBookings_ShouldHaveNoLines()
+    public void UpdateSessions_WhenADayHasNoBookings_ShouldHaveNoLines()
     {
         var week = new WeekViewModel();
 
@@ -172,7 +173,7 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
-    public void WeekViewModel_WhenSessionsSpanTheWeek_ShouldSumWeekTotal()
+    public void WeekTotalText_WhenSessionsSpanTheWeek_ShouldSumThem()
     {
         var week = new WeekViewModel();
         var monday = DateTimeOffset.Now.Date.AddDays(-(((int)DateTimeOffset.Now.DayOfWeek + 6) % 7));
@@ -188,7 +189,7 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
-    public void WeekViewModel_WhenNavigating_ShouldMoveAFullWeekAndKeepSelection()
+    public void PreviousWeekCommand_WhenNavigating_ShouldMoveAFullWeekAndKeepTheSelection()
     {
         var week = new WeekViewModel();
         var monday = DateTimeOffset.Now.Date.AddDays(-(((int)DateTimeOffset.Now.DayOfWeek + 6) % 7));

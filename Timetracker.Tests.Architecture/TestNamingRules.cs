@@ -6,9 +6,11 @@ using NUnit.Framework;
 namespace Timetracker.Tests.Architecture;
 
 /// <summary>
-/// Test methods must read as "&lt;ComponentTested&gt;_When&lt;StateCondition&gt;_Should&lt;ExpectedResult&gt;".
+/// UI-test methods must read as
+/// "&lt;ComponentTested&gt;_When&lt;StateCondition&gt;_Should&lt;ExpectedResult&gt;".
 /// The rule applies to methods carrying a test attribute; helper and test-double
-/// members are ignored. The pattern is enforced for unit and UI test assemblies.
+/// members are ignored. Unit tests are covered by
+/// <see cref="UnitTestStructureRules"/>, which names them after the tested method.
 /// </summary>
 public sealed class TestNamingRules
 {
@@ -21,21 +23,10 @@ public sealed class TestNamingRules
         RegexOptions.CultureInvariant);
 
     [Test]
-    public void Unit_test_methods_follow_the_naming_pattern()
-    {
-        AssertNamesFollowPattern(".Tests.Unit");
-    }
-
-    [Test]
     public void Ui_test_methods_follow_the_naming_pattern()
     {
-        AssertNamesFollowPattern(".Tests.UI");
-    }
-
-    private static void AssertNamesFollowPattern(string assemblySuffix)
-    {
         var testMethods = SolutionArchitecture.Instance.Types
-            .Where(t => t.Assembly.Name.EndsWith(assemblySuffix))
+            .Where(t => t.Assembly.Name.EndsWith(".Tests.UI"))
             .SelectMany(t => t.Members.OfType<MethodMember>())
             .Where(IsTestMethod)
             // ArchUnitNET reports the signature; the rule is about the name only.
@@ -43,15 +34,15 @@ public sealed class TestNamingRules
             .OrderBy(name => name)
             .ToList();
 
-        testMethods.Should().NotBeEmpty($"the {assemblySuffix} projects define test methods");
+        testMethods.Should().NotBeEmpty("the .Tests.UI projects define test methods");
 
         var offenders = testMethods
             .Where(name => !NamePattern.IsMatch(name))
-            .Select(name => $"  {name}")
+            .Select(name => "  " + name)
             .ToList();
 
         offenders.Should().BeEmpty(
-            "test methods must be named "
+            "UI-test methods must be named "
             + "<ComponentTested>_When<StateCondition>_Should<ExpectedResult>, but found:"
             + Environment.NewLine + string.Join(Environment.NewLine, offenders));
     }
