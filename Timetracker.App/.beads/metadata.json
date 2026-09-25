@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "Timetracker_App",
+  "project_id": "94cb61dd-3852-4bc8-a16a-258491fbaac2"
+}
