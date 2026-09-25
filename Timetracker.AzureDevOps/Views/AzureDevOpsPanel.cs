@@ -6,7 +6,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Timetracker.Plugins;
 
-namespace Timetracker.AzureDevOps;
+namespace Timetracker.AzureDevOps.Views;
 
 /// <summary>
 /// Add-in control for the tracker tab: a single button with the Azure DevOps
