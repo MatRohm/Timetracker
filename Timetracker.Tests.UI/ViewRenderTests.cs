@@ -14,6 +14,7 @@ using Timetracker.Plugins;
 using Timetracker.Tests.Unit;
 using Timetracker.ViewModels;
 using Timetracker.Views;
+using Timetracker.Views.Components;
 
 namespace Timetracker.Tests.UI;
 
@@ -225,6 +226,58 @@ public sealed class ViewRenderTests
         entry.Start = start;
         entry.End = start.AddHours(1);
         return entry;
+    }
+
+    [AvaloniaTest]
+    public void TrackerTabView_WhenFilteredByText_ShouldShowOnlyMatchingRows()
+    {
+        var (view, viewModel) = BuildTrackerView(
+            Entry("Report", "Quarterly"),
+            Entry("Meeting", "Project X"));
+
+        viewModel.FilterText = "project";
+
+        // The grid is bound to the filtered view-model collection.
+        FindControl<DataGrid>(view).Should().NotBeNull();
+        viewModel.Entries.Should().ContainSingle().Which.Task.Should().Be("Meeting");
+    }
+
+    [AvaloniaTest]
+    public void TrackerTabView_WhenFunnelToggled_ShouldShowTheFilterBoxAndClearItWhenHidden()
+    {
+        var (view, viewModel) = BuildTrackerView(Entry("Report", "Quarterly"));
+        RealizeWindow(view);
+
+        var filter = FindControl<FilterField>(view)!;
+        filter.FilterBox.IsVisible.Should().BeFalse("the filter box starts hidden");
+
+        // Toggling the funnel on reveals the box.
+        filter.Toggle.IsChecked = true;
+        filter.FilterBox.IsVisible.Should().BeTrue("the funnel shows the filter box");
+
+        // Typing filters the rows; toggling off clears the filter and hides the box.
+        filter.FilterBox.Text = "report";
+        viewModel.FilterText.Should().Be("report");
+
+        filter.Toggle.IsChecked = false;
+        filter.FilterBox.IsVisible.Should().BeFalse();
+        viewModel.FilterText.Should().BeEmpty("hiding the box drops the filter");
+    }
+
+    [AvaloniaTest]
+    public void TrackerTabView_WhenRendered_ShouldOfferAFilterBoxBoundToTheFilter()
+    {
+        var (view, viewModel) = BuildTrackerView(Entry("Report", "Quarterly"));
+
+        var filter = FindControl<FilterField>(view);
+        filter.Should().NotBeNull("the tracker view hosts a filter field");
+
+        var filterBox = filter!.FilterBox;
+        filterBox.IsVisible.Should().BeFalse("the filter box starts hidden behind the funnel");
+
+        filterBox.Text = "report";
+
+        viewModel.FilterText.Should().Be("report", "the box is bound to the view model filter");
     }
 
     private static (TrackerTabView View, TrackerViewModel ViewModel) BuildTrackerView(

@@ -666,6 +666,16 @@ public sealed class TrackerViewModelTests
         DurationSeconds = 1800,
     };
 
+    private static TrackerEntry Entry(string task, string bookingElement, int hour) => new()
+    {
+        Task = task,
+        BookingElement = bookingElement,
+        Start = new DateTimeOffset(2026, 9, 19, hour, 0, 0, TimeSpan.FromHours(2)),
+        End = new DateTimeOffset(2026, 9, 19, hour, 30, 0, TimeSpan.FromHours(2)),
+        Duration = "00:30:00",
+        DurationSeconds = 1800,
+    };
+
     private static ITrackerRepository SeedTasks(int count)
     {
         var entries = Enumerable.Range(0, count).Select(i => new TrackerEntry
@@ -678,5 +688,86 @@ public sealed class TrackerViewModelTests
         }).ToArray();
         var (repo, _) = RepositoryFake.Create(entries);
         return repo;
+    }
+
+    [Test]
+    public void FilterText_WhenSetToATaskSubstring_ShouldShowOnlyMatchingRows()
+    {
+        var (repo, _) = RepositoryFake.Create(
+            Entry("Report", 9), Entry("Review", 11), Entry("Meeting", 14));
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+
+        vm.FilterText = "re";
+
+        vm.Entries.Select(r => r.Task).Should().BeEquivalentTo("Report", "Review");
+    }
+
+    [Test]
+    public void FilterText_WhenSetToABookingElementSubstring_ShouldMatchItToo()
+    {
+        var (repo, _) = RepositoryFake.Create(
+            Entry("Report", "Quarterly", 9), Entry("Meeting", "Project X", 11));
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+
+        vm.FilterText = "project";
+
+        vm.Entries.Should().ContainSingle().Which.Task.Should().Be("Meeting",
+            "the filter matches the booking element as well as the task name");
+    }
+
+    [Test]
+    public void FilterText_WhenCleared_ShouldShowEverythingAgain()
+    {
+        var (repo, _) = RepositoryFake.Create(Entry("Report", 9), Entry("Meeting", 14));
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        vm.FilterText = "Report";
+        vm.Entries.Should().ContainSingle();
+
+        vm.FilterText = "";
+
+        vm.Entries.Should().HaveCount(2);
+    }
+
+    [Test]
+    public void FilterText_WhenNothingMatches_ShouldShowNoRowsAndASinglePage()
+    {
+        var (repo, _) = RepositoryFake.Create(Entry("Report", 9));
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+
+        vm.FilterText = "does-not-exist";
+
+        vm.Entries.Should().BeEmpty();
+        vm.TotalPages.Should().Be(1);
+        vm.HasMultiplePages.Should().BeFalse();
+    }
+
+    [Test]
+    public void FilterText_WhenItMatchesMoreThanAPage_ShouldPageTheFilteredRows()
+    {
+        // 25 tasks named "Task NN"; "Task" matches all of them, so paging still applies.
+        var repo = SeedTasks(25);
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+
+        vm.FilterText = "Task";
+
+        vm.Entries.Should().HaveCount(10, "the filter spans all pages but only one page is shown");
+        vm.TotalPages.Should().Be(3, "25 filtered rows need three pages");
+        vm.NextPageCommand.Execute(null);
+        vm.CurrentPage.Should().Be(2, "paging works within the filtered rows");
+    }
+
+    [Test]
+    public void IsFilterActive_WhenFilterTextHasContent_ShouldBeTrue()
+    {
+        var (repo, _) = RepositoryFake.Create(Entry("Report", 9));
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+
+        vm.IsFilterActive.Should().BeFalse("no filter is set initially");
+
+        vm.FilterText = "rep";
+        vm.IsFilterActive.Should().BeTrue();
+
+        vm.FilterText = "   ";
+        vm.IsFilterActive.Should().BeFalse("whitespace is not a filter");
     }
 }
