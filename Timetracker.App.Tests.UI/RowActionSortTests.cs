@@ -25,7 +25,7 @@ namespace Timetracker.Tests.UI;
 public sealed class RowActionSortTests
 {
     [AvaloniaTest]
-    public void Play_button_after_sorting_starts_the_row_it_is_drawn_next_to()
+    public void TrackerTabView_WhenPlayClickedAfterSorting_ShouldStartTheRowItIsDrawnNextTo()
     {
         var (view, viewModel) = Build(
             Entry("Alpha", 9), Entry("Bravo", 12), Entry("Charlie", 15));
@@ -51,7 +51,7 @@ public sealed class RowActionSortTests
     }
 
     [AvaloniaTest]
-    public void Edit_button_after_sorting_opens_the_row_it_is_drawn_next_to()
+    public void TrackerTabView_WhenEditClickedAfterSorting_ShouldOpenTheRowItIsDrawnNextTo()
     {
         var (view, viewModel) = Build(
             Entry("Alpha", 9), Entry("Bravo", 12), Entry("Charlie", 15));

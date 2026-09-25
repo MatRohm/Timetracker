@@ -12,7 +12,7 @@ namespace Timetracker.Tests.Unit;
 public sealed class HookRegistryTests
 {
     [Test]
-    public void The_migrator_runner_and_steps_are_registered()
+    public void HookRegistry_WhenBuilt_ShouldRegisterMigratorRunnerAndSteps()
     {
         var services = Timetracker.HookRegistry.BuildServiceProvider();
 

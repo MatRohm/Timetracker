@@ -26,7 +26,7 @@ namespace Timetracker.Tests.UI;
 public sealed class ViewRenderTests
 {
     [AvaloniaTest]
-    public void Tracker_view_shows_the_history_rows_and_start_button()
+    public void TrackerTabView_WhenRendered_ShouldShowHistoryRowsAndStartButton()
     {
         var (view, viewModel) = BuildTrackerView(
             Entry("Writing report", "Quarterly figures"),
@@ -44,7 +44,7 @@ public sealed class ViewRenderTests
     }
 
     [AvaloniaTest]
-    public void Tracker_grid_offers_per_row_edit_and_play_actions()
+    public void TrackerTabView_WhenRendered_ShouldOfferPerRowEditAndPlayActions()
     {
         var (view, viewModel) = BuildTrackerView(Entry("Writing report", "Project X"));
 
@@ -60,7 +60,7 @@ public sealed class ViewRenderTests
     }
 
     [AvaloniaTest]
-    public void Clicking_the_row_play_button_starts_timing_that_task()
+    public void TrackerTabView_WhenRowPlayButtonClicked_ShouldStartTimingThatTask()
     {
         var (view, viewModel) = BuildTrackerView(
             Entry("Writing report", "Quarterly figures"),
@@ -83,7 +83,7 @@ public sealed class ViewRenderTests
     }
 
     [AvaloniaTest]
-    public void Row_play_button_is_disabled_while_a_session_is_running()
+    public void TrackerTabView_WhenSessionIsRunning_ShouldDisableRowPlayButton()
     {
         var (view, viewModel) = BuildTrackerView(Entry("Writing report", "Project X"));
 
@@ -100,7 +100,7 @@ public sealed class ViewRenderTests
     }
 
     [AvaloniaTest]
-    public void Edit_entries_dialog_save_button_produces_the_edited_sessions()
+    public void EditEntriesWindow_WhenSaveButtonPressed_ShouldProduceEditedSessions()
     {
         var first = Entry("Report", "Project X", 9);
         var item = new EntryRow([first, Entry("Report", "Project X", 14)]);
@@ -117,7 +117,7 @@ public sealed class ViewRenderTests
     }
 
     [AvaloniaTest]
-    public void Clicking_the_row_edit_icon_opens_the_editor_for_that_item()
+    public void TrackerTabView_WhenRowEditIconClicked_ShouldOpenEditorForThatItem()
     {
         var (view, _) = BuildTrackerView(
             Entry("Writing report", "Quarterly figures"),
@@ -141,7 +141,7 @@ public sealed class ViewRenderTests
     }
 
     [AvaloniaTest]
-    public void Edit_entries_dialog_lists_each_session_of_the_item()
+    public void EditEntriesWindow_WhenRendered_ShouldListEachSessionOfTheItem()
     {
         var item = new EntryRow([
             Entry("Report", "Project X", 9),
@@ -165,7 +165,7 @@ public sealed class ViewRenderTests
     }
 
     [AvaloniaTest]
-    public void Tracker_view_exposes_suggestions_in_the_list()
+    public void TrackerTabView_WhenTaskNameEntered_ShouldExposeSuggestionsInTheList()
     {
         var (view, viewModel) = BuildTrackerView(Entry("Report", ""));
         viewModel.TaskName = "rep";
@@ -177,7 +177,7 @@ public sealed class ViewRenderTests
     }
 
     [AvaloniaTest]
-    public void Week_view_renders_seven_day_columns_with_bookings()
+    public void WeekTabView_WhenRendered_ShouldShowSevenDayColumnsWithBookings()
     {
         var (repo, _) = RepositoryFake.Create();
         using var tracker = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());

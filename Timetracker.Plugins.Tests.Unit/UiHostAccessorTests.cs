@@ -11,7 +11,7 @@ namespace Timetracker.Plugins.Tests.Unit;
 public sealed class UiHostAccessorTests
 {
     [Test]
-    public void GetTrackerHost_returns_the_registered_host()
+    public void UiHostAccessor_WhenHostIsRegistered_ShouldReturnIt()
     {
         var host = new FakeHost();
         UiHostAccessor.RegisterTrackerHost(host);
@@ -22,7 +22,7 @@ public sealed class UiHostAccessorTests
     }
 
     [Test]
-    public void GetTrackerHost_throws_for_another_type()
+    public void UiHostAccessor_WhenAnotherTypeIsRequested_ShouldThrow()
     {
         UiHostAccessor.RegisterTrackerHost(new FakeHost());
 
@@ -33,7 +33,7 @@ public sealed class UiHostAccessorTests
     }
 
     [Test]
-    public void RegisterTrackerHost_rejects_null()
+    public void UiHostAccessor_WhenRegisteringNullHost_ShouldReject()
     {
         var act = () => UiHostAccessor.RegisterTrackerHost(null!);
 
@@ -41,7 +41,7 @@ public sealed class UiHostAccessorTests
     }
 
     [Test]
-    public void RegisterWeekStatusSink_rejects_null()
+    public void UiHostAccessor_WhenRegisteringNullSink_ShouldReject()
     {
         var act = () => UiHostAccessor.RegisterWeekStatusSink(null!);
 
@@ -49,7 +49,7 @@ public sealed class UiHostAccessorTests
     }
 
     [Test]
-    public void ShowWeekStatus_forwards_to_the_registered_sink()
+    public void UiHostAccessor_WhenSinkIsRegistered_ShouldForwardWeekStatus()
     {
         string? message = null;
         WeekStatusKind? kind = null;
@@ -66,7 +66,7 @@ public sealed class UiHostAccessorTests
     }
 
     [Test]
-    public void ShowWeekStatus_without_a_sink_does_not_throw()
+    public void UiHostAccessor_WhenNoSinkIsRegistered_ShouldNotThrow()
     {
         // No registration in this test; the accessor must swallow the call.
         var act = () => UiHostAccessor.ShowWeekStatus("ignored", WeekStatusKind.Info);

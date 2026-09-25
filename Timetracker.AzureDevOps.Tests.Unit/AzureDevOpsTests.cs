@@ -8,7 +8,7 @@ namespace Timetracker.AzureDevOps.Tests.Unit;
 public sealed class AzureDevOpsTests
 {
     [Test]
-    public void Config_loads_values_from_the_json_file()
+    public void AzureDevOpsConfig_WhenJsonFileExists_ShouldLoadItsValues()
     {
         var path = TempPath("config-ok.json");
         File.WriteAllText(path, """
@@ -28,7 +28,7 @@ public sealed class AzureDevOpsTests
     }
 
     [Test]
-    public void Missing_config_file_yields_an_empty_unusable_config()
+    public void AzureDevOpsConfig_WhenJsonFileIsMissing_ShouldYieldAnEmptyUnusableConfig()
     {
         var config = AzureDevOpsConfig.Load(TempPath("does-not-exist.json"));
 
@@ -37,7 +37,7 @@ public sealed class AzureDevOpsTests
     }
 
     [Test]
-    public void Broken_config_file_yields_an_empty_config_instead_of_crashing()
+    public void AzureDevOpsConfig_WhenJsonFileIsBroken_ShouldYieldAnEmptyConfigInsteadOfCrashing()
     {
         var path = TempPath("config-broken.json");
         File.WriteAllText(path, "{ not valid json ");
@@ -48,7 +48,7 @@ public sealed class AzureDevOpsTests
     }
 
     [Test]
-    public void Config_without_pat_is_not_usable()
+    public void AzureDevOpsConfig_WhenPatIsMissing_ShouldNotBeUsable()
     {
         var config = new AzureDevOpsConfig
         {
@@ -61,7 +61,7 @@ public sealed class AzureDevOpsTests
     }
 
     [Test]
-    public async Task Client_parses_title_and_aze_element()
+    public async Task AzureDevOpsService_WhenWorkItemHasAzeElement_ShouldParseTitleAndAzeElement()
     {
         var http = FakeHttp.Create((request) => new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -87,7 +87,7 @@ public sealed class AzureDevOpsTests
     }
 
     [Test]
-    public async Task Client_falls_back_to_the_friendly_aze_element_field_name()
+    public async Task AzureDevOpsService_WhenAzeElementUsesFriendlyFieldName_ShouldFallBackToIt()
     {
         var http = FakeHttp.Create((request) => new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -109,7 +109,7 @@ public sealed class AzureDevOpsTests
     }
 
     [Test]
-    public async Task Client_returns_null_for_missing_work_items()
+    public async Task AzureDevOpsService_WhenWorkItemIsMissing_ShouldReturnNull()
     {
         var http = FakeHttp.Create((_) => new HttpResponseMessage(HttpStatusCode.NotFound));
         using var client = new AzureDevOpsClient(Config(), http);
@@ -120,7 +120,7 @@ public sealed class AzureDevOpsTests
     }
 
     [Test]
-    public async Task Client_builds_the_request_url_from_config_and_adds_basic_auth()
+    public async Task AzureDevOpsService_WhenRequestIsSent_ShouldBuildUrlFromConfigAndAddBasicAuth()
     {
         HttpRequestMessage? seen = null;
         var http = FakeHttp.Create((request) =>
@@ -143,7 +143,7 @@ public sealed class AzureDevOpsTests
     }
 
     [Test]
-    public async Task ApplyIssue_fills_the_host_with_number_and_title_plus_aze_element()
+    public async Task AzureDevOpsService_WhenWorkItemExists_ShouldFillHostWithNumberTitleAndAzeElement()
     {
         using var service = new AzureDevOpsService(Config(), () => new AzureDevOpsClient(
             Config(), FakeHttp.WorkItem(42, "Fix login bug", "Quarterly figures")));
@@ -159,7 +159,7 @@ public sealed class AzureDevOpsTests
     }
 
     [Test]
-    public async Task ApplyIssue_reports_missing_work_items_and_keeps_the_host_untouched()
+    public async Task AzureDevOpsService_WhenWorkItemIsMissing_ShouldReportAndKeepHostUntouched()
     {
         using var service = new AzureDevOpsService(Config(), () => new AzureDevOpsClient(
             Config(), FakeHttp.WorkItemNotFound()));
@@ -173,7 +173,7 @@ public sealed class AzureDevOpsTests
     }
 
     [Test]
-    public async Task ApplyIssue_requires_a_numeric_issue_number()
+    public async Task AzureDevOpsService_WhenIssueNumberIsNotNumeric_ShouldReportAnError()
     {
         using var service = new AzureDevOpsService(Config(), () => throw new InvalidOperationException());
         var host = new FakeHost();
@@ -184,7 +184,7 @@ public sealed class AzureDevOpsTests
     }
 
     [Test]
-    public async Task ApplyIssue_without_a_config_reports_where_to_put_it()
+    public async Task AzureDevOpsService_WhenConfigIsMissing_ShouldReportWhereToPutIt()
     {
         using var service = new AzureDevOpsService(new AzureDevOpsConfig());
         var host = new FakeHost();
@@ -196,7 +196,7 @@ public sealed class AzureDevOpsTests
     }
 
     [Test]
-    public void ConfigurationHint_names_the_path_and_shows_an_example()
+    public void AzureDevOpsService_WhenConfigurationHintIsRead_ShouldNameThePathAndShowAnExample()
     {
         using var service = new AzureDevOpsService(new AzureDevOpsConfig());
 
@@ -210,7 +210,7 @@ public sealed class AzureDevOpsTests
     }
 
     [Test]
-    public async Task ApplyIssue_maps_http_failures_to_error_results()
+    public async Task AzureDevOpsService_WhenHttpRequestFails_ShouldMapToErrorResult()
     {
         using var service = new AzureDevOpsService(Config(), () => new AzureDevOpsClient(
             Config(), FakeHttp.Create((_) => new HttpResponseMessage(HttpStatusCode.Unauthorized))));

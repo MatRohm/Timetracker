@@ -10,7 +10,7 @@ namespace Timetracker.Tests.Unit;
 public sealed class TrackerViewModelTests
 {
     [Test]
-    public void Start_with_task_name_starts_the_timer()
+    public void TrackerViewModel_WhenStartHasTaskName_ShouldStartTheTimer()
     {
         var (repo, _) = RepositoryFake.Create();
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
@@ -22,7 +22,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void Start_without_task_name_is_rejected_and_raises_invalid_task_name()
+    public void TrackerViewModel_WhenStartHasNoTaskName_ShouldRejectAndRaiseInvalidTaskName()
     {
         var (repo, _) = RepositoryFake.Create();
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
@@ -37,7 +37,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void Start_is_blocked_while_running()
+    public void TrackerViewModel_WhenAlreadyRunning_ShouldBlockStart()
     {
         var (repo, _) = RepositoryFake.Create(
             new TrackerEntry
@@ -59,7 +59,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void Stop_appends_a_session_and_resets_the_running_state()
+    public void TrackerViewModel_WhenStopped_ShouldAppendSessionAndResetRunningState()
     {
         var (repo, path) = RepositoryFake.Create();
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
@@ -76,7 +76,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void New_session_on_existing_task_is_grouped_and_accumulates_duration()
+    public void TrackerViewModel_WhenNewSessionOnExistingTask_ShouldGroupAndAccumulateDuration()
     {
         var (repo, _) = RepositoryFake.Create(
             new TrackerEntry
@@ -100,7 +100,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void History_row_shows_the_latest_session_times_and_the_summed_duration()
+    public void TrackerViewModel_WhenHistoryHasMultipleSessions_ShouldShowLatestTimesAndSummedDuration()
     {
         var (repo, _) = RepositoryFake.Create(
             new TrackerEntry
@@ -129,7 +129,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void BookingElement_edit_survives_adding_a_new_session()
+    public void TrackerViewModel_WhenBookingElementEdited_ShouldSurviveAddingNewSession()
     {
         // Regression: the booking element used to revert to empty after a new session.
         var (repo, _) = RepositoryFake.Create(
@@ -155,7 +155,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void UpdateEntryText_rejects_empty_task_name()
+    public void TrackerViewModel_WhenUpdateEntryTextHasEmptyTaskName_ShouldReject()
     {
         var (repo, _) = RepositoryFake.Create(
             new TrackerEntry
@@ -176,7 +176,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void Suggestions_are_substring_matches_with_totals_and_exclude_exact_match()
+    public void TrackerViewModel_WhenQueryIsSubstring_ShouldSuggestMatchesWithTotalsAndExcludeExactMatch()
     {
         var (repo, _) = RepositoryFake.Create(
             new TrackerEntry
@@ -207,7 +207,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void AcceptSuggestion_fills_the_task_name()
+    public void TrackerViewModel_WhenSuggestionAccepted_ShouldFillTaskName()
     {
         var (repo, _) = RepositoryFake.Create(
             new TrackerEntry
@@ -227,7 +227,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void ApplySort_ignores_the_non_sortable_booking_element_column()
+    public void TrackerViewModel_WhenSortingNonSortableBookingElementColumn_ShouldIgnoreIt()
     {
         var (repo, _) = RepositoryFake.Create(
             new TrackerEntry
@@ -247,7 +247,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void ApplySort_toggles_direction_on_repeated_clicks()
+    public void TrackerViewModel_WhenSortingTheSameColumnTwice_ShouldToggleDirection()
     {
         var (repo, _) = RepositoryFake.Create(
             new TrackerEntry
@@ -268,7 +268,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void StartFromRow_fills_the_task_field_and_starts()
+    public void TrackerViewModel_WhenStartingFromRow_ShouldFillTaskFieldAndStart()
     {
         var (repo, _) = RepositoryFake.Create(
             new TrackerEntry
@@ -289,7 +289,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void Save_failure_raises_error_and_keeps_state_consistent()
+    public void TrackerViewModel_WhenSaveFails_ShouldRaiseErrorAndKeepStateConsistent()
     {
         var repo = A.Fake<ITrackerRepository>();
         A.CallTo(() => repo.FilePath).Returns(Path.Combine(Path.GetTempPath(), "does-not-matter.json"));
@@ -308,7 +308,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void With_more_than_ten_tasks_the_grid_shows_the_first_page_only()
+    public void TrackerViewModel_WhenMoreThanTenTasks_ShouldShowFirstPageOnly()
     {
         var repo = SeedTasks(25);
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
@@ -320,7 +320,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void At_most_ten_tasks_need_no_paging()
+    public void TrackerViewModel_WhenTenTasksOrFewer_ShouldNotPage()
     {
         var repo = SeedTasks(10);
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
@@ -333,7 +333,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void Next_and_previous_page_commands_page_through_all_rows()
+    public void TrackerViewModel_WhenPagingThroughNextAndPrevious_ShouldCoverAllRows()
     {
         var repo = SeedTasks(25);
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
@@ -357,7 +357,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void Suggestions_come_from_all_tasks_not_only_the_current_page()
+    public void TrackerViewModel_WhenSuggesting_ShouldUseAllTasksNotOnlyCurrentPage()
     {
         var repo = SeedTasks(25); // "Task 00" is the oldest row → page 3
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
@@ -369,7 +369,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void Saving_a_new_session_reveals_the_task_row_even_on_another_page()
+    public void TrackerViewModel_WhenSavingNewSessionOnAnotherPage_ShouldRevealTaskRow()
     {
         var repo = SeedTasks(25);
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());

@@ -23,7 +23,7 @@ namespace Timetracker.Tests.UI;
 public sealed class WeekCopyButtonTests
 {
     [AvaloniaTest]
-    public void Each_booking_element_line_has_a_copy_button()
+    public void WeekTabView_WhenGroupingByBookingElement_ShouldShowCopyButtonOnEachLine()
     {
         var (view, _) = Build(Session(9, "Report", "Project X"), Session(12, "Meeting", "Project Y"));
 
@@ -33,7 +33,7 @@ public sealed class WeekCopyButtonTests
     }
 
     [AvaloniaTest]
-    public void Copy_buttons_disappear_in_task_grouping_mode()
+    public void WeekTabView_WhenGroupingByTask_ShouldHideCopyButtons()
     {
         var (view, week) = Build(Session(9, "Report", "Project X"));
 
@@ -47,7 +47,7 @@ public sealed class WeekCopyButtonTests
     }
 
     [AvaloniaTest]
-    public void Clicking_a_line_copy_button_copies_the_task_names_of_its_entries()
+    public void WeekTabView_WhenClickingLineCopyButton_ShouldCopyTaskNamesOfItsEntries()
     {
         var (view, _) = Build(
             Session(9, "Report", "Project X"),

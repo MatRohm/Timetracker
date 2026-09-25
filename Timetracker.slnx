@@ -9,4 +9,5 @@
   <Project Path="Timetracker.AzureDevOps.Tests.Unit/Timetracker.AzureDevOps.Tests.Unit.csproj" />
   <Project Path="Timetracker.AzureDevOps.Tests.UI/Timetracker.AzureDevOps.Tests.UI.csproj" />
   <Project Path="Timetracker.ActivityMonitor.Tests.Unit/Timetracker.ActivityMonitor.Tests.Unit.csproj" />
+  <Project Path="Timetracker.Tests.Architecture/Timetracker.Tests.Architecture.csproj" />
 </Solution>

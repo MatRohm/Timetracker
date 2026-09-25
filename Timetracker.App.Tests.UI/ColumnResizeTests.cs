@@ -25,7 +25,7 @@ namespace Timetracker.Tests.UI;
 public sealed class ColumnResizeTests
 {
     [AvaloniaTest]
-    public void Data_columns_can_be_resized_and_action_columns_stay_fixed()
+    public void TrackerTabView_WhenRendered_ShouldAllowResizingDataColumnsAndKeepActionColumnsFixed()
     {
         var (view, _) = Build();
         var window = new Window { Content = view, Width = 900, Height = 300 };
@@ -49,7 +49,7 @@ public sealed class ColumnResizeTests
     }
 
     [AvaloniaTest]
-    public void Dragging_the_task_header_separator_widens_the_task_column()
+    public void TrackerTabView_WhenTaskHeaderSeparatorDragged_ShouldWidenTaskColumn()
     {
         var (view, _) = Build();
         var window = new Window { Content = view, Width = 900, Height = 300 };

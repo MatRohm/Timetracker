@@ -12,7 +12,7 @@ namespace Timetracker.Tests.Unit;
 public sealed class PreviewBookingElementTests
 {
     [Test]
-    public void Preview_booking_element_is_used_for_the_next_session_and_then_cleared()
+    public void TrackerViewModel_WhenPreviewBookingElementIsSet_ShouldUseItForTheNextSessionThenClearIt()
     {
         var (repo, _) = RepositoryFake.Create();
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());

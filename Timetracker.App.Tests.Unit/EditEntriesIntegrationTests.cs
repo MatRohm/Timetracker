@@ -13,7 +13,7 @@ namespace Timetracker.Tests.Unit;
 public sealed class EditEntriesIntegrationTests
 {
     [Test]
-    public void Saving_edited_times_persists_them_and_updates_the_history_row()
+    public void EditEntriesViewModel_WhenEditedTimesAreSaved_ShouldPersistThemAndUpdateHistoryRow()
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 18, 9, 30), Entry("Meeting", 18, 11, 60));
@@ -35,7 +35,7 @@ public sealed class EditEntriesIntegrationTests
     }
 
     [Test]
-    public void Saving_leaves_other_items_untouched()
+    public void EditEntriesViewModel_WhenAnItemIsSaved_ShouldLeaveOtherItemsUntouched()
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 18, 9, 30), Entry("Meeting", 18, 11, 60));
@@ -51,7 +51,7 @@ public sealed class EditEntriesIntegrationTests
     }
 
     [Test]
-    public void Deleting_the_last_session_removes_the_history_row()
+    public void EditEntriesViewModel_WhenLastSessionIsDeleted_ShouldRemoveHistoryRow()
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 18, 9, 30), Entry("Meeting", 18, 11, 60));
@@ -67,7 +67,7 @@ public sealed class EditEntriesIntegrationTests
     }
 
     [Test]
-    public void Deleting_one_of_several_sessions_keeps_the_item_with_the_remaining_time()
+    public void EditEntriesViewModel_WhenOneSessionIsDeleted_ShouldKeepItemWithRemainingTime()
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 18, 9, 30), Entry("Report", 18, 14, 60));
@@ -87,7 +87,7 @@ public sealed class EditEntriesIntegrationTests
     }
 
     [Test]
-    public void Saving_updates_the_week_view_totals()
+    public void EditEntriesViewModel_WhenSessionsAreSaved_ShouldUpdateWeekViewTotals()
     {
         // Use today so the session lands in the week the view starts on.
         var today = DateTimeOffset.Now.Date.AddHours(9);

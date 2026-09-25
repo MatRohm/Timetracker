@@ -12,7 +12,7 @@ namespace Timetracker.Tests.Unit;
 public sealed class TrackerFileMigratorTests
 {
     [Test]
-    public void Chains_steps_from_the_file_version_up_to_the_target()
+    public void TrackerFileMigrator_WhenFileVersionIsOlder_ShouldChainStepsUpToTheTarget()
     {
         var oneToTwo = new StubMigration(1, 2);
         var twoToThree = new StubMigration(2, 3);
@@ -23,7 +23,7 @@ public sealed class TrackerFileMigratorTests
     }
 
     [Test]
-    public void An_up_to_date_file_needs_no_steps()
+    public void TrackerFileMigrator_WhenFileIsUpToDate_ShouldNeedNoSteps()
     {
         var chain = TrackerFileMigrator.BuildChain(2, 2, [new StubMigration(1, 2)]);
 
@@ -31,7 +31,7 @@ public sealed class TrackerFileMigratorTests
     }
 
     [Test]
-    public void A_missing_step_is_reported()
+    public void TrackerFileMigrator_WhenStepIsMissing_ShouldReportIt()
     {
         var act = () => TrackerFileMigrator.BuildChain(1, 3, [new StubMigration(1, 2)]);
 
@@ -40,7 +40,7 @@ public sealed class TrackerFileMigratorTests
     }
 
     [Test]
-    public void The_version_one_migration_states_the_range_it_handles()
+    public void TrackerFileMigrator_WhenVersionOneMigration_ShouldStateTheRangeItHandles()
     {
         var migration = new VersionOneToTwoMigration("unused.json");
 

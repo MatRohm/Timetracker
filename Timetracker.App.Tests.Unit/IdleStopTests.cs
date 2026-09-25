@@ -12,7 +12,7 @@ namespace Timetracker.Tests.Unit;
 public sealed class IdleStopTests
 {
     [Test]
-    public void A_running_session_stops_once_the_idle_threshold_is_reached()
+    public void TrackerViewModel_WhenIdleThresholdIsReached_ShouldStopRunningSession()
     {
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
@@ -30,7 +30,7 @@ public sealed class IdleStopTests
     }
 
     [Test]
-    public void Idle_below_the_threshold_keeps_the_session_running()
+    public void TrackerViewModel_WhenIdleIsBelowThreshold_ShouldKeepSessionRunning()
     {
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
@@ -47,7 +47,7 @@ public sealed class IdleStopTests
     }
 
     [Test]
-    public void The_idle_span_is_not_counted_as_work_time()
+    public void TrackerViewModel_WhenIdleSpanOccurs_ShouldNotCountItAsWorkTime()
     {
         // A 15-minute session, then 45 minutes away: only the 15 worked minutes
         // are billed, and the entry ends when the user walked away.
@@ -73,7 +73,7 @@ public sealed class IdleStopTests
     }
 
     [Test]
-    public void The_status_line_explains_the_idle_stop()
+    public void TrackerViewModel_WhenIdleStopHappens_ShouldExplainItInStatusLine()
     {
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
@@ -90,7 +90,7 @@ public sealed class IdleStopTests
     }
 
     [Test]
-    public void A_stopped_session_is_not_stopped_again_on_later_ticks()
+    public void TrackerViewModel_WhenSessionAlreadyStopped_ShouldNotStopItAgainOnLaterTicks()
     {
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
@@ -108,7 +108,7 @@ public sealed class IdleStopTests
     }
 
     [Test]
-    public void Idle_does_not_stop_a_session_that_is_not_running()
+    public void TrackerViewModel_WhenSessionIsNotRunning_ShouldNotStopItForIdle()
     {
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
@@ -123,7 +123,7 @@ public sealed class IdleStopTests
     }
 
     [Test]
-    public void Starting_again_after_an_idle_stop_works_normally()
+    public void TrackerViewModel_WhenStartingAgainAfterIdleStop_ShouldWorkNormally()
     {
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();

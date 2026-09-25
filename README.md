@@ -282,7 +282,8 @@ Timetracker/
 ├── Timetracker.Plugins.Tests.Unit/  # Plugins unit tests (UI host accessor)
 ├── Timetracker.AzureDevOps.Tests.Unit/  # Azure DevOps unit tests (config, client, service)
 ├── Timetracker.AzureDevOps.Tests.UI/    # Azure DevOps UI tests (panel rendering)
-└── Timetracker.ActivityMonitor.Tests.Unit/  # Activity monitor unit tests
+├── Timetracker.ActivityMonitor.Tests.Unit/  # Activity monitor unit tests
+└── Timetracker.Tests.Architecture/  # Architecture rules (references, test naming)
 ```
 
 The app project keeps the assembly name `Timetracker`, so the shipped executable
@@ -295,6 +296,22 @@ tests are needed). Unit tests use NUnit with AwesomeAssertions + FakeItEasy;
 UI tests use the Avalonia headless NUnit platform. Each UI test assembly needs
 at least one test fixture marked with an explicit `[TestFixture]`, otherwise the
 NUnit adapter does not discover the headless tests.
+
+**Test method names** follow
+`<ComponentTested>_When<StateCondition>_Should<ExpectedResult>`, e.g.
+`ActivityTracker_WhenIdleLastsAtLeastOneHour_ShouldLogAnIdleSpan`. The only
+underscores are the `_When` and `_Should` separators; each part is PascalCase.
+
+**`Timetracker.Tests.Architecture`** enforces the structural rules and runs with
+the rest of the suite:
+
+- Only unit-test (and UI-test) projects may reference `Timetracker.App`.
+- A non-App product project may only reference `Timetracker.Plugins`.
+- Unit-test and UI-test methods must follow the naming pattern above.
+
+It checks project references against the `.csproj` files and test names through
+ArchUnitNET, so the other projects are built but not referenced (their assemblies
+are copied next to the architecture test host for analysis).
 
 The view model knows nothing about Avalonia; the view contains no business logic.
 They communicate via data bindings, `ICommand`s, and view-model events.

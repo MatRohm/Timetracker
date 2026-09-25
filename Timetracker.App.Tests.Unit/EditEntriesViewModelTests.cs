@@ -13,7 +13,7 @@ namespace Timetracker.Tests.Unit;
 public sealed class EditEntriesViewModelTests
 {
     [Test]
-    public void Lists_every_session_of_the_item_in_chronological_order()
+    public void EditEntriesViewModel_WhenItemHasSessions_ShouldListThemChronologically()
     {
         var item = Item("Report",
             Session("Report", day: 18, hour: 14, minutes: 30),
@@ -28,7 +28,7 @@ public sealed class EditEntriesViewModelTests
     }
 
     [Test]
-    public void Editing_start_and_end_recalculates_the_duration()
+    public void EditEntriesViewModel_WhenStartAndEndAreEdited_ShouldRecalculateTheDuration()
     {
         var session = Session("Report", day: 18, hour: 9, minutes: 30);
         var editor = new EditEntriesViewModel(Item("Report", session));
@@ -43,7 +43,7 @@ public sealed class EditEntriesViewModelTests
     }
 
     [Test]
-    public void Editing_the_start_date_moves_the_whole_session()
+    public void EditEntriesViewModel_WhenStartDateIsEdited_ShouldMoveTheWholeSession()
     {
         var session = Session("Report", day: 18, hour: 9, minutes: 30);
         var editor = new EditEntriesViewModel(Item("Report", session));
@@ -57,7 +57,7 @@ public sealed class EditEntriesViewModelTests
     }
 
     [Test]
-    public void Ending_before_starting_is_clamped_to_zero_and_rejected_on_save()
+    public void EditEntriesViewModel_WhenEndIsBeforeStart_ShouldClampDurationToZeroAndRejectOnSave()
     {
         var session = Session("Report", day: 18, hour: 9, minutes: 30);
         var editor = new EditEntriesViewModel(Item("Report", session));
@@ -71,7 +71,7 @@ public sealed class EditEntriesViewModelTests
     }
 
     [Test]
-    public void An_unparsable_time_is_rejected_on_save()
+    public void EditEntriesViewModel_WhenTimeIsUnparsable_ShouldRejectOnSave()
     {
         var session = Session("Report", day: 18, hour: 9, minutes: 30);
         var editor = new EditEntriesViewModel(Item("Report", session));
@@ -86,7 +86,7 @@ public sealed class EditEntriesViewModelTests
     }
 
     [Test]
-    public void Editing_the_time_text_moves_the_staged_start_and_is_shown_back()
+    public void EditEntriesViewModel_WhenTimeTextIsEdited_ShouldMoveStagedStartAndShowItBack()
     {
         var session = Session("Report", day: 18, hour: 9, minutes: 30);
         var editor = new EditEntriesViewModel(Item("Report", session));
@@ -101,7 +101,7 @@ public sealed class EditEntriesViewModelTests
     }
 
     [Test]
-    public void Editing_keeps_the_sessions_stored_offset_instead_of_the_machine_timezone()
+    public void EditEntriesViewModel_WhenSessionHasStoredOffset_ShouldKeepItInsteadOfMachineTimezone()
     {
         // The session was recorded at +10:00; editing must not reinterpret the typed
         // wall clock in whatever offset the machine running the tests happens to have.
@@ -126,7 +126,7 @@ public sealed class EditEntriesViewModelTests
     }
 
     [Test]
-    public void Saving_applies_the_edited_times_to_the_underlying_session()
+    public void EditEntriesViewModel_WhenSaved_ShouldApplyEditedTimesToUnderlyingSession()
     {
         var session = Session("Report", day: 18, hour: 9, minutes: 30);
         var editor = new EditEntriesViewModel(Item("Report", session));
@@ -146,7 +146,7 @@ public sealed class EditEntriesViewModelTests
     }
 
     [Test]
-    public void Saving_ignores_a_stale_time_text_that_would_revert_the_edit()
+    public void EditEntriesViewModel_WhenTimeTextIsStale_ShouldIgnoreItOnSave()
     {
         // The text boxes are refreshed on commit; a programmatic SetStart/SetEnd must
         // win over whatever text happens to be staged.
@@ -166,7 +166,7 @@ public sealed class EditEntriesViewModelTests
     }
 
     [Test]
-    public void Saving_rejects_an_invalid_session_and_keeps_the_underlying_entry_untouched()
+    public void EditEntriesViewModel_WhenSessionIsInvalid_ShouldRejectSaveAndKeepUnderlyingEntryUntouched()
     {
         var session = Session("Report", day: 18, hour: 9, minutes: 30);
         var editor = new EditEntriesViewModel(Item("Report", session));
@@ -182,7 +182,7 @@ public sealed class EditEntriesViewModelTests
     }
 
     [Test]
-    public void Deleting_a_session_removes_only_that_session()
+    public void EditEntriesViewModel_WhenSessionIsDeleted_ShouldRemoveOnlyThatSession()
     {
         var first = Session("Report", day: 18, hour: 9, minutes: 30);
         var second = Session("Report", day: 18, hour: 14, minutes: 60);
@@ -197,7 +197,7 @@ public sealed class EditEntriesViewModelTests
     }
 
     [Test]
-    public void The_summary_reflects_the_edited_totals_and_session_count()
+    public void EditEntriesViewModel_WhenTotalsAreEdited_ShouldReflectThemInSummary()
     {
         var editor = new EditEntriesViewModel(Item("Report",
             Session("Report", day: 18, hour: 9, minutes: 30),
@@ -209,7 +209,7 @@ public sealed class EditEntriesViewModelTests
     }
 
     [Test]
-    public void An_item_with_no_sessions_is_reported_as_empty()
+    public void EditEntriesViewModel_WhenItemHasNoSessions_ShouldReportItAsEmpty()
     {
         var editor = new EditEntriesViewModel(new EntryRow([]));
 
