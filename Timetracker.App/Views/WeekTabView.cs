@@ -203,13 +203,28 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
         {
             var day = _week.Days[i];
 
-            var header = new TextBlock
+            var caption = new TextBlock
             {
                 Text = day.Header,
                 FontWeight = FontWeight.Bold,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+
+            var header = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 4,
                 Margin = new Thickness(4, 0, 4, 4),
                 Background = day.IsToday ? TodayBrush : SurfaceBrush,
             };
+            header.Children.Add(caption);
+
+            // Copying by booking element only makes sense while that grouping is on.
+            if (_week.GroupByBookingElement)
+            {
+                header.Children.Add(BuildCopyDayButton(day));
+            }
+
             Grid.SetColumn(header, i);
             Grid.SetRow(header, 0);
             _daysGrid.Children.Add(header);
@@ -245,6 +260,51 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
                 Grid.SetRow(text, 2 + c);
                 _daysGrid.Children.Add(text);
             }
+        }
+    }
+
+    /// <summary>
+    /// A small copy button for one weekday column: copies that day's booking element
+    /// names, one per line, to the clipboard and reports the result in the status line.
+    /// </summary>
+    private Control BuildCopyDayButton(WeekDayViewModel day)
+    {
+        var button = new Button
+        {
+            Content = "⧉",
+            FontSize = 11,
+            Padding = new Thickness(4, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        ToolTip.SetTip(button, "Copy this day's booking elements");
+
+        button.Click += async (_, _) => await CopyBookingElementsAsync(day);
+        return button;
+    }
+
+    private async Task CopyBookingElementsAsync(WeekDayViewModel day)
+    {
+        var text = day.BookingElementNamesText;
+        if (text.Length == 0)
+        {
+            ShowStatus("Nothing to copy for this day.", WeekStatusKind.Info);
+            return;
+        }
+
+        if (TopLevel.GetTopLevel(this)?.Clipboard is not { } clipboard)
+        {
+            ShowStatus("Could not access the clipboard.", WeekStatusKind.Error);
+            return;
+        }
+
+        try
+        {
+            await clipboard.SetTextAsync(text);
+            ShowStatus("Copied this day's booking elements.", WeekStatusKind.Success);
+        }
+        catch (Exception ex)
+        {
+            ShowStatus("Could not copy: " + ex.Message, WeekStatusKind.Error);
         }
     }
 

@@ -106,6 +106,45 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
+    public void Booking_element_names_are_listed_one_per_line_in_column_order()
+    {
+        var week = new WeekViewModel();
+        var today = DateTimeOffset.Now.Date;
+
+        week.UpdateSessions(
+        [
+            Session(today, 9, 60, "Report", "Project X"),
+            Session(today, 14, 30, "Report", "Project X"),
+            Session(today, 12, 30, "Meeting", "Project Y"),
+        ]);
+
+        var names = week.Days.Single(d => d.IsToday).BookingElementNamesText.Split(Environment.NewLine);
+
+        names.Should().Equal("Project X", "Project Y");
+    }
+
+    [Test]
+    public void Booking_element_names_are_empty_in_task_grouping_mode()
+    {
+        var week = new WeekViewModel();
+        var today = DateTimeOffset.Now.Date;
+        week.UpdateSessions([Session(today, 9, 60, "Report", "Project X")]);
+
+        week.GroupByBookingElement = false;
+
+        week.Days.Single(d => d.IsToday).BookingElementNamesText.Should().BeEmpty(
+            "copying by booking element is only offered while grouping by it");
+    }
+
+    [Test]
+    public void A_day_without_bookings_has_no_booking_element_names()
+    {
+        var week = new WeekViewModel();
+
+        week.Days.Should().OnlyContain(d => d.BookingElementNamesText.Length == 0);
+    }
+
+    [Test]
     public void Week_total_sums_all_sessions_of_the_week()
     {
         var week = new WeekViewModel();

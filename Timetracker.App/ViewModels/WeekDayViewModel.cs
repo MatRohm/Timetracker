@@ -11,6 +11,7 @@ public sealed class WeekDayViewModel : ObservableObject
     private string _entriesText = "";
     private string _totalText = "";
     private bool _isToday;
+    private string _bookingElementNamesText = "";
 
     public DateTimeOffset Date { get; private set; }
 
@@ -42,6 +43,16 @@ public sealed class WeekDayViewModel : ObservableObject
         private set => SetProperty(ref _isToday, value);
     }
 
+    /// <summary>
+    /// The day's booking element names, one per line, in the order they appear in
+    /// the column. Empty when the day has none; used by the day's copy button.
+    /// </summary>
+    public string BookingElementNamesText
+    {
+        get => _bookingElementNamesText;
+        private set => SetProperty(ref _bookingElementNamesText, value);
+    }
+
     public void Update(DateTimeOffset date, IEnumerable<TrackerEntry> sessions, bool groupByBookingElement)
     {
         var items = sessions.OrderBy(e => e.Start).ToList();
@@ -56,10 +67,15 @@ public sealed class WeekDayViewModel : ObservableObject
             .GroupBy(
                 e => groupByBookingElement ? e.BookingElement.Trim() : e.Task.Trim(),
                 StringComparer.CurrentCultureIgnoreCase)
-            .OrderBy(g => g.Min(e => e.Start));
+            .OrderBy(g => g.Min(e => e.Start))
+            .ToList();
 
         EntriesText = string.Join(Environment.NewLine, grouped.Select(g =>
             $"{GroupLabel(g, groupByBookingElement)} ({HoursMinutes(g.Sum(e => e.DurationSeconds))})"));
+
+        BookingElementNamesText = groupByBookingElement
+            ? string.Join(Environment.NewLine, grouped.Select(g => GroupLabel(g, groupByBookingElement: true)))
+            : "";
 
         TotalText = items.Count > 0 ? $"Σ {HoursMinutes(items.Sum(e => e.DurationSeconds))}" : "";
         IsToday = date.Date == DateTimeOffset.Now.Date;
