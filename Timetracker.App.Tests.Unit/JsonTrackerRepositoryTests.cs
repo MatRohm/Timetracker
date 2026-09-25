@@ -200,6 +200,38 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
+    public void MigrateIfNeeded_backs_up_the_original_file_before_rewriting_it()
+    {
+        var path = TempPath();
+        var original = """
+            [
+              { "task": "Report", "bookingElement": "Quarterly", "start": "2026-09-18T09:00:00+02:00", "end": "2026-09-18T09:30:00+02:00", "duration": "00:30:00", "durationSeconds": 1800 }
+            ]
+            """;
+        WriteVersionOne(path, original);
+        var repo = new JsonTrackerRepository(path);
+
+        repo.MigrateIfNeeded();
+
+        File.Exists(repo.MigrationBackupPath).Should().BeTrue("the original is kept");
+        File.ReadAllText(repo.MigrationBackupPath).Should().Be(original,
+            "the backup is the untouched version-1 file");
+        File.ReadAllText(path).Should().Contain("\"version\": 2");
+    }
+
+    [Test]
+    public void MigrateIfNeeded_does_not_back_up_when_there_is_nothing_to_migrate()
+    {
+        var path = TempPath();
+        var repo = new JsonTrackerRepository(path);
+        repo.Add(NewEntry("Report"));
+
+        repo.MigrateIfNeeded();
+
+        File.Exists(repo.MigrationBackupPath).Should().BeFalse("no migration happened");
+    }
+
+    [Test]
     public void MigrateIfNeeded_leaves_a_version_two_file_untouched()
     {
         var path = TempPath();

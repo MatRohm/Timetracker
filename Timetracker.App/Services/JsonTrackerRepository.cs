@@ -60,6 +60,12 @@ public sealed class JsonTrackerRepository : ITrackerRepository, ITrackerFileMigr
 
     public string FilePath => _jsonPath;
 
+    /// <summary>
+    /// Copy of the file as it was before the version-1 to version-2 migration, kept
+    /// next to the original so a migration can always be undone by hand.
+    /// </summary>
+    public string MigrationBackupPath => _jsonPath + ".v1-backup";
+
     public IReadOnlyList<TrackerEntry> GetAll() => LoadEntries();
 
     public void Add(TrackerEntry entry)
@@ -86,8 +92,10 @@ public sealed class JsonTrackerRepository : ITrackerRepository, ITrackerFileMigr
                 return false;
             }
 
-            // The file uses the unversioned (version 1) format: read it and rewrite
-            // it as version 2, keeping the original if anything goes wrong.
+            // The file uses the unversioned (version 1) format. Keep a copy first,
+            // so the migration can be undone if anything turns out wrong, then
+            // rewrite it as version 2.
+            File.Copy(_jsonPath, MigrationBackupPath, overwrite: true);
             WriteAll(ReadEntries(text).ToList());
             return true;
         }
