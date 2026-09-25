@@ -376,6 +376,10 @@ and are enforced by the shared `commit-msg` hook. Enable it once per clone:
 git config core.hooksPath .githooks
 ```
 
+The Beads integration manages its own hook directory (`.beads/hooks`, chained on
+top of the same `commit-msg` rule) and points `core.hooksPath` there when Beads is
+set up; the Conventional Commits check stays in force either way.
+
 ### Self-contained publish
 
 Windows (single-file, portable):
