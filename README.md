@@ -267,8 +267,14 @@ Timetracker/
 │   │   └── TrackerStatus.cs         # Info / Success / Error status kinds
 │   ├── Views/
 │   │   ├── TrackerWindow.cs         # Shell: window, tabs, title binding, close handling
-│   │   ├── TrackerTabView.cs        # Tracker tab: input, suggestions, timer, history grid
-│   │   ├── WeekTabView.cs           # Week view tab: weekday columns, navigation
+│   │   ├── TrackerTabView.cs        # Tracker tab: composes input, toolbar, grid, pager
+│   │   ├── WeekTabView.cs           # Week tab: composes header, day columns, status line
+│   │   ├── Components/              # Reusable view pieces (Timetracker.Views.Components)
+│   │   │   ├── TaskInputField.cs    # Task-name input with autocomplete
+│   │   │   ├── EntryHistoryGrid.cs  # History grid: row actions, sorting, delete, inline edit
+│   │   │   ├── WeekDaysGrid.cs      # Seven weekday columns with per-line copy
+│   │   │   ├── DeleteConfirmation.cs# Shared delete confirmation dialog
+│   │   │   └── ViewBrushes.cs       # Shared view colors
 │   │   └── AvaloniaUiTimer.cs       # Avalonia timer implementation
 │   ├── App.cs                       # Composition root: container, hooks, error handling
 │   ├── Program.cs                   # Entry point (Avalonia bootstrap)
@@ -332,7 +338,9 @@ ArchUnitNET, so the other projects are built but not referenced (their assemblie
 are copied next to the architecture test host for analysis).
 
 The view model knows nothing about Avalonia; the view contains no business logic.
-They communicate via data bindings, `ICommand`s, and view-model events.
+They communicate via data bindings, `ICommand`s, and view-model events. The two tab
+views are composed from small, focused controls in `Timetracker.Views.Components`
+(task input, history grid, week days grid), each owning one part of the screen.
 
 ## Build
 
