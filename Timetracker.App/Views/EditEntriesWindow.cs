@@ -179,8 +179,7 @@ public sealed class EditEntriesWindow : Window
         {
             Header = "",
             Width = new DataGridLength(48),
-            CellTemplate = new FuncDataTemplate<SessionEditRow>(
-                (row, _) => BuildDeleteButton(row), true),
+            CellTemplate = new FuncDataTemplate<SessionEditRow>((_, _) => BuildDeleteButton(), true),
         });
         return grid;
     }
@@ -206,7 +205,7 @@ public sealed class EditEntriesWindow : Window
             return box;
         }, true);
 
-    private Control BuildDeleteButton(SessionEditRow? row)
+    private Control BuildDeleteButton()
     {
         var button = new Button
         {
@@ -217,11 +216,15 @@ public sealed class EditEntriesWindow : Window
         };
         ToolTip.SetTip(button, "Delete this session");
 
-        // The row instance is captured, so no lookup through the visual tree is needed.
-        if (row is not null)
+        // The row is read from the button's DataContext at click time: the grid
+        // recycles cells, so a captured row would go stale after a re-sort.
+        button.Click += async (_, _) =>
         {
-            button.Click += async (_, _) => await DeleteAsync(row);
-        }
+            if (button.DataContext is SessionEditRow row)
+            {
+                await DeleteAsync(row);
+            }
+        };
         return button;
     }
 
