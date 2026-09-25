@@ -151,12 +151,6 @@ public sealed class EditEntriesWindow : Window
             Width = new DataGridLength(1.3, DataGridLengthUnitType.Star),
             Binding = new Binding(nameof(SessionEditRow.Task)),
         });
-        grid.Columns.Add(new DataGridTextColumn
-        {
-            Header = "Booking element",
-            Width = new DataGridLength(1.5, DataGridLengthUnitType.Star),
-            Binding = new Binding(nameof(SessionEditRow.BookingElement)),
-        });
         grid.Columns.Add(new DataGridTemplateColumn
         {
             Header = "Start",

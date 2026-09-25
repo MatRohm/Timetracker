@@ -160,7 +160,8 @@ public sealed class ViewRenderTests
         headers.Should().Contain("Start");
         headers.Should().Contain("End");
         headers.Should().Contain("Duration");
-        grid.Columns.Count.Should().Be(6);
+        headers.Should().NotContain("Booking element", "the dialog edits times, not the booking element");
+        grid.Columns.Count.Should().Be(5);
     }
 
     [AvaloniaTest]
