@@ -52,6 +52,9 @@ public sealed class App : Application
             // itself in HookRegistry, the shell resolves only interfaces.
             _services = HookRegistry.BuildServiceProvider();
 
+            // Upgrade an older tracker file to the current format before the first read.
+            RunStartupMigrations(_services);
+
             var viewModel = _services.GetRequiredService<ViewModels.TrackerViewModel>();
             var window = new TrackerWindow(viewModel, _services);
             desktop.MainWindow = window;
@@ -73,6 +76,25 @@ public sealed class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>
+    /// Runs every registered file migration once, before any component reads the
+    /// data file. A failure is ignored so a broken file can never stop startup.
+    /// </summary>
+    private static void RunStartupMigrations(IServiceProvider services)
+    {
+        foreach (var migration in services.GetServices<Services.ITrackerFileMigration>())
+        {
+            try
+            {
+                migration.MigrateIfNeeded();
+            }
+            catch (Exception ex)
+            {
+                Services.ErrorLog.Log("TrackerFileMigration", ex);
+            }
+        }
     }
 
     /// <summary>Explains that another instance owns the data file and shuts this one down.</summary>

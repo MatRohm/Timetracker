@@ -186,21 +186,39 @@ Entries are stored at `timetracker.json` in your user folder
 Linux). The file is rewritten atomically after each stop; every existing entry is
 always preserved, nothing is ever removed.
 
+The file carries a `version` marker and groups everything worked on one task into a
+single record, so it reads like a list of tasks rather than a flat log:
+
 ```json
-[
-  {
-    "task": "Writing report",
-    "bookingElement": "Quarterly figures",
-    "start": "2026-09-19T14:03:21.123+02:00",
-    "end": "2026-09-19T15:10:02.456+02:00",
-    "duration": "01:06:41",
-    "durationSeconds": 4001.3
-  }
-]
+{
+  "version": 2,
+  "tasks": [
+    {
+      "name": "Writing report",
+      "bookingElement": "Quarterly figures",
+      "sessions": [
+        {
+          "start": "2026-09-19T14:03:21.123+02:00",
+          "end": "2026-09-19T15:10:02.456+02:00",
+          "duration": "01:06:41",
+          "durationSeconds": 4001.3
+        }
+      ]
+    }
+  ]
+}
 ```
 
-`bookingElement` is optional. Older files that stored it under the JSON name
-`description` are migrated automatically on load; saves always write the new name.
+`bookingElement` is optional. A task's booking element is the first non-empty one
+among its sessions, or empty when none carries one. Sessions with the same task name
+are grouped case-insensitively, keeping the first spelling that was seen. Saves
+always write this format.
+
+Files without a version marker are the older (version&nbsp;1) flat array. They are
+read transparently, and at startup the app rewrites them to version&nbsp;2 in place:
+the sessions are grouped by task name as described above. Version&nbsp;1 entries that
+stored the booking element under the JSON name `description` are migrated as well.
+An unrecognised, newer version is left untouched rather than overwritten.
 
 ## Project structure (MVVM + add-in hooks)
 
@@ -220,7 +238,8 @@ Timetracker/
 │   ├── Models/
 │   │   └── TrackerEntry.cs          # One finished time entry
 │   ├── Services/
-│   │   ├── JsonTrackerRepository.cs # Append-only JSON persistence (atomic writes)
+│   │   ├── JsonTrackerRepository.cs # Versioned JSON persistence, v1→v2 migration (atomic writes)
+│   │   ├── TrackerFileFormat.cs     # Maps sessions to/from the one-record-per-task file shape
 │   │   └── ErrorLog.cs              # Timestamped error log next to the executable
 │   ├── ViewModels/
 │   │   ├── TrackerViewModel.cs      # All logic: start/stop, timer, state, sorting
