@@ -374,6 +374,7 @@ and runs without installing .NET.
 ## App icon
 
 The app icon (a fist smashing a clock) lives at `Timetracker.App/Timetracker.png`
-(the ICO `Timetracker.ico` is kept for Windows builds) and is shown in the title
-bar, taskbar and Alt-Tab view. The Azure DevOps favicon is likewise embedded as a
-PNG (`Timetracker.AzureDevOps/azure-favicon.png`).
+and `Timetracker.ico`. The PNG is embedded as the window icon (title bar); the ICO
+is set as `<ApplicationIcon>`, which Windows uses for the taskbar, Alt-Tab and
+Explorer. The Azure DevOps favicon is likewise embedded as a PNG
+(`Timetracker.AzureDevOps/azure-favicon.png`).

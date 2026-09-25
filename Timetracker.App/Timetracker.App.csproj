@@ -12,6 +12,12 @@
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
     <!--
+      Embeds Timetracker.ico as the executable icon, which Windows uses for the
+      taskbar, Alt-Tab and Explorer (Avalonia's per-window Icon only sets the
+      window icon in the title bar). Not Windows-only: it is ignored elsewhere.
+    -->
+    <ApplicationIcon>Timetracker.ico</ApplicationIcon>
+    <!--
       Bundle Avalonia's native libraries (libSkiaSharp, libHarfBuzzSharp) into the
       single-file executable and extract them on startup. Without this they are
       copied next to the executable instead, so a portable single file published
