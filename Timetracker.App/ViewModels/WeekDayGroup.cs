@@ -15,6 +15,9 @@ public sealed class WeekDayGroup
     /// <summary>Line as shown in the column, e.g. "Project X (1:30)".</summary>
     public string Label { get; }
 
-    /// <summary>Text the line's copy button copies, i.e. the line's name.</summary>
+    /// <summary>
+    /// The line's tracking entries as task names, one per line, e.g. "Report\nReview";
+    /// this is what the line's copy button copies.
+    /// </summary>
     public string CopyText { get; }
 }

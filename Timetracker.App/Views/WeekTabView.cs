@@ -250,9 +250,9 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
     }
 
     /// <summary>
-    /// One booking element line (label plus a copy button) that copies the booking
-    /// element's name. The button is only offered while grouping by booking element,
-    /// because that is the grouping it refers to.
+    /// One booking element line (label plus a copy button) that copies the task
+    /// names of that line's tracking entries. The button is only offered while
+    /// grouping by booking element, because that is the grouping it refers to.
     /// </summary>
     private Control BuildEntryLine(WeekDayGroup group)
     {
@@ -287,7 +287,7 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
             Padding = new Thickness(3, 0),
             VerticalAlignment = VerticalAlignment.Center,
         };
-        ToolTip.SetTip(button, "Copy this booking element");
+        ToolTip.SetTip(button, "Copy this booking element's tracked tasks");
 
         button.Click += async (_, _) => await CopyGroupAsync(group);
         return button;
@@ -304,7 +304,7 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
         try
         {
             await clipboard.SetTextAsync(group.CopyText);
-            ShowStatus($"Copied \"{group.CopyText}\".", WeekStatusKind.Success);
+            ShowStatus("Copied this booking element's tracked tasks.", WeekStatusKind.Success);
         }
         catch (Exception ex)
         {

@@ -106,7 +106,7 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
-    public void A_booking_element_line_copies_the_element_name()
+    public void A_booking_element_line_copies_the_task_names_of_its_entries()
     {
         var week = new WeekViewModel();
         var today = DateTimeOffset.Now.Date;
@@ -120,7 +120,7 @@ public sealed class WeekViewModelTests
         var group = week.Days.Single(d => d.IsToday).Groups.Single();
 
         group.Label.Should().Be("Project X (1:30)");
-        group.CopyText.Should().Be("Project X", "the copy button copies the element name");
+        group.CopyText.Split(Environment.NewLine).Should().Equal("Report", "Review");
     }
 
     [Test]
@@ -140,13 +140,13 @@ public sealed class WeekViewModelTests
 
         groups.Should().HaveCount(2, "one line per booking element");
         groups[0].Label.Should().Be("Project X (1:30)");
-        groups[0].CopyText.Should().Be("Project X");
+        groups[0].CopyText.Should().Be("Report" + Environment.NewLine + "Report");
         groups[1].Label.Should().Be("Project Y (0:30)");
-        groups[1].CopyText.Should().Be("Project Y");
+        groups[1].CopyText.Should().Be("Meeting");
     }
 
     [Test]
-    public void In_task_grouping_a_line_copies_the_task_name()
+    public void In_task_grouping_a_line_copies_its_entries()
     {
         var week = new WeekViewModel();
         var today = DateTimeOffset.Now.Date;
@@ -160,7 +160,7 @@ public sealed class WeekViewModelTests
 
         var group = week.Days.Single(d => d.IsToday).Groups.Single();
         group.Label.Should().Be("Report (1:15)");
-        group.CopyText.Should().Be("Report");
+        group.CopyText.Split(Environment.NewLine).Should().Equal("Report", "report");
     }
 
     [Test]

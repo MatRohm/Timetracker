@@ -68,7 +68,7 @@ public sealed class WeekDayViewModel : ObservableObject
 
         Groups = [.. grouped.Select(g => new WeekDayGroup(
             $"{GroupLabel(g, groupByBookingElement)} ({HoursMinutes(g.Sum(e => e.DurationSeconds))})",
-            GroupLabel(g, groupByBookingElement)))];
+            BuildCopyText(g)))];
 
         EntriesText = string.Join(Environment.NewLine, Groups.Select(g => g.Label));
 
@@ -160,4 +160,13 @@ public sealed class WeekDayViewModel : ObservableObject
 
     private static string HoursMinutes(double seconds) =>
         TimeSpan.FromSeconds(Math.Round(seconds)).ToString(@"h\:mm");
+
+    /// <summary>
+    /// The copy text of one line: the task names of its tracking entries, one per
+    /// line, in the order the entries were tracked.
+    /// </summary>
+    private static string BuildCopyText(IEnumerable<TrackerEntry> group) =>
+        string.Join(Environment.NewLine, group
+            .OrderBy(e => e.Start)
+            .Select(e => e.Task.Trim()));
 }

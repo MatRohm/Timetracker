@@ -17,8 +17,8 @@ namespace Timetracker.Tests.UI;
 
 /// <summary>
 /// While grouping by booking element, each booking element line in the week view
-/// has a copy button that copies that element's name to the clipboard. Switching to
-/// task grouping removes the buttons.
+/// has a copy button that copies the task names of that line's tracking entries.
+/// Switching to task grouping removes the buttons.
 /// </summary>
 public sealed class WeekCopyButtonTests
 {
@@ -47,7 +47,7 @@ public sealed class WeekCopyButtonTests
     }
 
     [AvaloniaTest]
-    public void Clicking_a_line_copy_button_copies_that_booking_elements_name()
+    public void Clicking_a_line_copy_button_copies_the_task_names_of_its_entries()
     {
         var (view, _) = Build(
             Session(9, "Report", "Project X"),
@@ -62,7 +62,8 @@ public sealed class WeekCopyButtonTests
         Dispatcher.UIThread.RunJobs();
 
         window.Clipboard!.GetTextAsync().GetAwaiter().GetResult()
-            .Should().Be("Project X", "the button copies that booking element's name");
+            .Should().Be("Report" + Environment.NewLine + "Review",
+                "the task names of that element's tracking entries, oldest first");
     }
 
     private static (DateTimeOffset Start, string Task, string Booking) Session(
