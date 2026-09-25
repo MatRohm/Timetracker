@@ -244,16 +244,14 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
             Header = "",
             Width = new DataGridLength(44),
             CanUserResize = false,
-            CellTemplate = new FuncDataTemplate<EntryRow>(
-                (row, _) => BuildEditButton(row), true),
+            CellTemplate = new FuncDataTemplate<EntryRow>((_, _) => BuildEditButton(), true),
         });
         _grid.Columns.Add(new DataGridTemplateColumn
         {
             Header = "",
             Width = new DataGridLength(44),
             CanUserResize = false,
-            CellTemplate = new FuncDataTemplate<EntryRow>(
-                (row, _) => BuildPlayButton(row), true),
+            CellTemplate = new FuncDataTemplate<EntryRow>((_, _) => BuildPlayButton(), true),
         });
 
         _grid.Columns.Add(new DataGridTextColumn
@@ -305,8 +303,12 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         button.Command = command;
     }
 
-    /// <summary>Grid row action: a pencil button that opens the item's editor.</summary>
-    private Control BuildEditButton(EntryRow? row)
+    /// <summary>
+    /// Grid row action: a pencil button that opens the item's editor. The row is
+    /// resolved from the button's DataContext at click time, not captured here,
+    /// because the grid recycles cells and their built control across sorts.
+    /// </summary>
+    private Control BuildEditButton()
     {
         var button = new Button
         {
@@ -318,19 +320,23 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         };
         ToolTip.SetTip(button, "Edit this item's entries");
 
-        // The row instance is captured, so no lookup through the visual tree is needed.
-        if (row is not null)
+        button.Click += (_, _) =>
         {
-            button.Click += (_, _) => OpenEditor(row);
-        }
+            if (button.DataContext is EntryRow row)
+            {
+                OpenEditor(row);
+            }
+        };
         return button;
     }
 
     /// <summary>
     /// Grid row action: a play button that starts timing the row's task. It follows
     /// the edit button's style and is disabled while a session is already running.
+    /// The row comes from the button's DataContext at click time (see
+    /// <see cref="BuildEditButton"/>).
     /// </summary>
-    private Control BuildPlayButton(EntryRow? row)
+    private Control BuildPlayButton()
     {
         var button = new Button
         {
@@ -342,10 +348,13 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         };
         ToolTip.SetTip(button, "Start timing this task");
 
-        if (row is not null)
+        button.Click += (_, _) =>
         {
-            button.Click += (_, _) => _vm.StartFromRow(row);
-        }
+            if (button.DataContext is EntryRow row)
+            {
+                _vm.StartFromRow(row);
+            }
+        };
 
         // A running session is never interrupted, so the action is unavailable then.
         button.Bind(Button.IsEnabledProperty, new Binding
