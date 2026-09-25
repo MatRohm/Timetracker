@@ -13,7 +13,7 @@ namespace Timetracker.AzureDevOps.Tests.UI;
 public sealed class AzureDevOpsPanelRenderTests
 {
     [AvaloniaTest]
-    public void Panel_loads_its_embedded_icon_and_button()
+    public void AzureDevOpsPanel_WhenLoaded_ShouldLoadEmbeddedIconAndButton()
     {
         var service = new AzureDevOpsService(configFilePath: "/nonexistent");
         var panel = new AzureDevOpsPanel(service, new FakeTrackerHost());

@@ -10,7 +10,7 @@ namespace Timetracker.Tests.Unit;
 public sealed class DeleteEntriesTests
 {
     [Test]
-    public void Delete_removes_only_the_selected_rows_and_persists()
+    public void TrackerViewModel_WhenDeleteSelectsSomeRows_ShouldRemoveOnlyThoseAndPersist()
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 9), Entry("Meeting", 11), Entry("Review", 13));
@@ -26,7 +26,7 @@ public sealed class DeleteEntriesTests
     }
 
     [Test]
-    public void Delete_removes_every_session_of_the_task()
+    public void TrackerViewModel_WhenDeletingTask_ShouldRemoveEverySession()
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 9), Entry("Report", 14), Entry("Meeting", 11));
@@ -40,7 +40,7 @@ public sealed class DeleteEntriesTests
     }
 
     [Test]
-    public void Delete_can_remove_multiple_tasks_at_once()
+    public void TrackerViewModel_WhenDeleteSelectsMultipleTasks_ShouldRemoveThemAll()
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 9), Entry("Meeting", 11), Entry("Review", 13));
@@ -55,7 +55,7 @@ public sealed class DeleteEntriesTests
     }
 
     [Test]
-    public void Delete_does_nothing_when_the_user_declines()
+    public void TrackerViewModel_WhenUserDeclinesDelete_ShouldDoNothing()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9), Entry("Meeting", 11));
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
@@ -70,7 +70,7 @@ public sealed class DeleteEntriesTests
     }
 
     [Test]
-    public void Delete_with_no_rows_is_a_noop()
+    public void TrackerViewModel_WhenDeleteHasNoRows_ShouldDoNothing()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9));
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
@@ -83,7 +83,7 @@ public sealed class DeleteEntriesTests
     }
 
     [Test]
-    public void Failed_delete_rolls_back_the_in_memory_state_and_reports_the_error()
+    public void TrackerViewModel_WhenDeleteFails_ShouldRollBackStateAndReportError()
     {
         var repo = A.Fake<ITrackerRepository>();
         A.CallTo(() => repo.FilePath).Returns("unused.json");
@@ -103,7 +103,7 @@ public sealed class DeleteEntriesTests
     }
 
     [Test]
-    public void Delete_writes_the_remaining_entries_to_the_real_file()
+    public void TrackerViewModel_WhenDeleteSucceeds_ShouldWriteRemainingEntriesToFile()
     {
         // End-to-end with the real repository: file contents after delete.
         var dir = Path.Combine(Path.GetTempPath(), "opencode", "tt-delete-tests");

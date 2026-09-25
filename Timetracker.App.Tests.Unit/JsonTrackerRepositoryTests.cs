@@ -8,7 +8,7 @@ namespace Timetracker.Tests.Unit;
 public sealed class JsonTrackerRepositoryTests
 {
     [Test]
-    public void Add_persists_the_entry_to_the_json_file()
+    public void JsonTrackerRepository_WhenEntryIsAdded_ShouldPersistItToTheJsonFile()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -32,7 +32,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void Add_is_append_only_and_never_removes_entries()
+    public void JsonTrackerRepository_WhenEntriesAreAdded_ShouldNeverRemoveExistingEntries()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -46,7 +46,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void Save_rewrites_all_entries_preserving_each_one()
+    public void JsonTrackerRepository_WhenSaveIsCalled_ShouldRewriteAllEntriesPreservingEachOne()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -64,7 +64,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void File_is_written_with_the_version_marker_and_one_record_per_task()
+    public void JsonTrackerRepository_WhenFileIsWritten_ShouldIncludeTheVersionMarkerAndOneRecordPerTask()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -81,7 +81,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void Sessions_of_the_same_task_are_stored_under_one_record()
+    public void JsonTrackerRepository_WhenSessionsBelongToTheSameTask_ShouldStoreThemUnderOneRecord()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -96,7 +96,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void Sessions_are_saved_oldest_first_and_load_in_order()
+    public void JsonTrackerRepository_WhenSessionsAreSaved_ShouldSaveOldestFirstAndLoadInOrder()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -109,7 +109,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void The_booking_element_of_a_task_is_the_first_non_empty_one()
+    public void JsonTrackerRepository_WhenTaskHasMultipleBookingElements_ShouldUseTheFirstNonEmptyOne()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -122,7 +122,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void Tasks_differing_only_by_case_are_merged_into_one_record()
+    public void JsonTrackerRepository_WhenTasksDifferOnlyByCase_ShouldMergeThemIntoOneRecord()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -138,7 +138,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void Missing_booking_element_loads_as_empty_string()
+    public void JsonTrackerRepository_WhenBookingElementIsMissing_ShouldLoadItAsEmptyString()
     {
         var path = TempPath();
         WriteVersionOne(path, """
@@ -153,7 +153,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void Legacy_description_field_is_migrated_to_booking_element()
+    public void JsonTrackerRepository_WhenLegacyDescriptionFieldIsPresent_ShouldMigrateItToBookingElement()
     {
         var path = TempPath();
         WriteVersionOne(path, """
@@ -170,7 +170,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void MigrateIfNeeded_upgrades_a_version_one_file_to_version_two()
+    public void JsonTrackerRepository_WhenVersionOneFileIsMigrated_ShouldUpgradeItToVersionTwo()
     {
         var path = TempPath();
         WriteVersionOne(path, """
@@ -201,7 +201,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void MigrateIfNeeded_backs_up_the_original_file_before_rewriting_it()
+    public void JsonTrackerRepository_WhenMigrationRuns_ShouldBackUpTheOriginalFileBeforeRewritingIt()
     {
         var path = TempPath();
         var original = """
@@ -221,7 +221,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void MigrateIfNeeded_does_not_back_up_when_there_is_nothing_to_migrate()
+    public void JsonTrackerRepository_WhenThereIsNothingToMigrate_ShouldNotBackUpTheFile()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -234,7 +234,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void MigrateIfNeeded_leaves_a_version_two_file_untouched()
+    public void JsonTrackerRepository_WhenFileIsVersionTwoAndMigrationRuns_ShouldLeaveItUntouched()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -249,7 +249,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void MigrateIfNeeded_does_nothing_when_there_is_no_file()
+    public void JsonTrackerRepository_WhenThereIsNoFile_ShouldDoNothing()
     {
         var path = TempPath();
         var migrator = MigratorFor(path);
@@ -259,7 +259,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void MigrateIfNeeded_keeps_an_unreadable_file_and_does_not_throw()
+    public void JsonTrackerRepository_WhenFileIsUnreadable_ShouldKeepItAndNotThrow()
     {
         var path = TempPath();
         WriteVersionOne(path, "{ not valid json");
@@ -272,7 +272,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void MigrateIfNeeded_reports_a_broken_file_through_the_log()
+    public void JsonTrackerRepository_WhenFileIsBroken_ShouldReportItThroughTheLog()
     {
         var path = TempPath();
         WriteVersionOne(path, "{ not valid json");
@@ -286,7 +286,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void An_unsupported_newer_version_is_reported_as_corrupt_and_not_overwritten()
+    public void JsonTrackerRepository_WhenFileHasUnsupportedNewerVersion_ShouldReportItAsCorruptAndNotOverwriteIt()
     {
         var path = TempPath();
         File.WriteAllText(path, """{ "version": 99, "tasks": [] }""");
@@ -299,7 +299,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void Save_writes_the_booking_element_under_its_new_name()
+    public void JsonTrackerRepository_WhenSaveIsCalled_ShouldWriteTheBookingElementUnderItsNewName()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
@@ -313,7 +313,7 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void GetAll_on_a_missing_file_returns_empty_list()
+    public void JsonTrackerRepository_WhenFileIsMissing_ShouldReturnAnEmptyList()
     {
         var all = new JsonTrackerRepository(TempPath()).GetAll();
 

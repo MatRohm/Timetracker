@@ -7,7 +7,7 @@ namespace Timetracker.ActivityMonitor.Tests.Unit;
 public sealed class ActivityMonitorTests
 {
     [Test]
-    public void Add_appends_spans_and_GetAll_returns_them_ordered_by_file()
+    public void ActivityLog_WhenSpansAreAppended_ShouldReturnThemOrderedByFile()
     {
         var path = TempPath("log-append.json");
         File.Delete(path);
@@ -25,7 +25,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void GetAll_on_a_missing_file_returns_an_empty_list()
+    public void ActivityLog_WhenFileIsMissing_ShouldReturnAnEmptyList()
     {
         var log = new ActivityLog(TempPath("does-not-exist.json"));
 
@@ -33,7 +33,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Tracker_ignores_short_idle_periods()
+    public void ActivityTracker_WhenIdlePeriodIsShort_ShouldIgnoreIt()
     {
         var path = TempPath("log-short-idle.json");
         File.Delete(path);
@@ -48,7 +48,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Tracker_logs_an_idle_span_of_at_least_one_hour()
+    public void ActivityTracker_WhenIdleLastsAtLeastOneHour_ShouldLogAnIdleSpan()
     {
         var path = TempPath("log-long-idle.json");
         File.Delete(path);
@@ -68,7 +68,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Stop_writes_the_open_span_and_marks_the_state_off()
+    public void ActivityTracker_WhenStopped_ShouldWriteOpenSpanAndMarkStateOff()
     {
         var path = TempPath("log-stop.json");
         File.Delete(path);
@@ -87,7 +87,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Stop_called_twice_does_not_write_a_second_span()
+    public void ActivityTracker_WhenStoppedTwice_ShouldNotWriteASecondSpan()
     {
         // Both the polling loop and ProcessExit call Stop; only one span may result.
         var path = TempPath("log-stop-twice.json");
@@ -105,7 +105,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Start_closes_the_span_left_open_by_the_previous_run()
+    public void ActivityTracker_WhenStartedAfterPreviousRun_ShouldCloseOpenSpan()
     {
         var path = TempPath("log-restart.json");
         File.Delete(path);
@@ -124,7 +124,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Setup_offers_install_when_the_monitor_is_not_installed()
+    public void MonitorSetupViewModel_WhenMonitorIsNotInstalled_ShouldOfferInstall()
     {
         var viewModel = new MonitorSetupViewModel(
             new InMemoryInstaller { IsInstalled = false }, new FakeWeekStatusHost());
@@ -134,7 +134,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Setup_offers_remove_when_the_monitor_is_installed()
+    public void MonitorSetupViewModel_WhenMonitorIsInstalled_ShouldOfferRemove()
     {
         var viewModel = new MonitorSetupViewModel(
             new InMemoryInstaller { IsInstalled = true }, new FakeWeekStatusHost());
@@ -144,7 +144,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Setup_install_flips_the_button_state_and_reports_success()
+    public void MonitorSetupViewModel_WhenInstallSucceeds_ShouldFlipButtonStateAndReportSuccess()
     {
         var statusHost = new FakeWeekStatusHost();
         var viewModel = new MonitorSetupViewModel(
@@ -157,7 +157,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Setup_uninstall_flips_the_button_state_and_reports_success()
+    public void MonitorSetupViewModel_WhenUninstallSucceeds_ShouldFlipButtonStateAndReportSuccess()
     {
         var statusHost = new FakeWeekStatusHost();
         var viewModel = new MonitorSetupViewModel(
@@ -170,7 +170,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Installer_reports_that_it_is_installed_after_installing()
+    public void ActivityMonitorInstaller_WhenInstallCompletes_ShouldReportInstalled()
     {
         // Exercises the platform installer contract through the in-memory fake.
         var installer = new InMemoryInstaller { IsInstalled = false };
@@ -182,7 +182,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Windows_idle_time_uses_the_32_bit_tick_difference()
+    public void WindowsIdleTimeProvider_WhenMeasuringIdleTime_ShouldUse32BitTickDifference()
     {
         // Normal case: 90 seconds between now and the last input.
         var current = unchecked((int)1_000_000u);
@@ -199,7 +199,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Windows_idle_time_provider_reports_the_last_input_tick()
+    public void WindowsIdleTimeProvider_WhenQueried_ShouldReportLastInputTick()
     {
         if (!OperatingSystem.IsWindows())
         {
@@ -217,14 +217,14 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Monitor_log_writes_next_to_the_executable()
+    public void MonitorLog_WhenCreated_ShouldWriteNextToTheExecutable()
     {
         MonitorLog.DefaultFilePath.Should().Be(
             Path.Combine(AppContext.BaseDirectory, "Timetracker.ActivityMonitor.log"));
     }
 
     [Test]
-    public void Monitor_log_tags_entries_with_the_calling_method()
+    public void MonitorLog_WhenEntryIsWritten_ShouldTagItWithCallingMethod()
     {
         var path = TempPath($"monitor-method-{Guid.NewGuid():N}.log");
         var monitorLog = new MonitorLog(path);
@@ -237,7 +237,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Start_logs_a_startup_message()
+    public void ActivityTracker_WhenStarted_ShouldLogAStartupMessage()
     {
         var (tracker, monitorLogPath) = TrackerWithLog("log-start");
 
@@ -249,7 +249,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Start_logs_when_the_state_file_is_missing()
+    public void ActivityTracker_WhenStateFileIsMissing_ShouldLogIt()
     {
         var (tracker, monitorLogPath) = TrackerWithLog("log-load-missing");
 
@@ -261,7 +261,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Start_logs_when_the_state_file_holds_an_unparsable_start_time()
+    public void ActivityTracker_WhenStateFileHasUnparsableStartTime_ShouldLogIt()
     {
         var statePath = TempPath($"state-bad-start-{Guid.NewGuid():N}.json");
         File.WriteAllText(statePath, "active\nnot-a-timestamp");
@@ -278,7 +278,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Poll_logs_a_polling_message_once_per_interval()
+    public void ActivityTracker_WhenPolledPastInterval_ShouldLogOnePollingMessage()
     {
         var (tracker, monitorLogPath) = TrackerWithLog("log-poll");
         tracker.Start();
@@ -295,7 +295,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Stop_logs_a_stopping_message()
+    public void ActivityTracker_WhenStopped_ShouldLogAStoppingMessage()
     {
         var (tracker, monitorLogPath) = TrackerWithLog("log-stop");
         tracker.Start();
@@ -308,7 +308,7 @@ public sealed class ActivityMonitorTests
     }
 
     [Test]
-    public void Stop_logs_the_span_it_closed()
+    public void ActivityTracker_WhenStopped_ShouldLogTheSpanItClosed()
     {
         var (tracker, monitorLogPath) = TrackerWithLog("log-stop-span");
         tracker.Start();

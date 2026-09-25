@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="TngTech.ArchUnitNET" Version="0.13.4" />
+    <PackageReference Include="TngTech.ArchUnitNET.NUnit" Version="0.13.4" />
+    <PackageReference Include="AwesomeAssertions" Version="9.6.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+    <PackageReference Include="NUnit" Version="4.6.1" />
+    <PackageReference Include="NUnit.Analyzers" Version="4.15.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="6.3.0" />
+  </ItemGroup>
+
+  <!--
+    The architecture project inspects every other project. It must not reference
+    Timetracker.App (or any product project other than Plugins) - that is one of the
+    rules it enforces - so the projects are built but not compile-referenced
+    (ReferenceOutputAssembly="false") and their assemblies are copied next to this
+    test host for analysis.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\Timetracker.Plugins\Timetracker.Plugins.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Timetracker.App\Timetracker.App.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Timetracker.AzureDevOps\Timetracker.AzureDevOps.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Timetracker.ActivityMonitor\Timetracker.ActivityMonitor.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Timetracker.App.Tests.Unit\Timetracker.App.Tests.Unit.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Timetracker.App.Tests.UI\Timetracker.App.Tests.UI.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Timetracker.AzureDevOps.Tests.Unit\Timetracker.AzureDevOps.Tests.Unit.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Timetracker.AzureDevOps.Tests.UI\Timetracker.AzureDevOps.Tests.UI.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Timetracker.ActivityMonitor.Tests.Unit\Timetracker.ActivityMonitor.Tests.Unit.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Timetracker.Plugins.Tests.Unit\Timetracker.Plugins.Tests.Unit.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AnalysisAssembly Include="..\Timetracker.App\bin\$(Configuration)\$(TargetFramework)\Timetracker.dll" />
+    <AnalysisAssembly Include="..\Timetracker.Plugins\bin\$(Configuration)\$(TargetFramework)\Timetracker.Plugins.dll" />
+    <AnalysisAssembly Include="..\Timetracker.AzureDevOps\bin\$(Configuration)\$(TargetFramework)\Timetracker.AzureDevOps.dll" />
+    <AnalysisAssembly Include="..\Timetracker.ActivityMonitor\bin\$(Configuration)\$(TargetFramework)\Timetracker.ActivityMonitor.dll" />
+    <AnalysisAssembly Include="..\Timetracker.App.Tests.Unit\bin\$(Configuration)\$(TargetFramework)\Timetracker.App.Tests.Unit.dll" />
+    <AnalysisAssembly Include="..\Timetracker.App.Tests.UI\bin\$(Configuration)\$(TargetFramework)\Timetracker.App.Tests.UI.dll" />
+    <AnalysisAssembly Include="..\Timetracker.AzureDevOps.Tests.Unit\bin\$(Configuration)\$(TargetFramework)\Timetracker.AzureDevOps.Tests.Unit.dll" />
+    <AnalysisAssembly Include="..\Timetracker.AzureDevOps.Tests.UI\bin\$(Configuration)\$(TargetFramework)\Timetracker.AzureDevOps.Tests.UI.dll" />
+    <AnalysisAssembly Include="..\Timetracker.ActivityMonitor.Tests.Unit\bin\$(Configuration)\$(TargetFramework)\Timetracker.ActivityMonitor.Tests.Unit.dll" />
+    <AnalysisAssembly Include="..\Timetracker.Plugins.Tests.Unit\bin\$(Configuration)\$(TargetFramework)\Timetracker.Plugins.Tests.Unit.dll" />
+  </ItemGroup>
+
+  <!-- Copy the analysed assemblies next to the test host, after they are built. -->
+  <Target Name="CopyAnalysedAssemblies" AfterTargets="Build">
+    <Copy SourceFiles="@(AnalysisAssembly)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>
