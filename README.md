@@ -278,11 +278,10 @@ Timetracker/
 ├── Timetracker.ActivityMonitor/     # Add-in: PC active/idle recording (background exe)
 ├── Timetracker.slnx                 # XML solution (app + add-ins + tests)
 ├── Timetracker.App.Tests.Unit/      # App unit tests (view models, services)
-├── Timetracker.App.Tests.UI/        # App UI tests (headless Avalonia view rendering)
 ├── Timetracker.Plugins.Tests.Unit/  # Plugins unit tests (UI host accessor)
 ├── Timetracker.AzureDevOps.Tests.Unit/  # Azure DevOps unit tests (config, client, service)
-├── Timetracker.AzureDevOps.Tests.UI/    # Azure DevOps UI tests (panel rendering)
 ├── Timetracker.ActivityMonitor.Tests.Unit/  # Activity monitor unit tests
+├── Timetracker.Tests.UI/            # UI tests: app views + add-in panels (headless Avalonia)
 └── Timetracker.Tests.Architecture/  # Architecture rules (references, test naming)
 ```
 
@@ -309,12 +308,16 @@ are named `<ClassTested>Tests` and carry `[TestFixture]`.
 **`Timetracker.Tests.Architecture`** enforces the structural rules and runs with
 the rest of the suite:
 
-- Only unit-test (and UI-test) projects may reference `Timetracker.App`.
-- A non-App product project may only reference `Timetracker.Plugins`.
+- A product project must not reference `Timetracker.App`.
+- A product project other than the app may only reference `Timetracker.Plugins`.
 - UI-test methods must follow the naming pattern above.
 - A unit-test class must carry `[TestFixture]` and be named `<ClassTested>Tests`
   after a production class or interface.
 - A unit-test method must be named after a real member of that production type.
+
+Test projects (`*.Tests.Unit`, `*.Tests.UI`) are exempt from the reference rules:
+they may reference whatever they verify, so the merged UI project can reference
+both `Timetracker.App` and `Timetracker.AzureDevOps`.
 
 It checks project references against the `.csproj` files and test names through
 ArchUnitNET, so the other projects are built but not referenced (their assemblies

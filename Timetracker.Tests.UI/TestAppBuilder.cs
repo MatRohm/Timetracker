@@ -8,8 +8,8 @@ using Timetracker.Tests.UI;
 namespace Timetracker.Tests.UI;
 
 /// <summary>
-/// Headless Avalonia application used by the UI tests: no windowing system is
-/// required, so the views can be constructed and asserted on any platform.
+/// Headless Avalonia application used by all UI tests: no windowing system is
+/// required, so the real views can be constructed and asserted on any platform.
 /// </summary>
 public static class TestAppBuilder
 {
@@ -18,7 +18,10 @@ public static class TestAppBuilder
         .UseHeadless(new AvaloniaHeadlessPlatformOptions());
 }
 
-/// <summary>Minimal application that loads the same themes as the real app.</summary>
+/// <summary>
+/// Minimal application that loads the same themes as the real app: the Fluent
+/// theme plus the DataGrid theme, so grids render in the app's own tabs.
+/// </summary>
 public sealed class HeadlessTestApp : Application
 {
     public override void Initialize()

@@ -1,9 +1,10 @@
 using AwesomeAssertions;
 using Avalonia.Headless.NUnit;
 using NUnit.Framework;
+using Timetracker.AzureDevOps;
 using Timetracker.Plugins;
 
-namespace Timetracker.AzureDevOps.Tests.UI;
+namespace Timetracker.Tests.UI;
 
 /// <summary>
 /// UI smoke tests for the Azure DevOps add-in panel: build the real control on a

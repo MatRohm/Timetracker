@@ -17,7 +17,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Timetracker.AzureDevOps.Tests.Unit" />
-    <InternalsVisibleTo Include="Timetracker.AzureDevOps.Tests.UI" />
+    <InternalsVisibleTo Include="Timetracker.Tests.UI" />
   </ItemGroup>
 
   <ItemGroup>
