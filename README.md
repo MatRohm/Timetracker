@@ -57,8 +57,8 @@ The **Group by booking element** checkbox switches the grouping: checked
 (default) groups by booking element; unchecked shows one line per task name
 instead.
 
-While grouping by booking element, each day's header has a small **copy button**
-(⧉) that copies that day's booking element names to the clipboard, one per line.
+While grouping by booking element, each booking element line has a small **copy
+button** (⧉) that copies the booking element's name to the clipboard.
 
 Navigate with **◀ Previous week** / **Next week ▶**; **● Current week** jumps
 back to today's week. The title shows the ISO week number and date range.
