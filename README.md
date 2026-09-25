@@ -216,9 +216,11 @@ always write this format.
 
 Files without a version marker are the older (version&nbsp;1) flat array. They are
 read transparently, and at startup the app rewrites them to version&nbsp;2 in place:
-the sessions are grouped by task name as described above. Version&nbsp;1 entries that
-stored the booking element under the JSON name `description` are migrated as well.
-An unrecognised, newer version is left untouched rather than overwritten.
+the sessions are grouped by task name as described above. Before rewriting, the
+original file is copied to `timetracker.json.v1-backup` so the migration can be
+undone by hand. Version&nbsp;1 entries that stored the booking element under the JSON
+name `description` are migrated as well. An unrecognised, newer version is left
+untouched rather than overwritten.
 
 ## Project structure (MVVM + add-in hooks)
 
