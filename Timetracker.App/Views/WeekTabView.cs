@@ -92,9 +92,18 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
         buttonRow.Children.Add(_nextButton);
         buttonRow.Children.Add(_groupByBookingElementCheck);
 
+        // Add-in controls sit at the bottom of the view, directly above the status
+        // line, so they do not mix with the week navigation toolbar.
+        var contributorRow = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 8,
+            Margin = new Thickness(0, 4, 0, 0),
+            IsVisible = _uiContributors.Count > 0,
+        };
         foreach (var contributor in _uiContributors)
         {
-            buttonRow.Children.Add(contributor.CreateControl(_services));
+            contributorRow.Children.Add(contributor.CreateControl(_services));
         }
 
         _statusLabel.TextTrimming = TextTrimming.CharacterEllipsis;
@@ -109,8 +118,11 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
         DockPanel.SetDock(topPanel, Dock.Top);
         root.Children.Add(topPanel);
 
-        DockPanel.SetDock(_statusLabel, Dock.Bottom);
-        root.Children.Add(_statusLabel);
+        var bottomPanel = new StackPanel { Spacing = 2 };
+        bottomPanel.Children.Add(contributorRow);
+        bottomPanel.Children.Add(_statusLabel);
+        DockPanel.SetDock(bottomPanel, Dock.Bottom);
+        root.Children.Add(bottomPanel);
 
         root.Children.Add(_daysGrid);
         Content = root;
