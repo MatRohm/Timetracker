@@ -229,13 +229,13 @@ public sealed class ViewRenderTests
     }
 
     [AvaloniaTest]
-    public void TrackerTabView_WhenFilteredByText_ShouldShowOnlyMatchingRows()
+    public void TrackerTabView_WhenAColumnFilterMatches_ShouldShowOnlyMatchingRows()
     {
         var (view, viewModel) = BuildTrackerView(
             Entry("Report", "Quarterly"),
             Entry("Meeting", "Project X"));
 
-        viewModel.FilterText = "project";
+        viewModel.SetColumnFilter(nameof(EntryRow.BookingElement), "project");
 
         // The grid is bound to the filtered view-model collection.
         FindControl<DataGrid>(view).Should().NotBeNull();
@@ -243,42 +243,46 @@ public sealed class ViewRenderTests
     }
 
     [AvaloniaTest]
-    public void TrackerTabView_WhenFunnelToggled_ShouldShowTheFilterBoxAndClearItWhenHidden()
+    public void TrackerTabView_WhenRendered_ShouldPutAFilterFunnelOnEachFilterableColumn()
+    {
+        var (view, _) = BuildTrackerView(Entry("Report", "Quarterly"));
+
+        var headers = FilterHeaders(view);
+
+        headers.Select(h => h.Column).Should().Equal(
+            nameof(EntryRow.Task),
+            nameof(EntryRow.BookingElement),
+            nameof(EntryRow.StartText),
+            nameof(EntryRow.EndText));
+    }
+
+    [AvaloniaTest]
+    public void TrackerTabView_WhenAColumnFunnelToggled_ShouldShowTheBoxAndClearThatFilterWhenHidden()
     {
         var (view, viewModel) = BuildTrackerView(Entry("Report", "Quarterly"));
         RealizeWindow(view);
 
-        var filter = FindControl<FilterField>(view)!;
-        filter.FilterBox.IsVisible.Should().BeFalse("the filter box starts hidden");
+        var taskHeader = FilterHeaders(view).Single(h => h.Column == nameof(EntryRow.Task));
+        taskHeader.FilterBox.IsVisible.Should().BeFalse("the filter box starts hidden");
 
         // Toggling the funnel on reveals the box.
-        filter.Toggle.IsChecked = true;
-        filter.FilterBox.IsVisible.Should().BeTrue("the funnel shows the filter box");
+        taskHeader.Toggle.IsChecked = true;
+        Dispatcher.UIThread.RunJobs();
+        taskHeader.FilterBox.IsVisible.Should().BeTrue("the funnel shows the column's filter box");
 
-        // Typing filters the rows; toggling off clears the filter and hides the box.
-        filter.FilterBox.Text = "report";
-        viewModel.FilterText.Should().Be("report");
+        // Typing filters the rows; toggling off clears that column's filter.
+        taskHeader.FilterBox.Text = "report";
+        Dispatcher.UIThread.RunJobs();
+        viewModel.IsColumnFiltered(nameof(EntryRow.Task)).Should().BeTrue();
 
-        filter.Toggle.IsChecked = false;
-        filter.FilterBox.IsVisible.Should().BeFalse();
-        viewModel.FilterText.Should().BeEmpty("hiding the box drops the filter");
+        taskHeader.Toggle.IsChecked = false;
+        Dispatcher.UIThread.RunJobs();
+        taskHeader.FilterBox.IsVisible.Should().BeFalse();
+        viewModel.IsColumnFiltered(nameof(EntryRow.Task)).Should().BeFalse("hiding the box drops the filter");
     }
 
-    [AvaloniaTest]
-    public void TrackerTabView_WhenRendered_ShouldOfferAFilterBoxBoundToTheFilter()
-    {
-        var (view, viewModel) = BuildTrackerView(Entry("Report", "Quarterly"));
-
-        var filter = FindControl<FilterField>(view);
-        filter.Should().NotBeNull("the tracker view hosts a filter field");
-
-        var filterBox = filter!.FilterBox;
-        filterBox.IsVisible.Should().BeFalse("the filter box starts hidden behind the funnel");
-
-        filterBox.Text = "report";
-
-        viewModel.FilterText.Should().Be("report", "the box is bound to the view model filter");
-    }
+    private static List<ColumnFilterHeader> FilterHeaders(Control view) =>
+        [.. FindAllControls<ColumnFilterHeader>(view)];
 
     private static (TrackerTabView View, TrackerViewModel ViewModel) BuildTrackerView(
         params TrackerEntry[] entries)

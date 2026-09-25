@@ -691,50 +691,78 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void FilterText_WhenSetToATaskSubstring_ShouldShowOnlyMatchingRows()
+    public void SetColumnFilter_WhenTheTaskColumnMatches_ShouldShowOnlyThoseRows()
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 9), Entry("Review", 11), Entry("Meeting", 14));
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
-        vm.FilterText = "re";
+        vm.SetColumnFilter(nameof(EntryRow.Task), "re");
 
         vm.Entries.Select(r => r.Task).Should().BeEquivalentTo("Report", "Review");
     }
 
     [Test]
-    public void FilterText_WhenSetToABookingElementSubstring_ShouldMatchItToo()
+    public void SetColumnFilter_WhenTheBookingElementColumnMatches_ShouldShowOnlyThoseRows()
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", "Quarterly", 9), Entry("Meeting", "Project X", 11));
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
-        vm.FilterText = "project";
+        vm.SetColumnFilter(nameof(EntryRow.BookingElement), "project");
 
         vm.Entries.Should().ContainSingle().Which.Task.Should().Be("Meeting",
-            "the filter matches the booking element as well as the task name");
+            "the booking element filter only compares the booking element column");
     }
 
     [Test]
-    public void FilterText_WhenCleared_ShouldShowEverythingAgain()
+    public void SetColumnFilter_WhenTheStartedColumnMatches_ShouldFilterByDate()
+    {
+        var (repo, _) = RepositoryFake.Create(
+            Entry("Report", 9), Entry("Meeting", 14));
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+
+        vm.SetColumnFilter(nameof(EntryRow.StartText), "14:00");
+
+        vm.Entries.Should().ContainSingle().Which.Task.Should().Be("Meeting");
+    }
+
+    [Test]
+    public void SetColumnFilter_WhenSeveralColumnsAreFilled_ShouldRequireAllOfThemToMatch()
+    {
+        var (repo, _) = RepositoryFake.Create(
+            Entry("Report", "Quarterly", 9),
+            Entry("Report", "Project X", 11),
+            Entry("Meeting", "Quarterly", 14));
+        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+
+        vm.SetColumnFilter(nameof(EntryRow.Task), "report");
+        vm.SetColumnFilter(nameof(EntryRow.BookingElement), "project");
+
+        vm.Entries.Should().ContainSingle("only the Report+Project row matches both filters");
+        vm.Entries[0].BookingElement.Should().Be("Project X");
+    }
+
+    [Test]
+    public void SetColumnFilter_WhenCleared_ShouldShowEverythingAgain()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9), Entry("Meeting", 14));
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
-        vm.FilterText = "Report";
+        vm.SetColumnFilter(nameof(EntryRow.Task), "Report");
         vm.Entries.Should().ContainSingle();
 
-        vm.FilterText = "";
+        vm.SetColumnFilter(nameof(EntryRow.Task), "");
 
         vm.Entries.Should().HaveCount(2);
     }
 
     [Test]
-    public void FilterText_WhenNothingMatches_ShouldShowNoRowsAndASinglePage()
+    public void SetColumnFilter_WhenNothingMatches_ShouldShowNoRowsAndASinglePage()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9));
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
-        vm.FilterText = "does-not-exist";
+        vm.SetColumnFilter(nameof(EntryRow.Task), "does-not-exist");
 
         vm.Entries.Should().BeEmpty();
         vm.TotalPages.Should().Be(1);
@@ -742,13 +770,13 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void FilterText_WhenItMatchesMoreThanAPage_ShouldPageTheFilteredRows()
+    public void SetColumnFilter_WhenItMatchesMoreThanAPage_ShouldPageTheFilteredRows()
     {
         // 25 tasks named "Task NN"; "Task" matches all of them, so paging still applies.
         var repo = SeedTasks(25);
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
-        vm.FilterText = "Task";
+        vm.SetColumnFilter(nameof(EntryRow.Task), "Task");
 
         vm.Entries.Should().HaveCount(10, "the filter spans all pages but only one page is shown");
         vm.TotalPages.Should().Be(3, "25 filtered rows need three pages");
@@ -757,17 +785,21 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void IsFilterActive_WhenFilterTextHasContent_ShouldBeTrue()
+    public void IsColumnFiltered_WhenThatColumnHasAFilter_ShouldBeTrue()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9));
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
         vm.IsFilterActive.Should().BeFalse("no filter is set initially");
+        vm.IsColumnFiltered(nameof(EntryRow.Task)).Should().BeFalse();
 
-        vm.FilterText = "rep";
+        vm.SetColumnFilter(nameof(EntryRow.Task), "rep");
+
         vm.IsFilterActive.Should().BeTrue();
+        vm.IsColumnFiltered(nameof(EntryRow.Task)).Should().BeTrue();
+        vm.IsColumnFiltered(nameof(EntryRow.BookingElement)).Should().BeFalse("only Task is filtered");
 
-        vm.FilterText = "   ";
-        vm.IsFilterActive.Should().BeFalse("whitespace is not a filter");
+        vm.SetColumnFilter(nameof(EntryRow.Task), "   ");
+        vm.IsFilterActive.Should().BeFalse("whitespace clears the filter");
     }
 }

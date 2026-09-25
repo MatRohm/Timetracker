@@ -23,6 +23,9 @@ public sealed class EntryHistoryGrid : UserControl
     /// <summary>Header captions without sort indicator, keyed by column property name.</summary>
     private readonly Dictionary<string, string> _columnBaseNames = new();
 
+    /// <summary>The filter headers by column property name, for sort-glyph updates.</summary>
+    private readonly Dictionary<string, ColumnFilterHeader> _filterHeaders = new();
+
     /// <summary>The grid, for hosts and tests.</summary>
     public DataGrid Grid => _grid;
 
@@ -71,7 +74,7 @@ public sealed class EntryHistoryGrid : UserControl
 
         _grid.Columns.Add(new DataGridTextColumn
         {
-            Header = "Task",
+            Header = BuildFilterHeader(nameof(EntryRow.Task), "Task"),
             Width = new DataGridLength(28, DataGridLengthUnitType.Star),
             SortMemberPath = nameof(EntryRow.Task),
             Binding = new Binding(nameof(EntryRow.Task)),
@@ -79,7 +82,7 @@ public sealed class EntryHistoryGrid : UserControl
         });
         _grid.Columns.Add(new DataGridTextColumn
         {
-            Header = "Booking element",
+            Header = BuildFilterHeader(nameof(EntryRow.BookingElement), "Booking element"),
             Width = new DataGridLength(28, DataGridLengthUnitType.Star),
             Binding = new Binding(nameof(EntryRow.BookingElement)),
             // Not sortable: the original app never sorted by booking element.
@@ -88,7 +91,7 @@ public sealed class EntryHistoryGrid : UserControl
         });
         _grid.Columns.Add(new DataGridTextColumn
         {
-            Header = "Started",
+            Header = BuildFilterHeader(nameof(EntryRow.StartText), "Started"),
             Width = new DataGridLength(18, DataGridLengthUnitType.Star),
             SortMemberPath = nameof(EntryRow.StartText),
             Binding = new Binding(nameof(EntryRow.StartText)),
@@ -96,7 +99,7 @@ public sealed class EntryHistoryGrid : UserControl
         });
         _grid.Columns.Add(new DataGridTextColumn
         {
-            Header = "Ended",
+            Header = BuildFilterHeader(nameof(EntryRow.EndText), "Ended"),
             Width = new DataGridLength(18, DataGridLengthUnitType.Star),
             SortMemberPath = nameof(EntryRow.EndText),
             Binding = new Binding(nameof(EntryRow.EndText)),
@@ -120,7 +123,9 @@ public sealed class EntryHistoryGrid : UserControl
         {
             if (!string.IsNullOrEmpty(column.SortMemberPath))
             {
-                _columnBaseNames[column.SortMemberPath] = column.Header?.ToString() ?? "";
+                _columnBaseNames[column.SortMemberPath] = column.Header is ColumnFilterHeader header
+                    ? header.Caption.Text ?? ""
+                    : column.Header?.ToString() ?? "";
             }
         }
 
@@ -132,6 +137,17 @@ public sealed class EntryHistoryGrid : UserControl
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
 
         UpdateSortGlyphs();
+    }
+
+    /// <summary>
+    /// A column header with a funnel that reveals that column's filter box. The
+    /// header is only wired to filtering, not to the grid's own sorting.
+    /// </summary>
+    private ColumnFilterHeader BuildFilterHeader(string column, string caption)
+    {
+        var header = new ColumnFilterHeader(_viewModel, column, caption);
+        _filterHeaders[column] = header;
+        return header;
     }
 
     /// <summary>
@@ -304,14 +320,18 @@ public sealed class EntryHistoryGrid : UserControl
                 continue;
             }
 
-            if (column.SortMemberPath == _viewModel.SortColumn)
+            // Prominent direction icon right in the header text.
+            var caption = column.SortMemberPath == _viewModel.SortColumn
+                ? (_viewModel.SortAscending ? "▲ " : "▼ ") + baseName
+                : baseName;
+
+            if (_filterHeaders.TryGetValue(column.SortMemberPath, out var header))
             {
-                // Prominent direction icon right in the header text.
-                column.Header = (_viewModel.SortAscending ? "▲ " : "▼ ") + baseName;
+                header.SetCaption(caption);
             }
             else
             {
-                column.Header = baseName;
+                column.Header = caption;
             }
         }
     }
