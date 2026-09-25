@@ -11,6 +11,14 @@
     <Version>1.0.0</Version>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <!--
+      Bundle Avalonia's native libraries (libSkiaSharp, libHarfBuzzSharp) into the
+      single-file executable and extract them on startup. Without this they are
+      copied next to the executable instead, so a portable single file published
+      from the release archive aborts at startup with a DllNotFoundException.
+      Ignored unless PublishSingleFile is true.
+    -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
