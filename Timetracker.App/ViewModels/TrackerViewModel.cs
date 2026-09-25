@@ -49,10 +49,17 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// <summary>Rows shown in the history grid per page; paging appears above this size.</summary>
     private const int PageSize = 10;
 
-    /// <summary>All rows in sort order; <see cref="_entries"/> holds only the current page.</summary>
+    /// <summary>All rows in sort order, before filtering; the visible page is drawn from the filtered set.</summary>
     private List<EntryRow> _allRows = [];
+
+    /// <summary>The rows that pass the current filter, in sort order; paging runs over these.</summary>
+    private List<EntryRow> _visibleRows = [];
+
     private int _currentPage = 1;
     private int _totalPages = 1;
+
+    /// <summary>Substring the history is filtered by (task name or booking element); empty = no filter.</summary>
+    private string _filterText = "";
 
     /// <summary>Raised when Start was attempted without a task name; the view shows a hint.</summary>
     public event Action? InvalidTaskName;
@@ -198,6 +205,27 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
     /// <summary>Text for the pager label, e.g. "Page 2 of 5".</summary>
     public string PageText => $"Page {CurrentPage} of {TotalPages}";
+
+    /// <summary>
+    /// Substring the history list is filtered by; a row matches when its task name
+    /// or its booking element contains it (case-insensitive). Empty shows everything.
+    /// Filtering spans all pages, like sorting.
+    /// </summary>
+    public string FilterText
+    {
+        get => _filterText;
+        set
+        {
+            if (SetProperty(ref _filterText, value))
+            {
+                OnPropertyChanged(nameof(IsFilterActive));
+                ApplyFilter();
+            }
+        }
+    }
+
+    /// <summary>True while a filter is set; the view highlights the filter box.</summary>
+    public bool IsFilterActive => FilterText.Trim().Length > 0;
 
     /// <summary>
     /// Human-readable description of what a delete would remove, e.g.
@@ -496,8 +524,28 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     {
         var rows = _allRows.ToList();
         rows.Sort(CompareRows);
-        FillEntries(rows);
+        _allRows = rows;
+        ApplyFilter();
     }
+
+    /// <summary>
+    /// Recomputes the visible rows from the filter and shows the first page of them.
+    /// Called whenever the rows or the filter change.
+    /// </summary>
+    private void ApplyFilter()
+    {
+        var filter = FilterText.Trim();
+        _visibleRows = filter.Length == 0
+            ? [.. _allRows]
+            : [.. _allRows.Where(row => MatchesFilter(row, filter))];
+
+        CurrentPage = 1;
+        FillEntries();
+    }
+
+    private static bool MatchesFilter(EntryRow row, string filter) =>
+        row.Task.Contains(filter, StringComparison.CurrentCultureIgnoreCase)
+        || row.BookingElement.Contains(filter, StringComparison.CurrentCultureIgnoreCase);
 
     private void RefreshEntries()
     {
@@ -509,7 +557,8 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
             .Select(g => new EntryRow([.. g]))
             .ToList();
         rows.Sort(CompareRows);
-        FillEntries(rows);
+        _allRows = rows;
+        ApplyFilter();
 
         // Keep the week view in sync with the session log and text edits.
         Week.UpdateSessions(_sessions);
@@ -518,13 +567,13 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         RefreshSuggestions();
     }
 
-    private void FillEntries(IReadOnlyList<EntryRow> rows)
+    /// <summary>Shows the current page of the visible (filtered) rows.</summary>
+    private void FillEntries()
     {
-        _allRows = [.. rows];
-        TotalPages = Math.Max(1, (_allRows.Count + PageSize - 1) / PageSize);
+        TotalPages = Math.Max(1, (_visibleRows.Count + PageSize - 1) / PageSize);
         CurrentPage = Math.Clamp(CurrentPage, 1, TotalPages);
 
-        var pageRows = _allRows
+        var pageRows = _visibleRows
             .Skip((CurrentPage - 1) * PageSize)
             .Take(PageSize)
             .ToList();
@@ -548,17 +597,30 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         }
 
         CurrentPage = target;
-        FillEntries(_allRows);
+        FillEntries();
     }
 
     /// <summary>
     /// Flips to the page containing the row for the given task, so the row the user
     /// just saved or edited stays visible even if its sort position is on another page.
+    /// Clears a filter that would hide the row, so the reveal always succeeds.
     /// </summary>
     private void RevealTask(string task)
     {
-        var index = _allRows.FindIndex(r =>
+        var row = _allRows.FirstOrDefault(r =>
             r.Task.Equals(task.Trim(), StringComparison.CurrentCultureIgnoreCase));
+        if (row is null)
+        {
+            return;
+        }
+
+        // A filter that excludes the row would make it unreachable; drop it.
+        if (!_visibleRows.Contains(row))
+        {
+            FilterText = "";
+        }
+
+        var index = _visibleRows.IndexOf(row);
         if (index < 0)
         {
             return;
@@ -568,7 +630,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         if (page != CurrentPage)
         {
             CurrentPage = page;
-            FillEntries(_allRows);
+            FillEntries();
         }
     }
 
