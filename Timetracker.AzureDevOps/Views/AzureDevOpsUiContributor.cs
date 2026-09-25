@@ -1,7 +1,7 @@
 using Timetracker.Plugins.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Timetracker.AzureDevOps;
+namespace Timetracker.AzureDevOps.Views;
 
 /// <summary>
 /// Registers the Azure DevOps import in the application UI: contributes its

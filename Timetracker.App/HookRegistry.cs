@@ -59,7 +59,7 @@ public static class HookRegistry
             new AzureDevOps.AzureDevOpsService(
                 sp.GetRequiredService<AzureDevOps.AzureDevOpsConfig>()));
         services.AddSingleton<ITrackerUiHost>(_ => UiHostAccessor.GetTrackerHost<ITrackerUiHost>());
-        services.AddSingleton<IUiContributor, AzureDevOps.AzureDevOpsUiContributor>();
+        services.AddSingleton<IUiContributor, AzureDevOps.Views.AzureDevOpsUiContributor>();
 
         // PC activity monitor: activity log, per-day lines, installer UI.
         services.AddSingleton<ActivityMonitor.ActivityLog>();

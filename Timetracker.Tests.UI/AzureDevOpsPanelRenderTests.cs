@@ -3,6 +3,7 @@ using AwesomeAssertions;
 using Avalonia.Headless.NUnit;
 using NUnit.Framework;
 using Timetracker.AzureDevOps;
+using Timetracker.AzureDevOps.Views;
 using Timetracker.Plugins;
 
 namespace Timetracker.Tests.UI;
