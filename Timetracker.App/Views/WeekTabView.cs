@@ -203,40 +203,26 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
         {
             var day = _week.Days[i];
 
-            var caption = new TextBlock
+            var header = new TextBlock
             {
                 Text = day.Header,
                 FontWeight = FontWeight.Bold,
-                VerticalAlignment = VerticalAlignment.Center,
-            };
-
-            var header = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                Spacing = 4,
                 Margin = new Thickness(4, 0, 4, 4),
                 Background = day.IsToday ? TodayBrush : SurfaceBrush,
             };
-            header.Children.Add(caption);
-
-            // Copying by booking element only makes sense while that grouping is on.
-            if (_week.GroupByBookingElement)
-            {
-                header.Children.Add(BuildCopyDayButton(day));
-            }
-
             Grid.SetColumn(header, i);
             Grid.SetRow(header, 0);
             _daysGrid.Children.Add(header);
 
-            var entries = new TextBlock
+            var entries = new StackPanel
             {
-                Text = day.EntriesText,
-                TextWrapping = TextWrapping.Wrap,
-                VerticalAlignment = VerticalAlignment.Top,
                 Margin = new Thickness(4, 0, 4, 6),
                 Background = day.IsToday ? TodayBrush : SurfaceBrush,
             };
+            foreach (var group in day.Groups)
+            {
+                entries.Children.Add(BuildEntryLine(group));
+            }
             Grid.SetColumn(entries, i);
             Grid.SetRow(entries, 1);
             _daysGrid.Children.Add(entries);
@@ -264,33 +250,51 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
     }
 
     /// <summary>
-    /// A small copy button for one weekday column: copies that day's booking element
-    /// names, one per line, to the clipboard and reports the result in the status line.
+    /// One booking element line (label plus a copy button) that copies the booking
+    /// element's name. The button is only offered while grouping by booking element,
+    /// because that is the grouping it refers to.
     /// </summary>
-    private Control BuildCopyDayButton(WeekDayViewModel day)
+    private Control BuildEntryLine(WeekDayGroup group)
+    {
+        var label = new TextBlock
+        {
+            Text = group.Label,
+            TextWrapping = TextWrapping.Wrap,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+
+        var line = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 4,
+        };
+        line.Children.Add(label);
+
+        if (_week.GroupByBookingElement)
+        {
+            line.Children.Add(BuildCopyGroupButton(group));
+        }
+
+        return line;
+    }
+
+    private Control BuildCopyGroupButton(WeekDayGroup group)
     {
         var button = new Button
         {
             Content = "⧉",
-            FontSize = 11,
-            Padding = new Thickness(4, 0),
+            FontSize = 10,
+            Padding = new Thickness(3, 0),
             VerticalAlignment = VerticalAlignment.Center,
         };
-        ToolTip.SetTip(button, "Copy this day's booking elements");
+        ToolTip.SetTip(button, "Copy this booking element");
 
-        button.Click += async (_, _) => await CopyBookingElementsAsync(day);
+        button.Click += async (_, _) => await CopyGroupAsync(group);
         return button;
     }
 
-    private async Task CopyBookingElementsAsync(WeekDayViewModel day)
+    private async Task CopyGroupAsync(WeekDayGroup group)
     {
-        var text = day.BookingElementNamesText;
-        if (text.Length == 0)
-        {
-            ShowStatus("Nothing to copy for this day.", WeekStatusKind.Info);
-            return;
-        }
-
         if (TopLevel.GetTopLevel(this)?.Clipboard is not { } clipboard)
         {
             ShowStatus("Could not access the clipboard.", WeekStatusKind.Error);
@@ -299,8 +303,8 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
 
         try
         {
-            await clipboard.SetTextAsync(text);
-            ShowStatus("Copied this day's booking elements.", WeekStatusKind.Success);
+            await clipboard.SetTextAsync(group.CopyText);
+            ShowStatus($"Copied \"{group.CopyText}\".", WeekStatusKind.Success);
         }
         catch (Exception ex)
         {

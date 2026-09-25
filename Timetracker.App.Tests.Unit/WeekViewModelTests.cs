@@ -106,7 +106,7 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
-    public void Booking_element_names_are_listed_one_per_line_in_column_order()
+    public void A_booking_element_line_copies_the_element_name()
     {
         var week = new WeekViewModel();
         var today = DateTimeOffset.Now.Date;
@@ -114,34 +114,61 @@ public sealed class WeekViewModelTests
         week.UpdateSessions(
         [
             Session(today, 9, 60, "Report", "Project X"),
-            Session(today, 14, 30, "Report", "Project X"),
-            Session(today, 12, 30, "Meeting", "Project Y"),
+            Session(today, 14, 30, "Review", "Project X"),
         ]);
 
-        var names = week.Days.Single(d => d.IsToday).BookingElementNamesText.Split(Environment.NewLine);
+        var group = week.Days.Single(d => d.IsToday).Groups.Single();
 
-        names.Should().Equal("Project X", "Project Y");
+        group.Label.Should().Be("Project X (1:30)");
+        group.CopyText.Should().Be("Project X", "the copy button copies the element name");
     }
 
     [Test]
-    public void Booking_element_names_are_empty_in_task_grouping_mode()
+    public void A_day_has_one_line_per_booking_element()
     {
         var week = new WeekViewModel();
         var today = DateTimeOffset.Now.Date;
-        week.UpdateSessions([Session(today, 9, 60, "Report", "Project X")]);
 
-        week.GroupByBookingElement = false;
+        week.UpdateSessions(
+        [
+            Session(today, 9, 60, "Report", "Project X"),
+            Session(today, 12, 30, "Meeting", "Project Y"),
+            Session(today, 14, 30, "Report", "Project X"),
+        ]);
 
-        week.Days.Single(d => d.IsToday).BookingElementNamesText.Should().BeEmpty(
-            "copying by booking element is only offered while grouping by it");
+        var groups = week.Days.Single(d => d.IsToday).Groups;
+
+        groups.Should().HaveCount(2, "one line per booking element");
+        groups[0].Label.Should().Be("Project X (1:30)");
+        groups[0].CopyText.Should().Be("Project X");
+        groups[1].Label.Should().Be("Project Y (0:30)");
+        groups[1].CopyText.Should().Be("Project Y");
     }
 
     [Test]
-    public void A_day_without_bookings_has_no_booking_element_names()
+    public void In_task_grouping_a_line_copies_the_task_name()
+    {
+        var week = new WeekViewModel();
+        var today = DateTimeOffset.Now.Date;
+        week.UpdateSessions(
+        [
+            Session(today, 9, 60, "Report", "Project X"),
+            Session(today, 14, 15, "report", "Project X"),
+        ]);
+
+        week.GroupByBookingElement = false;
+
+        var group = week.Days.Single(d => d.IsToday).Groups.Single();
+        group.Label.Should().Be("Report (1:15)");
+        group.CopyText.Should().Be("Report");
+    }
+
+    [Test]
+    public void A_day_without_bookings_has_no_lines()
     {
         var week = new WeekViewModel();
 
-        week.Days.Should().OnlyContain(d => d.BookingElementNamesText.Length == 0);
+        week.Days.Should().OnlyContain(d => d.Groups.Count == 0);
     }
 
     [Test]

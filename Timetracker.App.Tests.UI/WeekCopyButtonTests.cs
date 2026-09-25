@@ -1,9 +1,7 @@
 using AwesomeAssertions;
-using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
-using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,19 +16,20 @@ using Timetracker.Views;
 namespace Timetracker.Tests.UI;
 
 /// <summary>
-/// The week view offers a copy button per day that copies the day's booking
-/// element names, one per line. It is only shown while grouping by booking element.
+/// While grouping by booking element, each booking element line in the week view
+/// has a copy button that copies that element's name to the clipboard. Switching to
+/// task grouping removes the buttons.
 /// </summary>
 public sealed class WeekCopyButtonTests
 {
     [AvaloniaTest]
-    public void Copy_buttons_are_shown_when_grouping_by_booking_element()
+    public void Each_booking_element_line_has_a_copy_button()
     {
-        var (view, _) = Build(Session(9, "Report", "Project X"));
+        var (view, _) = Build(Session(9, "Report", "Project X"), Session(12, "Meeting", "Project Y"));
 
         Realize(view);
 
-        CopyButtons(view).Should().HaveCount(7, "one copy button per weekday column");
+        CopyButtonsForToday(view).Should().HaveCount(2, "one per booking element line");
     }
 
     [AvaloniaTest]
@@ -44,23 +43,26 @@ public sealed class WeekCopyButtonTests
         window.UpdateLayout();
         Dispatcher.UIThread.RunJobs();
 
-        CopyButtons(view).Should().BeEmpty("copying by booking element is only offered while grouping by it");
+        CopyButtonsForToday(view).Should().BeEmpty("the copy button is only offered while grouping by element");
     }
 
     [AvaloniaTest]
-    public void Clicking_a_day_copy_button_copies_its_booking_element_names_one_per_line()
+    public void Clicking_a_line_copy_button_copies_that_booking_elements_name()
     {
-        var (view, _) = Build(Session(9, "Report", "Project X"), Session(14, "Meeting", "Project Y"));
+        var (view, _) = Build(
+            Session(9, "Report", "Project X"),
+            Session(14, "Review", "Project X"),
+            Session(12, "Meeting", "Project Y"));
 
         var window = Realize(view);
-        var button = CopyButtonForToday(view);
+        // The first line in today's column is the earliest-started element (Project X).
+        var button = CopyButtonsForToday(view)[0];
 
-        Click(window, button);
+        button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         Dispatcher.UIThread.RunJobs();
 
-        var copied = window.Clipboard!.GetTextAsync().GetAwaiter().GetResult();
-        copied.Should().Be("Project X" + Environment.NewLine + "Project Y",
-            "the day's booking elements, one per line in column order");
+        window.Clipboard!.GetTextAsync().GetAwaiter().GetResult()
+            .Should().Be("Project X", "the button copies that booking element's name");
     }
 
     private static (DateTimeOffset Start, string Task, string Booking) Session(
@@ -103,32 +105,16 @@ public sealed class WeekCopyButtonTests
         return host;
     }
 
-    private static void Click(Window window, Button button)
-    {
-        var center = button.TranslatePoint(
-            new Point(button.Bounds.Width / 2, button.Bounds.Height / 2), window)!.Value;
-        window.MouseDown(center, MouseButton.Left, RawInputModifiers.None);
-        window.MouseUp(center, MouseButton.Left, RawInputModifiers.None);
-    }
-
-    /// <summary>The copy button in today's column, so the test is weekday-independent.</summary>
-    private static Button CopyButtonForToday(Control view)
+    /// <summary>Copy buttons in today's column, so the tests are weekday-independent.</summary>
+    private static List<Button> CopyButtonsForToday(Control view)
     {
         var todayColumn = ((int)DateTimeOffset.Now.DayOfWeek + 6) % 7; // Monday first
-        return CopyButtonsInColumn(view, todayColumn).Single();
-    }
-
-    private static List<Button> CopyButtons(Control view) =>
-        [.. Enumerable.Range(0, 7).SelectMany(column => CopyButtonsInColumn(view, column))];
-
-    private static List<Button> CopyButtonsInColumn(Control view, int column)
-    {
         var daysGrid = view.GetVisualDescendants().OfType<Grid>()
             .Single(g => g.ColumnDefinitions.Count == 7);
-        return [.. daysGrid.Children
+        var entriesCell = daysGrid.Children
             .OfType<Control>()
-            .Where(c => Grid.GetRow(c) == 0 && Grid.GetColumn(c) == column)
-            .SelectMany(c => c.GetVisualDescendants().OfType<Button>())];
+            .Single(c => Grid.GetRow(c) == 1 && Grid.GetColumn(c) == todayColumn);
+        return [.. entriesCell.GetVisualDescendants().OfType<Button>()];
     }
 
     private sealed class FakeRepo : ITrackerRepository
