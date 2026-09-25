@@ -1,3 +1,4 @@
+using Timetracker.ActivityMonitor.Interfaces;
 using System.Runtime.Versioning;
 using Microsoft.Win32;
 

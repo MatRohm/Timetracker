@@ -1,5 +1,6 @@
 using System.Net;
 using Timetracker.Plugins;
+using Timetracker.Plugins.Interfaces;
 
 namespace Timetracker.AzureDevOps.Tests.Unit;
 

@@ -1,8 +1,7 @@
+using Timetracker.ActivityMonitor.Interfaces;
+using Timetracker.Interfaces;
 using FakeItEasy;
-using Timetracker.ActivityMonitor;
 using Timetracker.Models;
-using Timetracker.Services;
-using Timetracker.ViewModels;
 
 namespace Timetracker.Tests.Unit;
 

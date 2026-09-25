@@ -1,3 +1,5 @@
+using Timetracker.Interfaces;
+using Timetracker.Plugins.Interfaces;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -60,14 +62,14 @@ public sealed class App : Application
             desktop.MainWindow = window;
 
             // Let the components run their startup hooks.
-            foreach (var hook in _services.GetServices<Plugins.IAppHook>())
+            foreach (var hook in _services.GetServices<IAppHook>())
             {
                 hook.OnAppStarted(_services);
             }
 
             desktop.ShutdownRequested += (_, _) =>
             {
-                foreach (var hook in _services.GetServices<Plugins.IAppHook>())
+                foreach (var hook in _services.GetServices<IAppHook>())
                 {
                     hook.OnAppClosing();
                 }
@@ -84,7 +86,7 @@ public sealed class App : Application
     /// </summary>
     private static void RunStartupMigrations(IServiceProvider services)
     {
-        foreach (var runner in services.GetServices<Services.ITrackerFileMigrationRunner>())
+        foreach (var runner in services.GetServices<ITrackerFileMigrationRunner>())
         {
             try
             {

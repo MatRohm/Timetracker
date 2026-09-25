@@ -1,3 +1,5 @@
+using Timetracker.Interfaces;
+using Timetracker.Plugins.Interfaces;
 using AwesomeAssertions;
 using Avalonia.Controls;
 using Avalonia.Headless.NUnit;
@@ -8,7 +10,6 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Timetracker.Models;
 using Timetracker.Plugins;
-using Timetracker.Services;
 using Timetracker.Tests.Unit;
 using Timetracker.ViewModels;
 using Timetracker.Views;

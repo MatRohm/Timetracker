@@ -1,3 +1,5 @@
+using Timetracker.ActivityMonitor.Interfaces;
+using Timetracker.Plugins.Interfaces;
 using System.ComponentModel;
 using Timetracker.Plugins;
 

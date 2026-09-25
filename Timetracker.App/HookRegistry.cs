@@ -1,3 +1,5 @@
+using Timetracker.Interfaces;
+using Timetracker.Plugins.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Timetracker.Plugins;
 
@@ -19,21 +21,21 @@ public static class HookRegistry
         // Framework services of the main app.
         // One repository instance is shared by every interface it implements.
         services.AddSingleton<Services.JsonTrackerRepository>();
-        services.AddSingleton<Services.ITrackerRepository>(
+        services.AddSingleton<ITrackerRepository>(
             sp => sp.GetRequiredService<Services.JsonTrackerRepository>());
 
         // Tracker file migrations: one step per version, chained by the migrator.
-        services.AddSingleton<Services.ITrackerFileMigration>(sp =>
+        services.AddSingleton<ITrackerFileMigration>(sp =>
             new Services.VersionOneToTwoMigration(
                 sp.GetRequiredService<Services.JsonTrackerRepository>().FilePath));
-        services.AddSingleton<Services.ITrackerFileMigrationRunner>(sp =>
+        services.AddSingleton<ITrackerFileMigrationRunner>(sp =>
             new Services.TrackerFileMigrator(
                 sp.GetRequiredService<Services.JsonTrackerRepository>().FilePath,
-                sp.GetServices<Services.ITrackerFileMigration>(),
+                sp.GetServices<ITrackerFileMigration>(),
                 Services.ErrorLog.Log));
-        services.AddSingleton<ViewModels.IUiTimer, Views.AvaloniaUiTimer>();
+        services.AddSingleton<IUiTimer, Views.AvaloniaUiTimer>();
         // Idle detection comes from the monitor project's platform-specific provider.
-        services.AddSingleton<ActivityMonitor.IIdleTimeProvider>(
+        services.AddSingleton<ActivityMonitor.Interfaces.IIdleTimeProvider>(
             _ => ActivityMonitor.IdleTimeProvider.CreateForCurrentPlatform());
         services.AddSingleton<ViewModels.TrackerViewModel>();
         services.AddSingleton<ViewModels.WeekViewModel>();
@@ -61,10 +63,10 @@ public static class HookRegistry
 
         // PC activity monitor: activity log, per-day lines, installer UI.
         services.AddSingleton<ActivityMonitor.ActivityLog>();
-        services.AddSingleton<ActivityMonitor.IActivityMonitorInstaller>(
+        services.AddSingleton<ActivityMonitor.Interfaces.IActivityMonitorInstaller>(
             _ => ActivityMonitor.ActivityMonitorInstallerFactory.CreateForCurrentPlatform());
         services.AddSingleton<IWeekDayContributor, ActivityMonitor.ActivityWeekDayContributor>();
         services.AddSingleton<IUiContributor, ActivityMonitor.MonitorSetupUiContributor>();
-        services.AddSingleton<Plugins.IWeekStatusHost, ActivityMonitor.WeekStatusHostAdapter>();
+        services.AddSingleton<IWeekStatusHost, ActivityMonitor.WeekStatusHostAdapter>();
     }
 }

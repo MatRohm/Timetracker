@@ -246,6 +246,7 @@ reference the main app project (they get hosts via `UiHostAccessor`).
 Timetracker/
 ├── Timetracker.App/                 # Application project (named after the csproj)
 │   ├── HookRegistry.cs              # DI container: every component registers here
+│   ├── Interfaces/                  # Project contracts (ITrackerRepository, IUiTimer, ...)
 │   ├── Models/
 │   │   └── TrackerEntry.cs          # One finished time entry
 │   ├── Services/
@@ -263,7 +264,6 @@ Timetracker/
 │   │   ├── SuggestionItem.cs        # Autocomplete suggestion (name + total time)
 │   │   ├── ObservableObject.cs      # INotifyPropertyChanged base class
 │   │   ├── RelayCommand.cs          # ICommand implementation
-│   │   ├── IUiTimer.cs              # UI-agnostic timer abstraction
 │   │   └── TrackerStatus.cs         # Info / Success / Error status kinds
 │   ├── Views/
 │   │   ├── TrackerWindow.cs         # Shell: window, tabs, title binding, close handling
@@ -274,8 +274,10 @@ Timetracker/
 │   ├── Program.cs                   # Entry point (Avalonia bootstrap)
 │   └── Timetracker.App.csproj
 ├── Timetracker.Plugins/             # Hook interfaces + UI host accessor (no logic)
+│   └── Interfaces/                  # IUiContributor, IAppHook, ITrackerUiHost, ...
 ├── Timetracker.AzureDevOps/         # Add-in: work item import (issue number → fields)
 ├── Timetracker.ActivityMonitor/     # Add-in: PC active/idle recording (background exe)
+│   └── Interfaces/                  # IActivityMonitorInstaller, IIdleTimeProvider
 ├── Timetracker.slnx                 # XML solution (app + add-ins + tests)
 ├── Timetracker.App.Tests.Unit/      # App unit tests (view models, services)
 ├── Timetracker.Plugins.Tests.Unit/  # Plugins unit tests (UI host accessor)
@@ -284,6 +286,11 @@ Timetracker/
 ├── Timetracker.Tests.UI/            # UI tests: app views + add-in panels (headless Avalonia)
 └── Timetracker.Tests.Architecture/  # Architecture rules (references, test naming)
 ```
+
+Every project that defines interfaces keeps them in its `Interfaces/` folder
+(`Timetracker.Interfaces`, `Timetracker.Plugins.Interfaces`,
+`Timetracker.ActivityMonitor.Interfaces`), so a project's contracts are found in
+one place. An architecture rule enforces this.
 
 The app project keeps the assembly name `Timetracker`, so the shipped executable
 is still `Timetracker` (`Timetracker.exe` on Windows). Only the project folder and
@@ -314,6 +321,7 @@ the rest of the suite:
 - A unit-test class must carry `[TestFixture]` and be named `<ClassTested>Tests`
   after a production class or interface.
 - A unit-test method must be named after a real member of that production type.
+- Every production interface must live in its project's `.Interfaces` namespace.
 
 Test projects (`*.Tests.Unit`, `*.Tests.UI`) are exempt from the reference rules:
 they may reference whatever they verify, so the merged UI project can reference

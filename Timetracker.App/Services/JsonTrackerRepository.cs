@@ -1,22 +1,8 @@
 using System.Text.Json;
+using Timetracker.Interfaces;
 using Timetracker.Models;
 
 namespace Timetracker.Services;
-
-public interface ITrackerRepository
-{
-    /// <summary>Full path of the JSON file the entries are stored in.</summary>
-    string FilePath { get; }
-
-    /// <summary>Reads all entries.</summary>
-    IReadOnlyList<TrackerEntry> GetAll();
-
-    /// <summary>Appends one entry, preserving every existing one.</summary>
-    void Add(TrackerEntry entry);
-
-    /// <summary>Writes the given entries, replacing the stored list (used by edits and deletes).</summary>
-    void Save(IReadOnlyList<TrackerEntry> entries);
-}
 
 /// <summary>
 /// JSON persistence for the time entries. The file carries a version marker

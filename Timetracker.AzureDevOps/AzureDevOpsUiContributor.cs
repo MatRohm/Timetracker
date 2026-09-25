@@ -1,5 +1,5 @@
+using Timetracker.Plugins.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
-using Timetracker.Plugins;
 
 namespace Timetracker.AzureDevOps;
 

@@ -1,7 +1,9 @@
+using Timetracker.Interfaces;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows.Input;
 using Timetracker.ActivityMonitor;
+using Timetracker.ActivityMonitor.Interfaces;
 using Timetracker.Models;
 using Timetracker.Services;
 

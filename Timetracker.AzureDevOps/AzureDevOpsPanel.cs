@@ -1,3 +1,4 @@
+using Timetracker.Plugins.Interfaces;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
