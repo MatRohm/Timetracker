@@ -1,7 +1,7 @@
 using Timetracker.Interfaces;
 using Avalonia.Threading;
 
-namespace Timetracker.Views;
+namespace Timetracker.Services;
 
 /// <summary>Avalonia implementation of <see cref="IUiTimer"/>; ticks on the UI thread.</summary>
 internal sealed class AvaloniaUiTimer : IUiTimer

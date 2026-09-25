@@ -255,6 +255,7 @@ Timetracker/
 │   │   ├── TrackerFileMigrator.cs   # Chains file upgrades, one step per version
 │   │   ├── TrackerFileMigrations.cs # The v1→v2 step (from/to version constants)
 │   │   ├── VersionOneFileFormat.cs  # Reads the old unversioned session array
+│   │   ├── AvaloniaUiTimer.cs       # IUiTimer implementation (ticks on the UI thread)
 │   │   └── ErrorLog.cs              # Timestamped error log next to the executable
 │   ├── ViewModels/
 │   │   ├── TrackerViewModel.cs      # All logic: start/stop, timer, state, sorting
@@ -275,7 +276,6 @@ Timetracker/
 │   │   │   ├── WeekDaysGrid.cs      # Seven weekday columns with per-line copy
 │   │   │   ├── DeleteConfirmation.cs# Shared delete confirmation dialog
 │   │   │   └── ViewBrushes.cs       # Shared view colors
-│   │   └── AvaloniaUiTimer.cs       # Avalonia timer implementation
 │   ├── App.cs                       # Composition root: container, hooks, error handling
 │   ├── Program.cs                   # Entry point (Avalonia bootstrap)
 │   └── Timetracker.App.csproj

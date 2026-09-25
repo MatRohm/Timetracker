@@ -33,7 +33,7 @@ public static class HookRegistry
                 sp.GetRequiredService<Services.JsonTrackerRepository>().FilePath,
                 sp.GetServices<ITrackerFileMigration>(),
                 Services.ErrorLog.Log));
-        services.AddSingleton<IUiTimer, Views.AvaloniaUiTimer>();
+        services.AddSingleton<IUiTimer, Services.AvaloniaUiTimer>();
         // Idle detection comes from the monitor project's platform-specific provider.
         services.AddSingleton<ActivityMonitor.Interfaces.IIdleTimeProvider>(
             _ => ActivityMonitor.IdleTimeProvider.CreateForCurrentPlatform());
