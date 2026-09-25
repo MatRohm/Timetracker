@@ -166,6 +166,11 @@ Idle detection is platform-specific: Windows uses the Win32 last-input timestamp
 where neither is available the monitor still records active time, it just never
 detects idle.
 
+The monitor keeps a plain-text log **`Timetracker.ActivityMonitor.log` next to its
+executable**: one timestamped entry per event, tagged with the method that wrote it
+(startup, a polling heartbeat every five minutes, state-file handling, and
+shutdown).
+
 The week view shows the resulting **active/idle time per weekday** in the gray
 line below each day's bookings.
 

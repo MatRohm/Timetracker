@@ -4,8 +4,9 @@ using Timetracker.ActivityMonitor;
 // timer and closes the open span when the process or session ends. No UI and no
 // window dependencies, so it runs the same on Windows and Linux.
 
+var monitorLog = new MonitorLog();
 var log = new ActivityLog();
-var tracker = new ActivityTracker(log);
+var tracker = new ActivityTracker(log, monitorLog: monitorLog);
 tracker.Start();
 
 using var stopping = new CancellationTokenSource();
