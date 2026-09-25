@@ -12,9 +12,16 @@ public class ActivityTracker
     /// <summary>Idle periods shorter than this are not logged.</summary>
     public static readonly TimeSpan DefaultIdleThreshold = TimeSpan.FromHours(1);
 
+    /// <summary>How often a routine polling entry is written to the monitor log.</summary>
+    public static readonly TimeSpan PollLogInterval = TimeSpan.FromMinutes(5);
+
     private readonly ActivityLog _log;
     private readonly IIdleTimeProvider _idleTime;
+    private readonly MonitorLog? _monitorLog;
     private Func<DateTimeOffset> _now;
+
+    /// <summary>Moment of the last polling log entry; throttles it to <see cref="PollLogInterval"/>.</summary>
+    private DateTimeOffset _lastPollLog;
 
     private string _state = "active";
     private DateTimeOffset _stateStart;
@@ -22,11 +29,13 @@ public class ActivityTracker
     public ActivityTracker(
         ActivityLog log,
         Func<DateTimeOffset>? now = null,
-        IIdleTimeProvider? idleTime = null)
+        IIdleTimeProvider? idleTime = null,
+        MonitorLog? monitorLog = null)
     {
         _log = log;
         _now = now ?? (() => DateTimeOffset.Now);
         _idleTime = idleTime ?? IdleTimeProvider.CreateForCurrentPlatform();
+        _monitorLog = monitorLog;
     }
 
     /// <summary>Path of the state file used to recover across restarts.</summary>
@@ -77,12 +86,28 @@ public class ActivityTracker
 
         _state = "active";
         _stateStart = now;
+        _lastPollLog = now;
         SaveState(_state, _stateStart);
+
+        _monitorLog?.Info(
+            $"Started; resumed state \"{state}\", current span \"{_state}\" from {_stateStart:O}.");
         return _stateStart;
     }
 
     /// <summary>Called periodically; flips active/idle when the threshold is crossed.</summary>
-    public void Poll() => PollWithIdle(_idleTime.CurrentIdleTime);
+    public void Poll()
+    {
+        var now = _now();
+        var idle = _idleTime.CurrentIdleTime;
+        PollWithIdle(idle);
+
+        // Routine heartbeat, throttled so the log does not grow per poll tick.
+        if (now - _lastPollLog >= PollLogInterval)
+        {
+            _lastPollLog = now;
+            _monitorLog?.Info($"Poll; state \"{_state}\", idle {idle:hh\\:mm\\:ss}.");
+        }
+    }
 
     /// <summary>Ends the open span (logoff/shutdown); called on session end.</summary>
     public void Stop()
@@ -92,9 +117,13 @@ public class ActivityTracker
             return; // Already stopped; avoids writing a duplicate span.
         }
 
-        CloseSpan(_state, _stateStart, _now());
+        var stoppedState = _state;
+        var endedAt = _now();
+        CloseSpan(stoppedState, _stateStart, endedAt);
         _state = "off";
         SaveState(_state, null);
+
+        _monitorLog?.Info($"Stopped; closed \"{stoppedState}\" span at {endedAt:O}.");
     }
 
     private void CloseAndOpen(string newState, DateTimeOffset newStateStart)
@@ -130,18 +159,32 @@ public class ActivityTracker
         {
             if (!File.Exists(_statePath))
             {
+                _monitorLog?.Info($"No state file at \"{_statePath}\"; starting fresh.");
                 return ("active", null);
             }
-            var parts = File.ReadAllText(_statePath).Split('\n', 2);
+
+            var lines = File.ReadAllText(_statePath).Split('\n', 2);
+            var state = lines[0].Trim();
             DateTimeOffset? start = null;
-            if (parts.Length > 1 && DateTimeOffset.TryParse(parts[1].Trim(), out var parsed))
+            var startText = lines.Length > 1 ? lines[1].Trim() : "";
+            if (startText.Length > 0)
             {
-                start = parsed;
+                if (DateTimeOffset.TryParse(startText, out var parsed))
+                {
+                    start = parsed;
+                }
+                else
+                {
+                    _monitorLog?.Info(
+                        $"State file \"{_statePath}\" held an unparsable start time; resuming without it.");
+                }
             }
-            return (parts[0].Trim(), start);
+
+            return (state, start);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
+            _monitorLog?.Error($"Could not read the state file \"{_statePath}\"; starting fresh.", ex);
             return ("active", null);
         }
     }

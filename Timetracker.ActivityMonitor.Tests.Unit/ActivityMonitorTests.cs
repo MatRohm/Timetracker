@@ -216,6 +216,123 @@ public sealed class ActivityMonitorTests
             "the last input tick is a current value, not a stale or unset one");
     }
 
+    [Test]
+    public void Monitor_log_writes_next_to_the_executable()
+    {
+        MonitorLog.DefaultFilePath.Should().Be(
+            Path.Combine(AppContext.BaseDirectory, "Timetracker.ActivityMonitor.log"));
+    }
+
+    [Test]
+    public void Monitor_log_tags_entries_with_the_calling_method()
+    {
+        var path = TempPath($"monitor-method-{Guid.NewGuid():N}.log");
+        var monitorLog = new MonitorLog(path);
+
+        WriteEntry(monitorLog, "hello");
+
+        var text = File.ReadAllText(path);
+        text.Should().Contain("[WriteEntry]", "the entry is tagged with the calling method");
+        text.Should().Contain("hello");
+    }
+
+    [Test]
+    public void Start_logs_a_startup_message()
+    {
+        var (tracker, monitorLogPath) = TrackerWithLog("log-start");
+
+        tracker.Start();
+
+        var text = File.ReadAllText(monitorLogPath);
+        text.Should().Contain("[Start]");
+        text.Should().Contain("Started;");
+    }
+
+    [Test]
+    public void Start_logs_when_the_state_file_is_missing()
+    {
+        var (tracker, monitorLogPath) = TrackerWithLog("log-load-missing");
+
+        tracker.Start();
+
+        var text = File.ReadAllText(monitorLogPath);
+        text.Should().Contain("[LoadState]");
+        text.Should().Contain("No state file");
+    }
+
+    [Test]
+    public void Start_logs_when_the_state_file_holds_an_unparsable_start_time()
+    {
+        var statePath = TempPath($"state-bad-start-{Guid.NewGuid():N}.json");
+        File.WriteAllText(statePath, "active\nnot-a-timestamp");
+        var monitorLogPath = TempPath($"monitor-bad-start-{Guid.NewGuid():N}.log");
+        var tracker = new TrackerForTests(
+            new ActivityLog(TempPath($"log-bad-start-{Guid.NewGuid():N}.json")),
+            () => At(9, 0), statePath, new MonitorLog(monitorLogPath));
+
+        tracker.Start();
+
+        var text = File.ReadAllText(monitorLogPath);
+        text.Should().Contain("[LoadState]");
+        text.Should().Contain("unparsable start time");
+    }
+
+    [Test]
+    public void Poll_logs_a_polling_message_once_per_interval()
+    {
+        var (tracker, monitorLogPath) = TrackerWithLog("log-poll");
+        tracker.Start();
+
+        // Within the interval: no extra polling entry.
+        tracker.PollAt(At(9, 1));
+        File.ReadAllText(monitorLogPath).Should().NotContain("[Poll]", "the heartbeat is throttled");
+
+        // Past the interval: one polling entry.
+        tracker.PollAt(At(9, 6));
+        var text = File.ReadAllText(monitorLogPath);
+        text.Should().Contain("[Poll]");
+        text.Should().Contain("Poll;");
+    }
+
+    [Test]
+    public void Stop_logs_a_stopping_message()
+    {
+        var (tracker, monitorLogPath) = TrackerWithLog("log-stop");
+        tracker.Start();
+
+        tracker.Stop();
+
+        var text = File.ReadAllText(monitorLogPath);
+        text.Should().Contain("[Stop]");
+        text.Should().Contain("Stopped;");
+    }
+
+    [Test]
+    public void Stop_logs_the_span_it_closed()
+    {
+        var (tracker, monitorLogPath) = TrackerWithLog("log-stop-span");
+        tracker.Start();
+
+        tracker.Stop();
+
+        File.ReadAllText(monitorLogPath).Should().Contain("closed \"active\" span",
+            "the log names the span that was open, not the state it moved to");
+    }
+
+    private static void WriteEntry(MonitorLog monitorLog, string message) =>
+        monitorLog.Info(message);
+
+    private static (TrackerForTests Tracker, string LogPath) TrackerWithLog(string name)
+    {
+        var logPath = TempPath($"{name}-{Guid.NewGuid():N}.log");
+        var tracker = new TrackerForTests(
+            new ActivityLog(TempPath($"{name}-activity-{Guid.NewGuid():N}.json")),
+            () => At(9, 0),
+            TempPath($"{name}-state-{Guid.NewGuid():N}.json"),
+            new MonitorLog(logPath));
+        return (tracker, logPath);
+    }
+
     private static DateTimeOffset At(int hour, int minute) =>
         new(2026, 9, 21, hour, minute, 0, TimeSpan.FromHours(2));
 
@@ -229,8 +346,9 @@ public sealed class ActivityMonitorTests
     /// <summary>Test seam: idle time is injected instead of read from Win32.</summary>
     private sealed class TrackerForTests : ActivityTracker
     {
-        public TrackerForTests(ActivityLog log, Func<DateTimeOffset> now, string statePath)
-            : base(log, now)
+        public TrackerForTests(
+            ActivityLog log, Func<DateTimeOffset> now, string statePath, MonitorLog? monitorLog = null)
+            : base(log, now, new NullIdleTimeProvider(), monitorLog)
         {
             UseStateFile(statePath);
         }
@@ -239,6 +357,13 @@ public sealed class ActivityMonitorTests
         {
             SetNow(() => at);
             PollIdleForTest(idle);
+        }
+
+        /// <summary>Polls at a given moment with no idle, to exercise the log heartbeat.</summary>
+        public void PollAt(DateTimeOffset at)
+        {
+            SetNow(() => at);
+            Poll();
         }
     }
 
