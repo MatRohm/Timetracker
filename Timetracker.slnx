@@ -4,10 +4,9 @@
   <Project Path="Timetracker.ActivityMonitor/Timetracker.ActivityMonitor.csproj" />
   <Project Path="Timetracker.Plugins/Timetracker.Plugins.csproj" />
   <Project Path="Timetracker.App.Tests.Unit/Timetracker.App.Tests.Unit.csproj" />
-  <Project Path="Timetracker.App.Tests.UI/Timetracker.App.Tests.UI.csproj" />
   <Project Path="Timetracker.Plugins.Tests.Unit/Timetracker.Plugins.Tests.Unit.csproj" />
   <Project Path="Timetracker.AzureDevOps.Tests.Unit/Timetracker.AzureDevOps.Tests.Unit.csproj" />
-  <Project Path="Timetracker.AzureDevOps.Tests.UI/Timetracker.AzureDevOps.Tests.UI.csproj" />
   <Project Path="Timetracker.ActivityMonitor.Tests.Unit/Timetracker.ActivityMonitor.Tests.Unit.csproj" />
+  <Project Path="Timetracker.Tests.UI/Timetracker.Tests.UI.csproj" />
   <Project Path="Timetracker.Tests.Architecture/Timetracker.Tests.Architecture.csproj" />
 </Solution>

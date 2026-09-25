@@ -18,7 +18,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Timetracker.App\Timetracker.App.csproj" />
     <ProjectReference Include="..\Timetracker.AzureDevOps\Timetracker.AzureDevOps.csproj" />
+    <!-- Shared test doubles (fakes) live in the app's unit-test project. -->
+    <ProjectReference Include="..\Timetracker.App.Tests.Unit\Timetracker.App.Tests.Unit.csproj" />
   </ItemGroup>
 
 </Project>
