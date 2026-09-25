@@ -1,33 +1,26 @@
 using Timetracker.Plugins.Interfaces;
-using System.Collections.Specialized;
 using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Avalonia.Threading;
 using Microsoft.Extensions.DependencyInjection;
+using Avalonia.Threading;
 using Timetracker.Plugins;
 using Timetracker.ViewModels;
+using Timetracker.Views.Components;
 
 namespace Timetracker.Views;
 
 /// <summary>
-/// Week view tab: one column per weekday (Monday first) showing all booked times,
-/// with navigation to previous/next/current week. View-only; state lives in
-/// <see cref="WeekViewModel"/>. Additional per-day lines (e.g. PC activity) and
-/// setup bands come from the registered <see cref="IWeekDayContributor"/> and
-/// <see cref="IUiContributor"/> hooks.
+/// Week view tab: composes the week header/toolbar, the seven day columns and the
+/// status line. View-only; state lives in <see cref="WeekViewModel"/>. Additional
+/// per-day lines (e.g. PC activity) and setup bands come from the registered
+/// <see cref="IWeekDayContributor"/> and <see cref="IUiContributor"/> hooks.
 /// </summary>
 public sealed class WeekTabView : UserControl, IWeekStatusHost
 {
-    private static readonly IBrush SuccessBrush = new SolidColorBrush(Color.FromRgb(0x22, 0x8B, 0x22));
-    private static readonly IBrush ErrorBrush = new SolidColorBrush(Color.FromRgb(0xB2, 0x22, 0x22));
-    private static readonly IBrush InfoBrush = new SolidColorBrush(Color.FromRgb(0x69, 0x69, 0x69));
-    private static readonly IBrush TodayBrush = new SolidColorBrush(Color.FromRgb(0xFF, 0xE4, 0xB5));
-    private static readonly IBrush SurfaceBrush = Brushes.Transparent;
-
     private readonly WeekViewModel _week;
     private readonly IServiceProvider _services;
     private readonly IReadOnlyList<IWeekDayContributor> _weekDayContributors;
@@ -41,8 +34,7 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
     private readonly CheckBox _groupByBookingElementCheck = new();
     private readonly TextBlock _statusLabel = new();
 
-    /// <summary>Grid holding the seven day columns and the contributor summary rows.</summary>
-    private readonly Grid _daysGrid = new();
+    private readonly WeekDaysGrid _daysGrid;
 
     public WeekTabView(WeekViewModel week, IServiceProvider services)
     {
@@ -52,6 +44,8 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
         _uiContributors = services.GetServices<IUiContributor>()
             .Where(c => c.TargetTab == "Week view")
             .ToArray();
+
+        _daysGrid = new WeekDaysGrid(_week, _weekDayContributors, this);
 
         // Add-in panels report results through the shared status line.
         UiHostAccessor.RegisterWeekStatusSink((message, kind) =>
@@ -103,14 +97,8 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
             buttonRow.Children.Add(contributor.CreateControl(_services));
         }
 
-        // Seven equal day columns; rows are added dynamically (header, entries, summaries).
-        for (var i = 0; i < 7; i++)
-        {
-            _daysGrid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
-        }
-
         _statusLabel.TextTrimming = TextTrimming.CharacterEllipsis;
-        _statusLabel.Foreground = InfoBrush;
+        _statusLabel.Foreground = ViewBrushes.Info;
         _statusLabel.Margin = new Thickness(0, 4, 0, 0);
 
         var root = new DockPanel { Margin = new Thickness(12, 10, 12, 10) };
@@ -124,9 +112,7 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
         DockPanel.SetDock(_statusLabel, Dock.Bottom);
         root.Children.Add(_statusLabel);
 
-        var scroll = new ScrollViewer { Content = _daysGrid };
-        root.Children.Add(scroll);
-
+        root.Children.Add(_daysGrid);
         Content = root;
     }
 
@@ -144,173 +130,21 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
         });
 
         _week.PropertyChanged += OnWeekPropertyChanged;
-        // The seven day view models are updated in place, so their property changes
-        // must repaint the columns (ObservableCollection only reports add/remove).
-        foreach (var day in _week.Days)
-        {
-            day.PropertyChanged += OnDayPropertyChanged;
-        }
-        _week.Days.CollectionChanged += OnDaysChanged;
-        UpdateGrid();
+        UpdateHeader();
     }
-
-    private void OnDaysChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        if (e.NewItems is not null)
-        {
-            foreach (WeekDayViewModel day in e.NewItems)
-            {
-                day.PropertyChanged += OnDayPropertyChanged;
-            }
-        }
-        UpdateGrid();
-    }
-
-    private void OnDayPropertyChanged(object? sender, PropertyChangedEventArgs e) => UpdateGrid();
 
     private void OnWeekPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(WeekViewModel.WeekTitle))
+        if (e.PropertyName is nameof(WeekViewModel.WeekTitle) or nameof(WeekViewModel.WeekTotalText))
         {
-            _titleLabel.Text = _week.WeekTitle;
-        }
-        else if (e.PropertyName == nameof(WeekViewModel.WeekTotalText))
-        {
-            _totalLabel.Text = _week.WeekTotalText;
-        }
-        else if (e.PropertyName == nameof(WeekViewModel.GroupByBookingElement))
-        {
-            UpdateGrid();
+            UpdateHeader();
         }
     }
 
-    private void UpdateGrid()
+    private void UpdateHeader()
     {
         _titleLabel.Text = _week.WeekTitle;
         _totalLabel.Text = _week.WeekTotalText;
-
-        _daysGrid.Children.Clear();
-        _daysGrid.RowDefinitions.Clear();
-
-        // Row 0: weekday captions. Row 1: bookings per day.
-        _daysGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-        _daysGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-        for (var c = 0; c < _weekDayContributors.Count; c++)
-        {
-            _daysGrid.RowDefinitions.Add(new RowDefinition(GridLength.Auto));
-        }
-
-        for (var i = 0; i < 7; i++)
-        {
-            var day = _week.Days[i];
-
-            var header = new TextBlock
-            {
-                Text = day.Header,
-                FontWeight = FontWeight.Bold,
-                Margin = new Thickness(4, 0, 4, 4),
-                Background = day.IsToday ? TodayBrush : SurfaceBrush,
-            };
-            Grid.SetColumn(header, i);
-            Grid.SetRow(header, 0);
-            _daysGrid.Children.Add(header);
-
-            var entries = new StackPanel
-            {
-                Margin = new Thickness(4, 0, 4, 6),
-                Background = day.IsToday ? TodayBrush : SurfaceBrush,
-            };
-            foreach (var group in day.Groups)
-            {
-                entries.Children.Add(BuildEntryLine(group));
-            }
-            Grid.SetColumn(entries, i);
-            Grid.SetRow(entries, 1);
-            _daysGrid.Children.Add(entries);
-        }
-
-        // One gray summary row per contributor (e.g. PC activity).
-        for (var c = 0; c < _weekDayContributors.Count; c++)
-        {
-            for (var i = 0; i < 7; i++)
-            {
-                var date = DateOnly.FromDateTime(_week.Days[i].Date.Date);
-                var text = new TextBlock
-                {
-                    Text = _weekDayContributors[c].GetDayText(date),
-                    Foreground = InfoBrush,
-                    FontStyle = FontStyle.Italic,
-                    TextWrapping = TextWrapping.Wrap,
-                    Margin = new Thickness(4, 0, 4, 2),
-                };
-                Grid.SetColumn(text, i);
-                Grid.SetRow(text, 2 + c);
-                _daysGrid.Children.Add(text);
-            }
-        }
-    }
-
-    /// <summary>
-    /// One booking element line (label plus a copy button) that copies the task
-    /// names of that line's tracking entries. The button is only offered while
-    /// grouping by booking element, because that is the grouping it refers to.
-    /// </summary>
-    private Control BuildEntryLine(WeekDayGroup group)
-    {
-        var label = new TextBlock
-        {
-            Text = group.Label,
-            TextWrapping = TextWrapping.Wrap,
-            VerticalAlignment = VerticalAlignment.Center,
-        };
-
-        var line = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Spacing = 4,
-        };
-        line.Children.Add(label);
-
-        if (_week.GroupByBookingElement)
-        {
-            line.Children.Add(BuildCopyGroupButton(group));
-        }
-
-        return line;
-    }
-
-    private Control BuildCopyGroupButton(WeekDayGroup group)
-    {
-        var button = new Button
-        {
-            Content = "⧉",
-            FontSize = 10,
-            Padding = new Thickness(3, 0),
-            VerticalAlignment = VerticalAlignment.Center,
-        };
-        ToolTip.SetTip(button, "Copy this booking element's tracked tasks");
-
-        button.Click += async (_, _) => await CopyGroupAsync(group);
-        return button;
-    }
-
-    private async Task CopyGroupAsync(WeekDayGroup group)
-    {
-        if (TopLevel.GetTopLevel(this)?.Clipboard is not { } clipboard)
-        {
-            ShowStatus("Could not access the clipboard.", WeekStatusKind.Error);
-            return;
-        }
-
-        try
-        {
-            await clipboard.SetTextAsync(group.CopyText);
-            ShowStatus("Copied this booking element's tracked tasks.", WeekStatusKind.Success);
-        }
-        catch (Exception ex)
-        {
-            ShowStatus("Could not copy: " + ex.Message, WeekStatusKind.Error);
-        }
     }
 
     /// <summary>One-line status at the bottom, styled like the tracker's status line.</summary>
@@ -319,9 +153,9 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
         _statusLabel.Text = message;
         _statusLabel.Foreground = kind switch
         {
-            WeekStatusKind.Success => SuccessBrush,
-            WeekStatusKind.Error => ErrorBrush,
-            _ => InfoBrush,
+            WeekStatusKind.Success => ViewBrushes.Success,
+            WeekStatusKind.Error => ViewBrushes.Error,
+            _ => ViewBrushes.Info,
         };
     }
 
