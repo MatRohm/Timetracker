@@ -27,7 +27,6 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
 
     private readonly TaskInputField _taskInput;
     private readonly EntryHistoryGrid _historyGrid;
-    private readonly FilterField _filterField;
     private readonly Button _startButton = new();
     private readonly Button _stopButton = new();
     private readonly TextBlock _elapsedLabel = new();
@@ -51,7 +50,6 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
 
         _taskInput = new TaskInputField(_vm);
         _historyGrid = new EntryHistoryGrid(_vm);
-        _filterField = new FilterField(_vm);
 
         // Add-in controls resolve the host interfaces through the registry.
         UiHostAccessor.RegisterTrackerHost(this);
@@ -116,7 +114,6 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         var topPanel = new StackPanel { Spacing = 4 };
         topPanel.Children.Add(_taskInput);
         topPanel.Children.Add(buttonRow);
-        topPanel.Children.Add(_filterField);
         DockPanel.SetDock(topPanel, Dock.Top);
         root.Children.Add(topPanel);
 

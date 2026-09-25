@@ -15,6 +15,7 @@ using Timetracker.Plugins;
 using Timetracker.Tests.Unit;
 using Timetracker.ViewModels;
 using Timetracker.Views;
+using Timetracker.Views.Components;
 
 namespace Timetracker.Tests.UI;
 
@@ -62,7 +63,7 @@ public sealed class ColumnResizeTests
         var grid = Find<DataGrid>(view)!;
         var taskHeader = grid.GetVisualDescendants()
             .OfType<DataGridColumnHeader>()
-            .First(h => h.Content?.ToString() == "Task");
+            .First(h => CaptionOf(h) == "Task");
 
         var before = ColumnWidth(grid, "Task");
         var bookingBefore = ColumnWidth(grid, "Booking element");
@@ -97,7 +98,15 @@ public sealed class ColumnResizeTests
     }
 
     private static string HeaderOf(DataGridColumn column) =>
-        string.IsNullOrEmpty(column.Header?.ToString()) ? "(action)" : column.Header!.ToString()!;
+        column.Header is ColumnFilterHeader filter
+            ? filter.Caption.Text ?? ""
+            : string.IsNullOrEmpty(column.Header?.ToString()) ? "(action)" : column.Header!.ToString()!;
+
+    /// <summary>The plain caption of a realized column header (used to find it).</summary>
+    private static string CaptionOf(DataGridColumnHeader header) =>
+        header.Content is ColumnFilterHeader filter
+            ? filter.Caption.Text ?? ""
+            : header.Content?.ToString() ?? "";
 
     private static double ColumnWidth(DataGrid grid, string header) =>
         grid.Columns.First(c => HeaderOf(c) == header).ActualWidth;

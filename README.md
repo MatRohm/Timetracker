@@ -97,10 +97,11 @@ than one page, **◀ Previous / Next ▶** controls with a page indicator appear
 below the list. Sorting spans all pages, and the task-name suggestions always
 use every saved task — regardless of the visible page.
 
-**Filtering**: the funnel button above the grid toggles a filter box. Text typed
-there narrows the list to the rows whose **task name or booking element** contains
-it (case-insensitive); hiding the box clears the filter. Filtering spans all pages,
-so paging then applies to the filtered rows.
+**Filtering**: each of the **Task**, **Booking element**, **Started** and **Ended**
+headers has a funnel button that toggles a filter box for that column. A row is
+shown when it matches **every** filled column filter (case-insensitive substring);
+hiding a box clears that column's filter. Filtering spans all pages, so paging then
+applies to the filtered rows.
 
 The **Task** and **Booking element** cells are editable inline: press **F2** on a
 selected cell, type, and press **Enter** to commit (Esc cancels). Changes are
@@ -277,7 +278,7 @@ Timetracker/
 │   │   ├── WeekTabView.cs           # Week tab: composes header, day columns, status line
 │   │   ├── Components/              # Reusable view pieces (Timetracker.Views.Components)
 │   │   │   ├── TaskInputField.cs    # Task-name input with autocomplete
-│   │   │   ├── FilterField.cs       # Funnel toggle + history filter box
+│   │   │   ├── ColumnFilterHeader.cs# Column caption + per-column filter funnel
 │   │   │   ├── EntryHistoryGrid.cs  # History grid: row actions, sorting, delete, inline edit
 │   │   │   ├── WeekDaysGrid.cs      # Seven weekday columns with per-line copy
 │   │   │   ├── DeleteConfirmation.cs# Shared delete confirmation dialog

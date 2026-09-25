@@ -58,8 +58,12 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     private int _currentPage = 1;
     private int _totalPages = 1;
 
-    /// <summary>Substring the history is filtered by (task name or booking element); empty = no filter.</summary>
-    private string _filterText = "";
+    /// <summary>
+    /// Per-column filters, keyed by the <see cref="EntryRow"/> property they apply
+    /// to (Task, BookingElement, StartText, EndText). A row must match every filled
+    /// filter; an absent key means that column is unfiltered.
+    /// </summary>
+    private readonly Dictionary<string, string> _columnFilters = new(StringComparer.Ordinal);
 
     /// <summary>Raised when Start was attempted without a task name; the view shows a hint.</summary>
     public event Action? InvalidTaskName;
@@ -207,25 +211,40 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     public string PageText => $"Page {CurrentPage} of {TotalPages}";
 
     /// <summary>
-    /// Substring the history list is filtered by; a row matches when its task name
-    /// or its booking element contains it (case-insensitive). Empty shows everything.
-    /// Filtering spans all pages, like sorting.
+    /// Sets the filter for one column (by the <see cref="EntryRow"/> property name)
+    /// and refreshes the list. Empty clears that column's filter. Filtering spans all
+    /// pages, like sorting; a row must match every filled column filter.
     /// </summary>
-    public string FilterText
+    public void SetColumnFilter(string column, string filter)
     {
-        get => _filterText;
-        set
+        filter = filter.Trim();
+        var changed = filter.Length == 0
+            ? _columnFilters.Remove(column)
+            : SetOrUpdate(column, filter);
+
+        if (changed)
         {
-            if (SetProperty(ref _filterText, value))
-            {
-                OnPropertyChanged(nameof(IsFilterActive));
-                ApplyFilter();
-            }
+            OnPropertyChanged(nameof(IsFilterActive));
+            ApplyFilter();
         }
     }
 
-    /// <summary>True while a filter is set; the view highlights the filter box.</summary>
-    public bool IsFilterActive => FilterText.Trim().Length > 0;
+    /// <summary>True while any column filter is set; the view highlights active funnels.</summary>
+    public bool IsFilterActive => _columnFilters.Count > 0;
+
+    /// <summary>True when the given column currently has a filter.</summary>
+    public bool IsColumnFiltered(string column) => _columnFilters.ContainsKey(column);
+
+    private bool SetOrUpdate(string column, string filter)
+    {
+        if (_columnFilters.TryGetValue(column, out var existing) && existing == filter)
+        {
+            return false;
+        }
+
+        _columnFilters[column] = filter;
+        return true;
+    }
 
     /// <summary>
     /// Human-readable description of what a delete would remove, e.g.
@@ -529,23 +548,33 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Recomputes the visible rows from the filter and shows the first page of them.
-    /// Called whenever the rows or the filter change.
+    /// Recomputes the visible rows from the column filters and shows the first page
+    /// of them. Called whenever the rows or a filter change.
     /// </summary>
     private void ApplyFilter()
     {
-        var filter = FilterText.Trim();
-        _visibleRows = filter.Length == 0
+        _visibleRows = _columnFilters.Count == 0
             ? [.. _allRows]
-            : [.. _allRows.Where(row => MatchesFilter(row, filter))];
+            : [.. _allRows.Where(MatchesFilters)];
 
         CurrentPage = 1;
         FillEntries();
     }
 
-    private static bool MatchesFilter(EntryRow row, string filter) =>
-        row.Task.Contains(filter, StringComparison.CurrentCultureIgnoreCase)
-        || row.BookingElement.Contains(filter, StringComparison.CurrentCultureIgnoreCase);
+    /// <summary>A row passes when every filled column filter matches its column's text.</summary>
+    private bool MatchesFilters(EntryRow row) =>
+        _columnFilters.All(filter => ColumnValue(row, filter.Key)
+            .Contains(filter.Value, StringComparison.CurrentCultureIgnoreCase));
+
+    /// <summary>The text a filter on the given column compares against.</summary>
+    private static string ColumnValue(EntryRow row, string column) => column switch
+    {
+        nameof(EntryRow.Task) => row.Task,
+        nameof(EntryRow.BookingElement) => row.BookingElement,
+        nameof(EntryRow.StartText) => row.StartText,
+        nameof(EntryRow.EndText) => row.EndText,
+        _ => "",
+    };
 
     private void RefreshEntries()
     {
@@ -614,10 +643,12 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
             return;
         }
 
-        // A filter that excludes the row would make it unreachable; drop it.
+        // A filter that excludes the row would make it unreachable; drop them all.
         if (!_visibleRows.Contains(row))
         {
-            FilterText = "";
+            _columnFilters.Clear();
+            OnPropertyChanged(nameof(IsFilterActive));
+            ApplyFilter();
         }
 
         var index = _visibleRows.IndexOf(row);
