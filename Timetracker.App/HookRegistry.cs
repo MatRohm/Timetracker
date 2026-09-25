@@ -17,12 +17,20 @@ public static class HookRegistry
         var services = new ServiceCollection();
 
         // Framework services of the main app.
-        // One repository instance is shared by both interfaces it implements.
+        // One repository instance is shared by every interface it implements.
         services.AddSingleton<Services.JsonTrackerRepository>();
         services.AddSingleton<Services.ITrackerRepository>(
             sp => sp.GetRequiredService<Services.JsonTrackerRepository>());
-        services.AddSingleton<Services.ITrackerFileMigration>(
-            sp => sp.GetRequiredService<Services.JsonTrackerRepository>());
+
+        // Tracker file migrations: one step per version, chained by the migrator.
+        services.AddSingleton<Services.ITrackerFileMigration>(sp =>
+            new Services.VersionOneToTwoMigration(
+                sp.GetRequiredService<Services.JsonTrackerRepository>().FilePath));
+        services.AddSingleton<Services.ITrackerFileMigrationRunner>(sp =>
+            new Services.TrackerFileMigrator(
+                sp.GetRequiredService<Services.JsonTrackerRepository>().FilePath,
+                sp.GetServices<Services.ITrackerFileMigration>(),
+                Services.ErrorLog.Log));
         services.AddSingleton<ViewModels.IUiTimer, Views.AvaloniaUiTimer>();
         // Idle detection comes from the monitor project's platform-specific provider.
         services.AddSingleton<ActivityMonitor.IIdleTimeProvider>(

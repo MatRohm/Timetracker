@@ -1,3 +1,5 @@
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using Timetracker.Models;
 
 namespace Timetracker.Services;
@@ -10,6 +12,15 @@ namespace Timetracker.Services;
 /// </summary>
 internal static class TrackerFileFormat
 {
+    /// <summary>Serializer settings shared by every read and write of the tracker file.</summary>
+    public static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = true,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
+
     /// <summary>
     /// Groups sessions into one record per task name (case-insensitive, first-seen
     /// spelling kept). A task's booking element is the first non-empty one of its

@@ -84,11 +84,11 @@ public sealed class App : Application
     /// </summary>
     private static void RunStartupMigrations(IServiceProvider services)
     {
-        foreach (var migration in services.GetServices<Services.ITrackerFileMigration>())
+        foreach (var runner in services.GetServices<Services.ITrackerFileMigrationRunner>())
         {
             try
             {
-                migration.MigrateIfNeeded();
+                runner.MigrateIfNeeded();
             }
             catch (Exception ex)
             {

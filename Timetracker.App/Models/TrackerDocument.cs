@@ -11,6 +11,13 @@ public sealed class TrackerDocument
     /// <summary>On-disk format this application writes.</summary>
     public const int CurrentVersion = 2;
 
+    /// <summary>
+    /// The implicit version of files written before the version marker existed: a
+    /// flat array of per-session entries. <c>v1</c> is migrated up to
+    /// <see cref="CurrentVersion"/> on load.
+    /// </summary>
+    public const int UnversionedVersion = 1;
+
     public int Version { get; set; } = CurrentVersion;
 
     public List<TrackedTask> Tasks { get; set; } = [];
