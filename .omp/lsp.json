@@ -1,8 +1,8 @@
 {
   "servers": {
-    "omnisharp": {
-      "command": "/home/matthias/.local/share/omnisharp/OmniSharp",
-      "args": ["--languageserver"]
+    "csharp": {
+      "command": "C:\\Users\\haukc\\.dotnet\\tools\\roslyn-language-server.cmd",
+      "args": ["--stdio"]
     }
   }
 }
