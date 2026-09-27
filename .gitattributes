@@ -11,6 +11,7 @@
 # Shell scripts and git hooks must keep LF or they fail to execute.
 *.sh text eol=lf
 .githooks/* text eol=lf
+.beads/hooks/* text eol=lf
 
 # Binary assets are never normalized.
 *.ico binary
