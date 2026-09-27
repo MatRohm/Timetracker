@@ -381,15 +381,28 @@ freezes outright). The file is read automatically by `dotnet build`, `test`,
 ### Git hooks
 
 Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
-and are enforced by the shared `commit-msg` hook. Enable it once per clone:
+and **must end with the tracked issue's id**, e.g.:
+
+```
+feat: show the week view as a tree (timetracker-66k)
+```
+
+Both rules are enforced by the shared `commit-msg` hook. Enable it once per clone
+(unless Beads already set it up — see below):
 
 ```sh
 git config core.hooksPath .githooks
 ```
 
-The Beads integration manages its own hook directory (`.beads/hooks`, chained on
-top of the same `commit-msg` rule) and points `core.hooksPath` there when Beads is
-set up; the Conventional Commits check stays in force either way.
+The id may be bare or wrapped in one trailing `)` or `]`. Git-generated merge and
+revert messages are exempt; `git commit --no-verify` bypasses the check in an
+emergency.
+
+The Beads integration sets `core.hooksPath` to its own directory (`.beads/hooks`)
+for its pre-commit/post-merge/etc. shims. That directory's `commit-msg` is a thin
+delegator to `.githooks/commit-msg`, so the rules have a single source of truth
+and the two directories cannot drift apart. (`.gitattributes` keeps both
+directories as LF so the hooks stay executable on a fresh clone.)
 
 ### Self-contained publish
 

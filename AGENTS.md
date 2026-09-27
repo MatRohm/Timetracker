@@ -89,8 +89,9 @@ or explicitly state that validation could not be performed.
   in sensible, separate commits.
 - **Do not push to remotes without explicit permission from the user** —
   pushing happens only when the user asks for it.
-- Commit messages must follow Conventional Commits; this is enforced by the
-  shared `commit-msg` hook (see README.md for the one-time setup).
+- Commit messages must follow Conventional Commits **and end with the tracked
+  issue id** (e.g. `feat: show the week view as a tree (timetracker-66k)`); both
+  are enforced by the shared `commit-msg` hook (see README.md for the setup).
 
 ## Before creating new code
 
@@ -128,6 +129,7 @@ bd prime                # Refresh Beads context
 - Use `bd` for all task tracking; do not create markdown TODO lists.
 - Run `bd prime` when Beads context is missing or stale. Codex 0.129.0+ can load Beads context automatically through native hooks; use `/hooks` to inspect or toggle them.
 - Keep persistent project memory in Beads via `bd remember`; do not create ad hoc memory files.
+- Every task commit should have an beads issue associated with them, if none is mentioned for you make it yoursel. You are allowed to commit to closed issues, in case a fix for that issue is needed. 
 
 **Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/core-concepts/sync-concepts.md for details and anti-patterns.
 <!-- END BEADS CODEX SETUP -->
