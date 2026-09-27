@@ -48,11 +48,11 @@ public sealed class WeekContributorPlacementTests
         bottomPanel.Children[0].Should().BeSameAs(contributorRow);
         bottomPanel.Children[1].Should().BeOfType<TextBlock>("the status label sits after the controls");
 
-        // It is laid out below the day grid, i.e. at the bottom of the view.
-        var daysGrid = view.GetVisualDescendants().OfType<WeekDaysGrid>().Single();
+        // It is laid out below the week tree, i.e. at the bottom of the view.
+        var tree = view.GetVisualDescendants().OfType<WeekTrackingTree>().Single();
         var controlTop = control.TranslatePoint(default, view)!.Value.Y;
-        var gridTop = daysGrid.TranslatePoint(default, view)!.Value.Y;
-        controlTop.Should().BeGreaterThan(gridTop, "add-in controls are at the bottom, below the day columns");
+        var gridTop = tree.TranslatePoint(default, view)!.Value.Y;
+        controlTop.Should().BeGreaterThan(gridTop, "add-in controls are at the bottom, below the tree");
     }
 
     private static void Realize(Control root)

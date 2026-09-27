@@ -1,16 +1,29 @@
 using System.Globalization;
-using Timetracker.ActivityMonitor;
+using System.Windows.Input;
 using Timetracker.Models;
 
 namespace Timetracker.ViewModels;
 
-/// <summary>One weekday column in the week view; the instance is updated in place on rebuild.</summary>
+/// <summary>
+/// One day node in the week tree: the weekday caption, the day's summed time and
+/// its booking element groups (one per element, plus a "&lt;None&gt;" group for
+/// entries without one). The instance is updated in place on rebuild, and the
+/// user's expansion state is kept across those updates.
+/// </summary>
 public sealed class WeekDayViewModel : ObservableObject
 {
+    /// <summary>Group name used for entries that carry no booking element.</summary>
+    public const string NoBookingElementLabel = "<None>";
+
     private string _header = "";
-    private string _entriesText = "";
     private string _totalText = "";
     private bool _isToday;
+    private bool _isExpanded;
+
+    public WeekDayViewModel()
+    {
+        ToggleCommand = new RelayCommand(() => IsExpanded = !IsExpanded);
+    }
 
     public DateTimeOffset Date { get; private set; }
 
@@ -21,13 +34,6 @@ public sealed class WeekDayViewModel : ObservableObject
         private set => SetProperty(ref _header, value);
     }
 
-    /// <summary>All bookings of the day, one line per session.</summary>
-    public string EntriesText
-    {
-        get => _entriesText;
-        private set => SetProperty(ref _entriesText, value);
-    }
-
     /// <summary>Sum of the day's durations, e.g. "Σ 2:30".</summary>
     public string TotalText
     {
@@ -35,138 +41,93 @@ public sealed class WeekDayViewModel : ObservableObject
         private set => SetProperty(ref _totalText, value);
     }
 
-    /// <summary>True when this column is today; the view highlights it.</summary>
+    /// <summary>True when this day is today; the view highlights it.</summary>
     public bool IsToday
     {
         get => _isToday;
         private set => SetProperty(ref _isToday, value);
     }
 
-    /// <summary>
-    /// The day's lines: one per booking element while grouping by element, else one
-    /// per task. Each carries the text its copy button copies. Empty for a day with
-    /// no bookings.
-    /// </summary>
-    public IReadOnlyList<WeekDayGroup> Groups { get; private set; } = [];
+    /// <summary>True while the day shows its booking element groups.</summary>
+    public bool IsExpanded
+    {
+        get => _isExpanded;
+        set => SetProperty(ref _isExpanded, value);
+    }
 
-    public void Update(DateTimeOffset date, IEnumerable<TrackerEntry> sessions, bool groupByBookingElement)
+    /// <summary>Expands or collapses the day.</summary>
+    public ICommand ToggleCommand { get; }
+
+    /// <summary>
+    /// The day's booking element groups, ordered by earliest start. Each carries
+    /// the element's summed time and its merged tasks. Empty when the day has none.
+    /// </summary>
+    public IReadOnlyList<WeekElementGroupViewModel> Groups { get; private set; } = [];
+
+    public void Update(DateTimeOffset date, IEnumerable<TrackerEntry> sessions)
     {
         var items = sessions.OrderBy(e => e.Start).ToList();
 
         Date = date;
         Header = $"{date.ToString("ddd", CultureInfo.InvariantCulture)} {date.Day:00}.{date.Month:00}.";
 
-        // One line per group: entries are merged and only the total duration is
-        // shown (case-insensitive, like everywhere else). The group key is either
-        // the booking element (default) or the task name.
-        var grouped = items
-            .GroupBy(
-                e => groupByBookingElement ? e.BookingElement.Trim() : e.Task.Trim(),
-                StringComparer.CurrentCultureIgnoreCase)
-            .OrderBy(g => g.Min(e => e.Start))
-            .ToList();
-
-        Groups = [.. grouped.Select(g => new WeekDayGroup(
-            $"{GroupLabel(g, groupByBookingElement)} ({HoursMinutes(g.Sum(e => e.DurationSeconds))})",
-            BuildCopyText(g)))];
-
-        EntriesText = string.Join(Environment.NewLine, Groups.Select(g => g.Label));
-
-        TotalText = items.Count > 0 ? $"Σ {HoursMinutes(items.Sum(e => e.DurationSeconds))}" : "";
+        Groups = BuildGroups(items);
+        TotalText = items.Count > 0 ? $"Σ {WeekTimeFormat.HoursMinutes(items.Sum(e => e.DurationSeconds))}" : "";
         IsToday = date.Date == DateTimeOffset.Now.Date;
+
         OnPropertyChanged(nameof(Date));
         OnPropertyChanged(nameof(Groups));
     }
 
-    /// <summary>
-    /// Sets the PC activity line for this day: the sum of active and idle spans
-    /// overlapping this date, e.g. "PC 7:15 active". Empty when no data exists.
-    /// </summary>
-    public void UpdateActivity(IEnumerable<ActivitySpan> spans)
+    /// <summary>Collapses the day and every group below it.</summary>
+    public void CollapseAll()
     {
-        var daySpans = spans
-            .Select(s => (Span: s, From: s.Start, To: s.End))
-            .ToList();
-
-        var activeSeconds = 0.0;
-        var idleSeconds = 0.0;
-        foreach (var (span, from, to) in daySpans)
+        IsExpanded = false;
+        foreach (var group in Groups)
         {
-            // Clamps a span to this day; spans crossing midnight count on both
-            // days with their respective parts.
-            var dayStart = Date.Date;
-            var dayEnd = dayStart.AddDays(1);
-            var overlapStart = from > dayStart ? from : dayStart;
-            var overlapEnd = to < dayEnd ? to : dayEnd;
-            if (overlapEnd <= overlapStart)
-            {
-                continue;
-            }
-
-            var seconds = (overlapEnd - overlapStart).TotalSeconds;
-            if (span.Kind == "active")
-            {
-                activeSeconds += seconds;
-            }
-            else
-            {
-                idleSeconds += seconds;
-            }
+            group.IsExpanded = false;
         }
-
-        if (activeSeconds <= 0 && idleSeconds <= 0)
-        {
-            ActivityText = "";
-            return;
-        }
-
-        var result = "PC " + HoursMinutes(activeSeconds) + " active";
-        if (idleSeconds > 0)
-        {
-            result += " · " + HoursMinutes(idleSeconds) + " idle";
-        }
-        ActivityText = result;
     }
-
-    /// <summary>PC activity line for this day, e.g. "PC 7:15 active · 1:20 idle".</summary>
-    public string ActivityText
-    {
-        get => _activityText;
-        private set => SetProperty(ref _activityText, value);
-    }
-
-    private string _activityText = "";
-
-    /// <summary>Falls back to "(without)" when the group key is empty (no booking element set).</summary>
-    private static string GroupLabel(IGrouping<string, TrackerEntry> group, bool groupByBookingElement)
-    {
-        var key = group.Key;
-        if (key.Length > 0)
-        {
-            return key;
-        }
-
-        if (!groupByBookingElement)
-        {
-            // Grouping by task: the key is already the meaningful name.
-            return "(without)";
-        }
-
-        // Grouping by booking element: show the task names contained in the group.
-        return string.Join(", ", group
-            .Select(e => e.Task.Trim())
-            .Distinct(StringComparer.CurrentCultureIgnoreCase));
-    }
-
-    private static string HoursMinutes(double seconds) =>
-        TimeSpan.FromSeconds(Math.Round(seconds)).ToString(@"h\:mm");
 
     /// <summary>
-    /// The copy text of one line: the task names of its tracking entries, one per
-    /// line, in the order the entries were tracked.
+    /// One group per booking element (case-insensitive; entries without one form
+    /// the "&lt;None&gt;" group), each holding its tasks merged by name. Groups and
+    /// tasks are ordered by earliest start, tie-broken by name.
     /// </summary>
-    private static string BuildCopyText(IEnumerable<TrackerEntry> group) =>
-        string.Join(Environment.NewLine, group
-            .OrderBy(e => e.Start)
-            .Select(e => e.Task.Trim()));
+    private IReadOnlyList<WeekElementGroupViewModel> BuildGroups(IReadOnlyList<TrackerEntry> items)
+    {
+        // Keep the expansion of elements that are still present.
+        var expanded = Groups.Where(g => g.IsExpanded).Select(g => g.Name).ToHashSet(StringComparer.Ordinal);
+
+        return [.. items
+            .GroupBy(ElementKey, StringComparer.CurrentCultureIgnoreCase)
+            .OrderBy(g => g.Min(e => e.Start))
+            .ThenBy(g => ElementLabel(g.Key), StringComparer.CurrentCultureIgnoreCase)
+            .Select(g => Observe(new WeekElementGroupViewModel(ElementLabel(g.Key), BuildEntries(g))
+            {
+                IsExpanded = expanded.Contains(ElementLabel(g.Key)),
+            }))];
+    }
+
+    /// <summary>
+    /// Re-raises a group's changes as a change of <see cref="Groups"/>, so the view
+    /// only has to observe the day node to repaint the whole subtree.
+    /// </summary>
+    private WeekElementGroupViewModel Observe(WeekElementGroupViewModel group)
+    {
+        group.PropertyChanged += (_, _) => OnPropertyChanged(nameof(Groups));
+        return group;
+    }
+
+    private static IReadOnlyList<WeekEntryViewModel> BuildEntries(IEnumerable<TrackerEntry> sessions) =>
+        [.. sessions
+            .GroupBy(e => e.Task.Trim(), StringComparer.CurrentCultureIgnoreCase)
+            .OrderBy(g => g.Min(e => e.Start))
+            .ThenBy(g => g.Key, StringComparer.CurrentCultureIgnoreCase)
+            .Select(g => new WeekEntryViewModel(g.Key, g.Sum(e => e.DurationSeconds)))];
+
+    private static string ElementKey(TrackerEntry entry) => entry.BookingElement.Trim();
+
+    private static string ElementLabel(string element) =>
+        element.Length > 0 ? element : NoBookingElementLabel;
 }

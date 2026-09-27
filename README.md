@@ -43,29 +43,37 @@ Inline edits of **Task** apply to every session of that task, which also merges
 
 ## Week view
 
-The second tab shows the selected week as a **grid with seven columns, one per
-weekday, Monday first**. Every cell lists that day's bookings — **one line per
-booking element with its total duration** (`Project X (1:30)`), entries without
-a booking element fall back to their task names — with a per-day sum (`Σ 1:30`)
-at the bottom of the cell. Today's column is highlighted.
+The second tab shows the selected week as a **collapsible tree**. Each of the seven
+weekdays (Monday first) is a day node, and the whole tree starts **collapsed**:
 
-Below each day's bookings, a gray **PC activity line** shows the recorded
-machine activity for that day (`PC 7:15 active · 1:20 idle`), based on the
-activity monitor's log (see below).
+```
+▾ Sun 27.09.  Σ 2:00          PC 7:15 active · 1:20 idle
+    ▾ Project X (1:30)  ⧉
+          Report (1:00)  ⧉
+          Review (0:30)  ⧉
+    ▸ <None> (0:45)  ⧉
+▸ Mon 21.09.
+▸ Tue 22.09.
+…                             (all seven days)
+```
 
-The **Group by booking element** checkbox switches the grouping: checked
-(default) groups by booking element; unchecked shows one line per task name
-instead.
+Expand a day (**+**/**−**) to see its booking elements with the day's summed time;
+expand an element to see the tasks worked on it, merged by name with their summed
+time. Entries without a booking element are grouped under **`<None>`**. The day row
+shows the day's total (`Σ`), so a day's sum is visible without expanding.
 
-While grouping by booking element, each booking element line has a small **copy
-button** (⧉) that copies the task names of that line's tracking entries for the
-day, one per line.
+Each booking element and task row has a **copy button** (⧉): the element button
+copies the **task names inside it**, the task button copies the **task name** — never
+the time. Feedback appears in the status line.
 
-Navigate with **◀ Previous week** / **Next week ▶**; **● Current week** jumps
-back to today's week. The title shows the ISO week number and date range.
-The view starts on the current week, stays on the selected week while you
-track time, and updates live as sessions are added or edited. Durations
-display as `h:mm`.
+Below the tree, day nodes also show the gray **PC activity line** from the activity
+monitor's log (`PC 7:15 active · 1:20 idle`).
+
+Navigate with **◀ Previous week** / **Next week ▶**; **● Current week** jumps back
+to today's week. The title shows the ISO week number and date range. The view starts
+on the current week, keeps the selected week and your expansion while you track
+time, and **collapses everything when you change the week**. Durations display as
+`h:mm`.
 
 ## Suggestions & task totals
 
@@ -266,8 +274,11 @@ Timetracker/
 │   ├── ViewModels/
 │   │   ├── TrackerViewModel.cs      # All logic: start/stop, timer, state, sorting
 │   │   ├── EntryRow.cs              # Aggregated display row (grouped sessions)
-│   │   ├── WeekViewModel.cs         # Week view state: 7 day columns, navigation
-│   │   ├── WeekDayViewModel.cs      # One weekday column (header, bookings, total)
+│   │   ├── WeekViewModel.cs         # Week view state: 7 day nodes, navigation, collapse
+│   │   ├── WeekDayViewModel.cs      # One day node (header, total, groups, expander)
+│   │   ├── WeekElementGroupViewModel.cs # Booking element node (total, tasks, copy)
+│   │   ├── WeekEntryViewModel.cs    # Task leaf node (merged total, copy)
+│   │   ├── WeekTimeFormat.cs        # Shared "h:mm" duration formatting
 │   │   ├── SuggestionItem.cs        # Autocomplete suggestion (name + total time)
 │   │   ├── ObservableObject.cs      # INotifyPropertyChanged base class
 │   │   ├── RelayCommand.cs          # ICommand implementation
@@ -280,7 +291,7 @@ Timetracker/
 │   │   │   ├── TaskInputField.cs    # Task-name input with autocomplete
 │   │   │   ├── ColumnFilterHeader.cs# Column caption + per-column filter funnel
 │   │   │   ├── EntryHistoryGrid.cs  # History grid: row actions, sorting, delete, inline edit
-│   │   │   ├── WeekDaysGrid.cs      # Seven weekday columns with per-line copy
+│   │   │   ├── WeekTrackingTree.cs  # Collapsible day → element → task tree with copy
 │   │   │   ├── DeleteConfirmation.cs# Shared delete confirmation dialog
 │   │   │   └── ViewBrushes.cs       # Shared view colors
 │   ├── App.cs                       # Composition root: container, hooks, error handling

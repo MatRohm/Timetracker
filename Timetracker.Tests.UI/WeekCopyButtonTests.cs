@@ -17,59 +17,90 @@ using Timetracker.Views;
 namespace Timetracker.Tests.UI;
 
 /// <summary>
-/// While grouping by booking element, each booking element line in the week view
-/// has a copy button that copies the task names of that line's tracking entries.
-/// Switching to task grouping removes the buttons.
+/// In the week tree, each booking element row and each task row has a copy button
+/// that copies the task names of that node, never its time.
 /// </summary>
 public sealed class WeekCopyButtonTests
 {
     [AvaloniaTest]
-    public void WeekTabView_WhenGroupingByBookingElement_ShouldShowCopyButtonOnEachLine()
+    public void WeekTrackingTree_WhenRendered_ShouldShowCopyButtonsOnElementAndTaskRows()
     {
-        var (view, _) = Build(Session(9, "Report", "Project X"), Session(12, "Meeting", "Project Y"));
-
+        var (view, week) = Build(Session(9, "Report", "Project X"), Session(12, "Meeting", "Project Y"));
+        ExpandToday(week);
         Realize(view);
 
-        CopyButtonsForToday(view).Should().HaveCount(2, "one per booking element line");
+        // One task row per entry plus one element row per element.
+        CopyButtons(view).Should().HaveCount(4, "two elements and their two tasks");
     }
 
     [AvaloniaTest]
-    public void WeekTabView_WhenGroupingByTask_ShouldHideCopyButtons()
+    public void WeekTrackingTree_WhenClickingElementCopyButton_ShouldCopyItsTaskNames()
     {
-        var (view, week) = Build(Session(9, "Report", "Project X"));
-
-        week.GroupByBookingElement = false;
-        var window = Realize(view);
-        Dispatcher.UIThread.RunJobs();
-        window.UpdateLayout();
-        Dispatcher.UIThread.RunJobs();
-
-        CopyButtonsForToday(view).Should().BeEmpty("the copy button is only offered while grouping by element");
-    }
-
-    [AvaloniaTest]
-    public void WeekTabView_WhenClickingLineCopyButton_ShouldCopyTaskNamesOfItsEntries()
-    {
-        var (view, _) = Build(
+        var (view, week) = Build(
             Session(9, "Report", "Project X"),
-            Session(14, "Review", "Project X"),
-            Session(12, "Meeting", "Project Y"));
+            Session(14, "Review", "Project X"));
+        ExpandToday(week);
 
         var window = Realize(view);
-        // The first line in today's column is the earliest-started element (Project X).
-        var button = CopyButtonsForToday(view)[0];
+        // Rows are ordered oldest first: element "Project X", then its tasks.
+        var elementCopy = CopyButtons(view)[0];
 
-        button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        Dispatcher.UIThread.RunJobs();
+        Click(elementCopy);
 
         window.Clipboard!.GetTextAsync().GetAwaiter().GetResult()
             .Should().Be("Report" + Environment.NewLine + "Review",
-                "the task names of that element's tracking entries, oldest first");
+                "the element's copy button copies the task names inside it, not the element name");
+    }
+
+    [AvaloniaTest]
+    public void WeekTrackingTree_WhenClickingTaskCopyButton_ShouldCopyOnlyTheTaskName()
+    {
+        var (view, week) = Build(Session(9, "Report", "Project X"), Session(14, "Review", "Project X"));
+        ExpandToday(week);
+
+        var window = Realize(view);
+        // Index 1 is the first task row under the element.
+        var taskCopy = CopyButtons(view)[1];
+
+        Click(taskCopy);
+
+        window.Clipboard!.GetTextAsync().GetAwaiter().GetResult()
+            .Should().Be("Report", "the task's copy button copies the name without its time");
+    }
+
+    [AvaloniaTest]
+    public void WeekTrackingTree_WhenTheNoneGroupIsCopied_ShouldCopyItsTaskNames()
+    {
+        var (view, week) = Build(Session(9, "Adhoc"), Session(12, "Meeting", "Project Y"));
+        ExpandToday(week);
+
+        var window = Realize(view);
+        // The row whose own child text starts with "<None>"; its copy button is the ⧉.
+        var noneLabel = FindAll<TextBlock>(view)
+            .First(t => t.Text?.StartsWith(WeekDayViewModel.NoBookingElementLabel) == true);
+        var noneRow = noneLabel.Parent.Should().BeOfType<StackPanel>().Subject;
+        var copy = noneRow.GetVisualDescendants().OfType<Button>()
+            .First(b => b.Content?.ToString() == "⧉");
+
+        Click(copy);
+
+        window.Clipboard!.GetTextAsync().GetAwaiter().GetResult().Should().Be("Adhoc");
     }
 
     private static (DateTimeOffset Start, string Task, string Booking) Session(
-        int hour, string task, string booking) =>
+        int hour, string task, string booking = "") =>
         (DateTimeOffset.Now.Date.AddHours(hour), task, booking);
+
+    /// <summary>Expands today's day and its groups so the rows below become visible.</summary>
+    private static void ExpandToday(WeekViewModel week)
+    {
+        var today = week.Days.Single(d => d.IsToday);
+        today.IsExpanded = true;
+        foreach (var group in today.Groups)
+        {
+            group.IsExpanded = true;
+        }
+    }
 
     private static (WeekTabView View, WeekViewModel Week) Build(
         params (DateTimeOffset Start, string Task, string Booking)[] sessions)
@@ -107,17 +138,17 @@ public sealed class WeekCopyButtonTests
         return host;
     }
 
-    /// <summary>Copy buttons in today's column, so the tests are weekday-independent.</summary>
-    private static List<Button> CopyButtonsForToday(Control view)
+    private static void Click(Button button)
     {
-        var todayColumn = ((int)DateTimeOffset.Now.DayOfWeek + 6) % 7; // Monday first
-        var daysGrid = view.GetVisualDescendants().OfType<Grid>()
-            .Single(g => g.ColumnDefinitions.Count == 7);
-        var entriesCell = daysGrid.Children
-            .OfType<Control>()
-            .Single(c => Grid.GetRow(c) == 1 && Grid.GetColumn(c) == todayColumn);
-        return [.. entriesCell.GetVisualDescendants().OfType<Button>()];
+        button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Dispatcher.UIThread.RunJobs();
     }
+
+    private static IReadOnlyList<Button> CopyButtons(Control view) =>
+        [.. FindAll<Button>(view).Where(b => b.Content?.ToString() == "⧉")];
+
+    private static IEnumerable<T> FindAll<T>(Control root) where T : Control =>
+        root.GetVisualDescendants().OfType<T>();
 
     private sealed class FakeRepo : ITrackerRepository
     {
