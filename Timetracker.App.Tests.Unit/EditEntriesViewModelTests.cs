@@ -163,8 +163,8 @@ public sealed class EditEntriesViewModelTests
 
         vm.ReplaceSessions(item.Task, editor.RemainingEntries());
 
-        // The edited duration (1:30) shows in the today column of the week view.
-        vm.Week.Days.Single(d => d.IsToday).EntriesText.Should().Contain("1:30");
+        // The edited duration (1:30) shows in the day node of the week tree.
+        vm.Week.Days.Single(d => d.IsToday).TotalText.Should().Contain("1:30");
     }
 
     private static EntryRow Item(string task, params TrackerEntry[] sessions) =>

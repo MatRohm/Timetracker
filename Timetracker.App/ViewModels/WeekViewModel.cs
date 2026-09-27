@@ -1,14 +1,15 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows.Input;
-using Timetracker.ActivityMonitor;
 using Timetracker.Models;
 
 namespace Timetracker.ViewModels;
 
 /// <summary>
-/// Week view state: seven weekday columns (Monday first) for the selected week,
-/// with navigation backwards/forwards. Starts on the current week.
+/// Week view state: seven day nodes (Monday first) for the selected week, each a
+/// collapsible tree of booking elements and their tasks, with navigation
+/// backwards/forwards. Starts on the current week. Changing the week collapses
+/// every node; a live data refresh keeps the user's expansion.
 /// </summary>
 public sealed class WeekViewModel : ObservableObject
 {
@@ -18,11 +19,9 @@ public sealed class WeekViewModel : ObservableObject
     private readonly RelayCommand _currentWeekCommand;
 
     private IReadOnlyList<TrackerEntry> _sessions = [];
-    private IReadOnlyList<ActivitySpan> _activitySpans = [];
     private DateTimeOffset _weekStart;
     private string _weekTitle = "";
     private string _weekTotalText = "";
-    private bool _groupByBookingElement = true;
 
     public WeekViewModel()
     {
@@ -53,22 +52,6 @@ public sealed class WeekViewModel : ObservableObject
         private set => SetProperty(ref _weekTotalText, value);
     }
 
-    /// <summary>
-    /// True: day columns group entries by booking element (default). False: they
-    /// show the task names instead.
-    /// </summary>
-    public bool GroupByBookingElement
-    {
-        get => _groupByBookingElement;
-        set
-        {
-            if (SetProperty(ref _groupByBookingElement, value))
-            {
-                Rebuild();
-            }
-        }
-    }
-
     public ICommand PreviousWeekCommand => _previousWeekCommand;
 
     public ICommand NextWeekCommand => _nextWeekCommand;
@@ -76,8 +59,8 @@ public sealed class WeekViewModel : ObservableObject
     public ICommand CurrentWeekCommand => _currentWeekCommand;
 
     /// <summary>
-    /// Refreshes the view against a new session log. The selected week is kept,
-    /// so a refresh never jumps the user back to the current week.
+    /// Refreshes the view against a new session log. The selected week and the
+    /// user's expansion are kept, so a refresh while tracking never resets the view.
     /// </summary>
     public void UpdateSessions(IReadOnlyList<TrackerEntry> sessions)
     {
@@ -85,34 +68,18 @@ public sealed class WeekViewModel : ObservableObject
         Rebuild();
     }
 
-    /// <summary>
-    /// Refreshes the PC activity spans (active/idle per day) shown in the week
-    /// columns; null or missing data simply leaves the line empty.
-    /// </summary>
-    public void UpdateActivitySpans(IReadOnlyList<ActivitySpan> spans)
-    {
-        _activitySpans = spans;
-        Rebuild();
-    }
-
-    /// <summary>Sets the grouping mode without changing the grouping itself (for binding only).</summary>
-    public void SetGrouping(bool groupByBookingElement)
-    {
-        _groupByBookingElement = groupByBookingElement;
-        OnPropertyChanged(nameof(GroupByBookingElement));
-        Rebuild();
-    }
-
     private void Move(int days)
     {
         _weekStart = _weekStart.AddDays(days);
         Rebuild();
+        CollapseAll();
     }
 
     private void MoveToCurrentWeek()
     {
         _weekStart = StartOfWeek(DateTimeOffset.Now);
         Rebuild();
+        CollapseAll();
     }
 
     private void Rebuild()
@@ -125,13 +92,20 @@ public sealed class WeekViewModel : ObservableObject
         for (var i = 0; i < 7; i++)
         {
             var day = _weekStart.AddDays(i);
-            _days[i].Update(day, weekSessions.Where(s => s.Start.Date == day.Date), GroupByBookingElement);
-            _days[i].UpdateActivity(
-                _activitySpans.Where(s => s.Start.Date == day.Date || s.End.Date == day.Date));
+            _days[i].Update(day, weekSessions.Where(s => s.Start.Date == day.Date));
         }
 
-        WeekTotalText = $"Σ {HoursMinutes(weekSessions.Sum(s => s.DurationSeconds))}";
+        WeekTotalText = $"Σ {WeekTimeFormat.HoursMinutes(weekSessions.Sum(s => s.DurationSeconds))}";
         WeekTitle = $"Week {ISOWeek.GetWeekOfYear(_weekStart.LocalDateTime):00} · {FormatRange(_weekStart)}";
+    }
+
+    /// <summary>Collapses every day (and group) of the selected week.</summary>
+    private void CollapseAll()
+    {
+        foreach (var day in _days)
+        {
+            day.CollapseAll();
+        }
     }
 
     /// <summary>Monday 00:00 of the week containing <paramref name="moment"/>.</summary>
@@ -158,7 +132,4 @@ public sealed class WeekViewModel : ObservableObject
 
         return $"{startText} – {endText}";
     }
-
-    private static string HoursMinutes(double seconds) =>
-        TimeSpan.FromSeconds(Math.Round(seconds)).ToString(@"h\:mm");
 }

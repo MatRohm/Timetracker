@@ -2,7 +2,6 @@ using Timetracker.Interfaces;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows.Input;
-using Timetracker.ActivityMonitor;
 using Timetracker.ActivityMonitor.Interfaces;
 using Timetracker.Models;
 using Timetracker.Services;
@@ -591,7 +590,6 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
         // Keep the week view in sync with the session log and text edits.
         Week.UpdateSessions(_sessions);
-        Week.UpdateActivitySpans(new ActivityLog().GetAll());
 
         RefreshSuggestions();
     }

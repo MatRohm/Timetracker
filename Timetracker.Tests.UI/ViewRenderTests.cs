@@ -179,7 +179,7 @@ public sealed class ViewRenderTests
     }
 
     [AvaloniaTest]
-    public void WeekTabView_WhenRendered_ShouldShowSevenDayColumnsWithBookings()
+    public void WeekTabView_WhenRendered_ShouldShowSevenDayNodesWithBookings()
     {
         var (repo, _) = RepositoryFake.Create();
         using var tracker = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
@@ -194,18 +194,20 @@ public sealed class ViewRenderTests
                 DurationSeconds = 3600,
             },
         ]);
+        // Days start collapsed; expand today to reveal its booking element node.
+        var today = tracker.Week.Days.Single(d => d.IsToday);
+        today.IsExpanded = true;
 
         var services = BuildServices(repo);
         var view = new WeekTabView(tracker.Week, services);
 
-        // The seven columns are laid out in the days grid; the booking text is present.
-        // Default grouping is by booking element, so the label is the element name.
+        // The tree holds all seven day nodes, and today's element node shows its name.
         var texts = FindAllControls<TextBlock>(view).Select(t => t.Text ?? "").ToList();
         texts.Should().Contain("Project X (1:00)");
         texts.Should().Contain(t => t.StartsWith("Week "), "the week title is shown");
 
-        var grid = FindAllControls<Grid>(view).Single(g => g.ColumnDefinitions.Count == 7);
-        grid.ColumnDefinitions.Should().HaveCount(7, "Monday through Sunday");
+        tracker.Week.Days.Should().HaveCount(7, "Monday through Sunday");
+        FindAllControls<WeekTrackingTree>(view).Should().ContainSingle("the week tree is hosted");
     }
 
     private static TrackerEntry Entry(string task, string bookingElement) => new()

@@ -22,7 +22,18 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
-    public void UpdateSessions_WhenSessionsSpanDays_ShouldShowThemOnlyInTheirOwnDayColumns()
+    public void Days_WhenTheWeekIsShown_ShouldBeAllCollapsed()
+    {
+        var week = new WeekViewModel();
+        var today = DateTimeOffset.Now.Date;
+        week.UpdateSessions([Session(today, 9, 60, "Report", "Project X")]);
+
+        week.Days.Should().OnlyContain(d => !d.IsExpanded);
+        week.Days.Single(d => d.IsToday).Groups.Should().OnlyContain(g => !g.IsExpanded);
+    }
+
+    [Test]
+    public void UpdateSessions_WhenSessionsSpanDays_ShouldGroupThemUnderTheirOwnDay()
     {
         var week = new WeekViewModel();
         var monday = DateTimeOffset.Now.Date.AddDays(-(((int)DateTimeOffset.Now.DayOfWeek + 6) % 7));
@@ -30,9 +41,9 @@ public sealed class WeekViewModelTests
 
         week.UpdateSessions([Session(wednesday, 10, 45, "Review")]);
 
-        week.Days[2].EntriesText.Should().Contain("Review");
+        week.Days[2].Groups.Single().Entries.Single().Task.Should().Be("Review");
         week.Days.Where(d => d.Date != wednesday.Date)
-            .Should().OnlyContain(d => d.EntriesText.Length == 0);
+            .Should().OnlyContain(d => d.Groups.Count == 0);
     }
 
     [Test]
@@ -48,16 +59,34 @@ public sealed class WeekViewModelTests
             Session(today, 13, 45, "Review", "Project Y"),
         ]);
 
-        var lines = week.Days.Single(d => d.IsToday).EntriesText.Split(Environment.NewLine);
+        var groups = week.Days.Single(d => d.IsToday).Groups;
 
-        // Default mode: grouped by booking element; the label is the element name.
-        lines.Should().HaveCount(2, "both Project X entries merge into one line");
-        lines[0].Should().Be("Project X (1:30)");
-        lines[1].Should().Be("Project Y (0:45)");
+        groups.Select(g => g.Name).Should().Equal("Project X", "Project Y");
+        groups[0].TotalText.Should().Be("1:30", "both Project X entries merge under one element");
+        groups[1].TotalText.Should().Be("0:45");
     }
 
     [Test]
-    public void GroupByBookingElement_WhenSetToFalse_ShouldShowTaskNamesAgain()
+    public void UpdateSessions_WhenAnEntryHasNoBookingElement_ShouldPutItInTheNoneGroup()
+    {
+        var week = new WeekViewModel();
+        var today = DateTimeOffset.Now.Date;
+
+        week.UpdateSessions(
+        [
+            Session(today, 9, 60, "Adhoc"),
+            Session(today, 11, 30, "Report", "Project X"),
+        ]);
+
+        var groups = week.Days.Single(d => d.IsToday).Groups;
+
+        groups.Should().Contain(g => g.Name == WeekDayViewModel.NoBookingElementLabel);
+        groups.Single(g => g.Name == WeekDayViewModel.NoBookingElementLabel)
+            .Entries.Single().Task.Should().Be("Adhoc");
+    }
+
+    [Test]
+    public void UpdateSessions_WhenTheSameTaskIsWorkedTwice_ShouldMergeItIntoOneEntry()
     {
         var week = new WeekViewModel();
         var today = DateTimeOffset.Now.Date;
@@ -65,49 +94,18 @@ public sealed class WeekViewModelTests
         week.UpdateSessions(
         [
             Session(today, 9, 60, "Report", "Project X"),
-            Session(today, 14, 30, "Report", "Project X"),
-            Session(today, 12, 30, "Meeting", "Project X"),
+            Session(today, 14, 30, "report", "Project X"),
         ]);
 
-        week.GroupByBookingElement = false;
+        var entries = week.Days.Single(d => d.IsToday).Groups.Single().Entries;
 
-        var lines = week.Days.Single(d => d.IsToday).EntriesText.Split(Environment.NewLine);
-        lines.Should().HaveCount(2);
-        lines[0].Should().Be("Report (1:30)");
-        lines[1].Should().Be("Meeting (0:30)");
+        entries.Should().ContainSingle("the same task merges, case-insensitively");
+        entries[0].Task.Should().Be("Report", "the first-seen spelling is kept");
+        entries[0].TotalText.Should().Be("1:30");
     }
 
     [Test]
-    public void UpdateSessions_WhenAnEntryHasNoBookingElement_ShouldLabelItWhenGroupingByElement()
-    {
-        var week = new WeekViewModel();
-        var today = DateTimeOffset.Now.Date;
-
-        week.UpdateSessions([Session(today, 9, 60, "Adhoc")]);
-
-        week.Days.Single(d => d.IsToday).EntriesText.Should().Contain("Adhoc (1:00)");
-    }
-
-    [Test]
-    public void UpdateSessions_WhenGroupingByTask_ShouldMergeEntriesWithTheSameTask()
-    {
-        var week = new WeekViewModel
-        {
-            GroupByBookingElement = false,
-        };
-        var today = DateTimeOffset.Now.Date;
-
-        week.UpdateSessions(
-        [
-            Session(today, 9, 60, "Report"),
-            Session(today, 14, 15, "report"),
-        ]);
-
-        week.Days.Single(d => d.IsToday).EntriesText.Should().Contain("Report (1:15)");
-    }
-
-    [Test]
-    public void UpdateSessions_WhenGroupingByBookingElement_ShouldCopyTaskNamesIntoEachLine()
+    public void UpdateSessions_WhenGroupingByElement_ShouldCopyTheTaskNamesOfTheGroup()
     {
         var week = new WeekViewModel();
         var today = DateTimeOffset.Now.Date;
@@ -120,56 +118,7 @@ public sealed class WeekViewModelTests
 
         var group = week.Days.Single(d => d.IsToday).Groups.Single();
 
-        group.Label.Should().Be("Project X (1:30)");
         group.CopyText.Split(Environment.NewLine).Should().Equal("Report", "Review");
-    }
-
-    [Test]
-    public void UpdateSessions_WhenGroupingByBookingElement_ShouldGiveEachDayOneLinePerElement()
-    {
-        var week = new WeekViewModel();
-        var today = DateTimeOffset.Now.Date;
-
-        week.UpdateSessions(
-        [
-            Session(today, 9, 60, "Report", "Project X"),
-            Session(today, 12, 30, "Meeting", "Project Y"),
-            Session(today, 14, 30, "Report", "Project X"),
-        ]);
-
-        var groups = week.Days.Single(d => d.IsToday).Groups;
-
-        groups.Should().HaveCount(2, "one line per booking element");
-        groups[0].Label.Should().Be("Project X (1:30)");
-        groups[0].CopyText.Should().Be("Report" + Environment.NewLine + "Report");
-        groups[1].Label.Should().Be("Project Y (0:30)");
-        groups[1].CopyText.Should().Be("Meeting");
-    }
-
-    [Test]
-    public void UpdateSessions_WhenGroupingByTask_ShouldCopyTaskNamesIntoEachLine()
-    {
-        var week = new WeekViewModel();
-        var today = DateTimeOffset.Now.Date;
-        week.UpdateSessions(
-        [
-            Session(today, 9, 60, "Report", "Project X"),
-            Session(today, 14, 15, "report", "Project X"),
-        ]);
-
-        week.GroupByBookingElement = false;
-
-        var group = week.Days.Single(d => d.IsToday).Groups.Single();
-        group.Label.Should().Be("Report (1:15)");
-        group.CopyText.Split(Environment.NewLine).Should().Equal("Report", "report");
-    }
-
-    [Test]
-    public void UpdateSessions_WhenADayHasNoBookings_ShouldHaveNoLines()
-    {
-        var week = new WeekViewModel();
-
-        week.Days.Should().OnlyContain(d => d.Groups.Count == 0);
     }
 
     [Test]
@@ -198,18 +147,55 @@ public sealed class WeekViewModelTests
         week.UpdateSessions([Session(lastWeek, 8, 120, "Old stuff")]);
         week.PreviousWeekCommand.Execute(null);
 
-        week.Days.Single(d => d.Date.Date == lastWeek).EntriesText.Should().Contain("Old stuff");
-        week.Days.Should().OnlyContain(d => d.EntriesText.Contains("Old stuff") || d.EntriesText.Length == 0);
+        week.Days.Single(d => d.Date.Date == lastWeek).Groups.Should().NotBeEmpty();
 
         week.NextWeekCommand.Execute(null);
         week.Days[0].Date.Date.Should().Be(monday, "back to the current week");
 
         week.NextWeekCommand.Execute(null);
         week.Days[0].Date.Date.Should().Be(monday.AddDays(7));
-        week.Days.Should().OnlyContain(d => d.EntriesText.Length == 0, "the future week has no data");
+        week.Days.Should().OnlyContain(d => d.Groups.Count == 0, "the future week has no data");
 
         week.CurrentWeekCommand.Execute(null);
         week.Days[0].Date.Date.Should().Be(monday, "current week jumps back");
+    }
+
+    [Test]
+    public void PreviousWeekCommand_WhenTheWeekChanges_ShouldCollapseEveryNodeAgain()
+    {
+        var week = new WeekViewModel();
+        var today = DateTimeOffset.Now.Date;
+        week.UpdateSessions([Session(today, 9, 60, "Report", "Project X")]);
+        week.Days.Single(d => d.IsToday).IsExpanded = true;
+        week.Days.Single(d => d.IsToday).Groups.Single().IsExpanded = true;
+
+        week.PreviousWeekCommand.Execute(null);
+
+        week.Days.Should().OnlyContain(d => !d.IsExpanded, "a week change collapses the tree");
+        week.Days.Should().OnlyContain(d => d.Groups.All(g => !g.IsExpanded));
+    }
+
+    [Test]
+    public void UpdateSessions_WhenDataRefreshes_ShouldKeepTheUsersExpansion()
+    {
+        var week = new WeekViewModel();
+        var today = DateTimeOffset.Now.Date;
+        week.UpdateSessions([Session(today, 9, 60, "Report", "Project X")]);
+        var day = week.Days.Single(d => d.IsToday);
+        day.IsExpanded = true;
+        day.Groups.Single().IsExpanded = true;
+
+        // A live refresh (e.g. a session being saved) must not reset the tree.
+        week.UpdateSessions(
+        [
+            Session(today, 9, 60, "Report", "Project X"),
+            Session(today, 14, 30, "Review", "Project X"),
+        ]);
+
+        var refreshed = week.Days.Single(d => d.IsToday);
+        refreshed.IsExpanded.Should().BeTrue("the day stays expanded across a refresh");
+        refreshed.Groups.Single().IsExpanded.Should().BeTrue("the element stays expanded too");
+        refreshed.Groups.Single().Entries.Should().HaveCount(2);
     }
 
     private static TrackerEntry Session(DateTime date, int startHour, int minutes, string task, string bookingElement = "") => new()

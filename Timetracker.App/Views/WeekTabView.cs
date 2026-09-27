@@ -2,7 +2,6 @@ using Timetracker.Plugins.Interfaces;
 using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,10 +30,9 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
     private readonly Button _prevButton = new();
     private readonly Button _nextButton = new();
     private readonly Button _currentButton = new();
-    private readonly CheckBox _groupByBookingElementCheck = new();
     private readonly TextBlock _statusLabel = new();
 
-    private readonly WeekDaysGrid _daysGrid;
+    private readonly WeekTrackingTree _tree;
 
     public WeekTabView(WeekViewModel week, IServiceProvider services)
     {
@@ -45,7 +43,7 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
             .Where(c => c.TargetTab == "Week view")
             .ToArray();
 
-        _daysGrid = new WeekDaysGrid(_week, _weekDayContributors, this);
+        _tree = new WeekTrackingTree(_week, _weekDayContributors, this);
 
         // Add-in panels report results through the shared status line.
         UiHostAccessor.RegisterWeekStatusSink((message, kind) =>
@@ -76,11 +74,6 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
         _nextButton.Content = "Next week ▶";
         _currentButton.Content = "● Current week";
 
-        _groupByBookingElementCheck.Content = "Group by booking element";
-        _groupByBookingElementCheck.IsChecked = true;
-        _groupByBookingElementCheck.Margin = new Thickness(16, 0, 0, 0);
-        _groupByBookingElementCheck.VerticalAlignment = VerticalAlignment.Center;
-
         var buttonRow = new StackPanel
         {
             Orientation = Orientation.Horizontal,
@@ -90,7 +83,6 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
         buttonRow.Children.Add(_prevButton);
         buttonRow.Children.Add(_currentButton);
         buttonRow.Children.Add(_nextButton);
-        buttonRow.Children.Add(_groupByBookingElementCheck);
 
         // Add-in controls sit at the bottom of the view, directly above the status
         // line, so they do not mix with the week navigation toolbar.
@@ -124,7 +116,7 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
         DockPanel.SetDock(bottomPanel, Dock.Bottom);
         root.Children.Add(bottomPanel);
 
-        root.Children.Add(_daysGrid);
+        root.Children.Add(_tree);
         Content = root;
     }
 
@@ -133,13 +125,6 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
         _prevButton.Command = _week.PreviousWeekCommand;
         _nextButton.Command = _week.NextWeekCommand;
         _currentButton.Command = _week.CurrentWeekCommand;
-
-        _groupByBookingElementCheck.Bind(Avalonia.Controls.Primitives.ToggleButton.IsCheckedProperty, new Binding
-        {
-            Source = _week,
-            Path = nameof(WeekViewModel.GroupByBookingElement),
-            Mode = BindingMode.TwoWay,
-        });
 
         _week.PropertyChanged += OnWeekPropertyChanged;
         UpdateHeader();
