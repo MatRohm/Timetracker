@@ -20,7 +20,28 @@ namespace Timetracker.Views.Components;
 /// </summary>
 public sealed class WeekTrackingTree : UserControl
 {
-    private const int IndentSize = 18;
+    /// <summary>Width of the +/- expander button.</summary>
+    private const double ExpanderWidth = 18;
+
+    /// <summary>Gap between an expander and the text that follows it.</summary>
+    private const double RowSpacing = 4;
+
+    /// <summary>One nesting step: how much deeper each level's text sits.</summary>
+    private const double IndentSize = 18;
+
+    /// <summary>
+    /// Left edge of an element row: one step in, so its expander lines up under the
+    /// day's text.
+    /// </summary>
+    private const double ElementRowIndent = IndentSize;
+
+    /// <summary>
+    /// Left edge of a task row. Task rows carry no expander, so the offset includes
+    /// the expander column to place their text one indentation step past the element
+    /// text rather than level with it.
+    /// </summary>
+    private const double EntryRowIndent =
+        ElementRowIndent + ExpanderWidth + RowSpacing + IndentSize;
 
     private readonly WeekViewModel _week;
     private readonly IReadOnlyList<IWeekDayContributor> _weekDayContributors;
@@ -99,7 +120,7 @@ public sealed class WeekTrackingTree : UserControl
         var row = new StackPanel
         {
             Orientation = Orientation.Horizontal,
-            Spacing = 4,
+            Spacing = RowSpacing,
             Margin = new Thickness(0, 2, 0, 2),
             Background = day.IsToday ? ViewBrushes.Today : ViewBrushes.Surface,
         };
@@ -147,8 +168,8 @@ public sealed class WeekTrackingTree : UserControl
         var row = new StackPanel
         {
             Orientation = Orientation.Horizontal,
-            Spacing = 4,
-            Margin = new Thickness(IndentSize, 1, 0, 1),
+            Spacing = RowSpacing,
+            Margin = new Thickness(ElementRowIndent, 1, 0, 1),
         };
 
         row.Children.Add(BuildExpander(group.IsExpanded, group.ToggleCommand));
@@ -169,8 +190,8 @@ public sealed class WeekTrackingTree : UserControl
         var row = new StackPanel
         {
             Orientation = Orientation.Horizontal,
-            Spacing = 4,
-            Margin = new Thickness(IndentSize * 2, 1, 0, 1),
+            Spacing = RowSpacing,
+            Margin = new Thickness(EntryRowIndent, 1, 0, 1),
         };
 
         row.Children.Add(new TextBlock
