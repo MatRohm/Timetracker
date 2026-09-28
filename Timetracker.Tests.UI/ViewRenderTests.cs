@@ -1,5 +1,3 @@
-using Timetracker.Interfaces;
-using Timetracker.Plugins.Interfaces;
 using AwesomeAssertions;
 using Avalonia;
 using Avalonia.Controls;
@@ -7,10 +5,8 @@ using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Timetracker.Models;
-using Timetracker.Plugins;
 using Timetracker.Tests.Unit;
 using Timetracker.ViewModels;
 using Timetracker.Views;
@@ -182,7 +178,7 @@ public sealed class ViewRenderTests
     public void WeekTabView_WhenRendered_ShouldShowSevenDayNodesWithBookings()
     {
         var (repo, _) = RepositoryFake.Create();
-        using var tracker = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var tracker = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
         tracker.Week.UpdateSessions([
             new TrackerEntry
             {
@@ -198,8 +194,7 @@ public sealed class ViewRenderTests
         var today = tracker.Week.Days.Single(d => d.IsToday);
         today.IsExpanded = true;
 
-        var services = BuildServices(repo);
-        var view = new WeekTabView(tracker.Week, services);
+        var view = new WeekTabView(tracker.Week, []);
 
         // The tree holds all seven day nodes, and today's element node shows its name.
         var texts = FindAllControls<TextBlock>(view).Select(t => t.Text ?? "").ToList();
@@ -290,20 +285,9 @@ public sealed class ViewRenderTests
         params TrackerEntry[] entries)
     {
         var (repo, _) = RepositoryFake.Create(entries);
-        var viewModel = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
-        var services = BuildServices(repo);
-        var view = new TrackerTabView(viewModel, services);
+        var viewModel = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        var view = new TrackerTabView(viewModel, []);
         return (view, viewModel);
-    }
-
-    private static IServiceProvider BuildServices(ITrackerRepository repo)
-    {
-        var services = new ServiceCollection();
-        services.AddSingleton(repo);
-        services.AddSingleton<IUiTimer, FakeTimer>();
-        services.AddSingleton<TrackerViewModel>();
-        services.AddSingleton<ITrackerUiHost>(new FakeTrackerHost());
-        return services.BuildServiceProvider();
     }
 
     /// <summary>Keeps realized test windows alive so their visual tree remains valid.</summary>
@@ -351,14 +335,5 @@ public sealed class ViewRenderTests
         Dispatcher.UIThread.RunJobs();
         host.UpdateLayout();
         HostWindows.Add(host);
-    }
-
-    private sealed class FakeTrackerHost : ITrackerUiHost
-    {
-        public void SetTaskName(string taskName) { }
-
-        public void SetBookingElement(string bookingElement) { }
-
-        public void ShowStatus(string message, TrackerStatusKind kind) { }
     }
 }

@@ -58,7 +58,26 @@ public sealed class App : Application
             RunStartupMigrations(_services);
 
             var viewModel = _services.GetRequiredService<ViewModels.TrackerViewModel>();
-            var window = new TrackerWindow(viewModel, _services);
+
+            // Resolve the add-in UI contributors and build their controls here, so
+            // the tab views stay free of the plugin contract.
+            var trackerContributors = _services.GetServices<IUiContributor>()
+                .Where(c => c.TargetTab == "Tracker")
+                .Select(c => c.CreateControl(_services))
+                .ToList();
+            var weekContributors = _services.GetServices<IUiContributor>()
+                .Where(c => c.TargetTab == "Week view")
+                .Select(c => c.CreateControl(_services))
+                .ToList();
+
+            // Feed the per-day contributor lines (e.g. PC activity) into the week view.
+            var weekDayContributors = _services.GetServices<IWeekDayContributor>().ToArray();
+            viewModel.Week.DayContributorText = day =>
+                string.Join(" · ", weekDayContributors
+                    .Select(c => c.GetDayText(day))
+                    .Where(text => text.Length > 0));
+
+            var window = new TrackerWindow(viewModel, trackerContributors, weekContributors);
             desktop.MainWindow = window;
 
             // Let the components run their startup hooks.

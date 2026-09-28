@@ -2,6 +2,8 @@ using Timetracker.ActivityMonitor.Interfaces;
 using Timetracker.Interfaces;
 using FakeItEasy;
 using Timetracker.Models;
+using Timetracker.Services;
+using Timetracker.ViewModels;
 
 namespace Timetracker.Tests.Unit;
 
@@ -65,4 +67,32 @@ public static class RepositoryFake
 
     public static IReadOnlyList<TrackerEntry> Persisted(ITrackerRepository repo) =>
         repo.GetAllAsync().GetAwaiter().GetResult();
+}
+
+/// <summary>
+/// Builds the delegate set the tracker view model consumes, wired to the manual
+/// fakes. Tests that need to drive the timer or idle provider keep references to
+/// those fakes and pass them in; the others accept fresh instances.
+/// </summary>
+public static class TrackerDependenciesFactory
+{
+    public static TrackerDependencies Create(
+        ITrackerRepository repository,
+        FakeTimer? timer = null,
+        FakeIdleTimeProvider? idle = null)
+    {
+        timer ??= new FakeTimer();
+        idle ??= new FakeIdleTimeProvider();
+        return new TrackerDependencies(
+            repository.GetAllAsync,
+            repository.AddAsync,
+            repository.SaveAsync,
+            () => repository.FilePath,
+            handler => { timer.Tick += handler; },
+            timer.Start,
+            timer.Stop,
+            timer.Dispose,
+            () => idle.CurrentIdleTime,
+            (context, exception) => ErrorLog.Log(context, exception));
+    }
 }

@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using Timetracker.Models;
 
 namespace Timetracker.ViewModels;
 
@@ -89,9 +88,9 @@ public sealed class EditEntriesViewModel : ObservableObject
         return true;
     }
 
-    /// <summary>The sessions to keep, in the item's original order.</summary>
-    public IReadOnlyList<TrackerEntry> RemainingEntries() =>
-        [.. Sessions.Select(s => s.Entry).OrderBy(e => e.Start)];
+    /// <summary>The sessions to keep, in chronological order.</summary>
+    public IReadOnlyList<SessionEditRow> RemainingSessions() =>
+        [.. Sessions.OrderBy(s => s.Start)];
 
     private void RaiseTotalsChanged() => OnPropertyChanged(nameof(SummaryText));
 }

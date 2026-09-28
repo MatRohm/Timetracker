@@ -1,7 +1,6 @@
 using Timetracker.Interfaces;
 using Timetracker.Plugins.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
-using Timetracker.Plugins;
 
 namespace Timetracker;
 
@@ -37,6 +36,7 @@ public static class HookRegistry
         // Idle detection comes from the monitor project's platform-specific provider.
         services.AddSingleton<ActivityMonitor.Interfaces.IIdleTimeProvider>(
             _ => ActivityMonitor.IdleTimeProvider.CreateForCurrentPlatform());
+        services.AddSingleton<ViewModels.TrackerDependencies>(BuildTrackerDependencies);
         services.AddSingleton<ViewModels.TrackerViewModel>();
         services.AddSingleton<ViewModels.WeekViewModel>();
 
@@ -47,18 +47,43 @@ public static class HookRegistry
     }
 
     /// <summary>
+    /// Bundles the repository, timer and idle provider into the delegate set the
+    /// tracker view model consumes, so the view model stays free of concrete services.
+    /// </summary>
+    private static ViewModels.TrackerDependencies BuildTrackerDependencies(IServiceProvider services)
+    {
+        var repository = services.GetRequiredService<ITrackerRepository>();
+        var timer = services.GetRequiredService<IUiTimer>();
+        var idleTime = services.GetRequiredService<ActivityMonitor.Interfaces.IIdleTimeProvider>();
+        return new ViewModels.TrackerDependencies(
+            repository.GetAllAsync,
+            repository.AddAsync,
+            repository.SaveAsync,
+            () => repository.FilePath,
+            handler => { timer.Tick += handler; },
+            timer.Start,
+            timer.Stop,
+            timer.Dispose,
+            () => idleTime.CurrentIdleTime,
+            (context, exception) => Services.ErrorLog.Log(context, exception));
+    }
+
+    /// <summary>
     /// Component registrations. Add-ins register the services they offer and the
     /// UI hooks they contribute; the app resolves the hook interfaces only.
     /// </summary>
     private static void AddComponents(IServiceCollection services)
     {
+        // Add-in UI hosts: forwarded to the view models by the app's own services.
+        services.AddSingleton<ITrackerUiHost, Services.TrackerUiHost>();
+        services.AddSingleton<IWeekStatusHost, Services.WeekStatusHost>();
+
         // Azure DevOps import.
         services.AddSingleton<AzureDevOps.AzureDevOpsConfig>(_ =>
             AzureDevOps.AzureDevOpsConfig.Load());
         services.AddSingleton<AzureDevOps.AzureDevOpsService>(sp =>
             new AzureDevOps.AzureDevOpsService(
                 sp.GetRequiredService<AzureDevOps.AzureDevOpsConfig>()));
-        services.AddSingleton<ITrackerUiHost>(_ => UiHostAccessor.GetTrackerHost<ITrackerUiHost>());
         services.AddSingleton<IUiContributor, AzureDevOps.Views.AzureDevOpsUiContributor>();
 
         // PC activity monitor: activity log, per-day lines, installer UI.
@@ -67,6 +92,5 @@ public static class HookRegistry
             _ => ActivityMonitor.ActivityMonitorInstallerFactory.CreateForCurrentPlatform());
         services.AddSingleton<IWeekDayContributor, ActivityMonitor.ActivityWeekDayContributor>();
         services.AddSingleton<IUiContributor, ActivityMonitor.MonitorSetupUiContributor>();
-        services.AddSingleton<IWeekStatusHost, ActivityMonitor.WeekStatusHostAdapter>();
     }
 }

@@ -15,7 +15,7 @@ public sealed class TrackerViewModelTests
     public void Start_WhenTaskNameIsSet_ShouldStartTheTimer()
     {
         var (repo, _) = RepositoryFake.Create();
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
@@ -27,7 +27,7 @@ public sealed class TrackerViewModelTests
     public void Start_WhenTheTaskNameIsEmpty_ShouldRejectAndRaiseInvalidTaskName()
     {
         var (repo, _) = RepositoryFake.Create();
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
         var invalidNameRaised = false;
         vm.InvalidTaskName += () => invalidNameRaised = true;
 
@@ -50,7 +50,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
 
@@ -64,7 +64,7 @@ public sealed class TrackerViewModelTests
     public async Task Stop_WhenStopped_ShouldAppendSessionAndResetRunningState()
     {
         var (repo, path) = RepositoryFake.Create();
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
 
@@ -90,7 +90,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         vm.StartFromRow(vm.Entries.Single(r => r.Task == "Report"));
         Thread.Sleep(50);
@@ -121,7 +121,7 @@ public sealed class TrackerViewModelTests
                 Duration = "00:30:00",
                 DurationSeconds = 1800,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         var row = vm.Entries.Single();
 
@@ -144,7 +144,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
         var row = vm.Entries[0];
         row.BookingElement = "edited via grid"; // binding stages first, as in the real grid
         (await vm.UpdateEntryTextAsync(row, row.Task, row.BookingElement)).Should().BeTrue();
@@ -168,7 +168,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
         var row = vm.Entries[0];
 
         var result = await vm.UpdateEntryTextAsync(row, "   ", row.BookingElement);
@@ -197,7 +197,7 @@ public sealed class TrackerViewModelTests
                 Duration = "00:30:00",
                 DurationSeconds = 1800,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         vm.TaskName = "rep";
 
@@ -220,7 +220,7 @@ public sealed class TrackerViewModelTests
                 Duration = "00:30:00",
                 DurationSeconds = 1800,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
         vm.TaskName = "mee";
 
         vm.AcceptSuggestion(vm.Suggestions.Single());
@@ -240,7 +240,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         vm.ApplySort(nameof(EntryRow.BookingElement));
 
@@ -260,7 +260,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         vm.ApplySort(nameof(EntryRow.Task));
         vm.SortAscending.Should().BeTrue();
@@ -282,7 +282,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         vm.StartFromRow(vm.Entries[0]);
 
@@ -296,7 +296,7 @@ public sealed class TrackerViewModelTests
         var repo = A.Fake<ITrackerRepository>();
         A.CallTo(() => repo.FilePath).Returns(Path.Combine(Path.GetTempPath(), "does-not-matter.json"));
         A.CallTo(() => repo.AddAsync(A<TrackerEntry>._)).ThrowsAsync(new IOException("disk full"));
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
         string? reported = null;
         vm.ErrorOccurred += m => reported = m;
         vm.TaskName = "Report";
@@ -313,7 +313,7 @@ public sealed class TrackerViewModelTests
     public void Entries_WhenThereAreMoreThanTenTasks_ShouldShowTheFirstPageOnly()
     {
         var repo = SeedTasks(25);
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         vm.Entries.Should().HaveCount(10);
         vm.TotalPages.Should().Be(3);
@@ -325,7 +325,7 @@ public sealed class TrackerViewModelTests
     public void TotalPages_WhenThereAreTenTasksOrFewer_ShouldBeOne()
     {
         var repo = SeedTasks(10);
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         vm.Entries.Should().HaveCount(10);
         vm.TotalPages.Should().Be(1);
@@ -338,7 +338,7 @@ public sealed class TrackerViewModelTests
     public void NextPageCommand_WhenPagingBackAndForth_ShouldCoverAllRows()
     {
         var repo = SeedTasks(25);
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         vm.PreviousPageCommand.CanExecute(null).Should().BeFalse("page 1 is the first page");
         vm.NextPageCommand.Execute(null);
@@ -362,7 +362,7 @@ public sealed class TrackerViewModelTests
     public void Suggestions_WhenTheTaskIsOnAnotherPage_ShouldUseAllTasks()
     {
         var repo = SeedTasks(25); // "Task 00" is the oldest row → page 3
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         vm.TaskName = "task 0";
 
@@ -374,7 +374,7 @@ public sealed class TrackerViewModelTests
     public void StartCommand_WhenSavingANewSessionOnAnotherPage_ShouldRevealTheTaskRow()
     {
         var repo = SeedTasks(25);
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
         vm.NextPageCommand.Execute(null);
         vm.TaskName = "Brand new task";
 
@@ -390,7 +390,7 @@ public sealed class TrackerViewModelTests
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 9), Entry("Meeting", 11), Entry("Review", 13));
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
         var row = vm.Entries.Single(r => r.Task == "Meeting");
 
         var deleted = await vm.DeleteEntriesAsync([row], _ => true);
@@ -406,7 +406,7 @@ public sealed class TrackerViewModelTests
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 9), Entry("Report", 14), Entry("Meeting", 11));
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
         var row = vm.Entries.Single(r => r.Task == "Report");
 
         await vm.DeleteEntriesAsync([row], _ => true);
@@ -420,7 +420,7 @@ public sealed class TrackerViewModelTests
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 9), Entry("Meeting", 11), Entry("Review", 13));
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         var rows = vm.Entries.Where(r => r.Task != "Meeting").ToList();
         var deleted = await vm.DeleteEntriesAsync(rows, _ => true);
@@ -434,7 +434,7 @@ public sealed class TrackerViewModelTests
     public async Task DeleteEntriesAsync_WhenUserDeclines_ShouldDoNothing()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9), Entry("Meeting", 11));
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
         var row = vm.Entries.Single(r => r.Task == "Report");
 
         var declined = await vm.DeleteEntriesAsync([row], _ => false);
@@ -449,7 +449,7 @@ public sealed class TrackerViewModelTests
     public async Task DeleteEntriesAsync_WhenThereAreNoRows_ShouldDoNothing()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9));
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         (await vm.DeleteEntriesAsync([], _ => true)).Should().BeFalse();
         (await vm.DeleteEntriesAsync(null!, _ => true)).Should().BeFalse();
@@ -466,7 +466,7 @@ public sealed class TrackerViewModelTests
         A.CallTo(() => repo.GetAllAsync()).Returns(
             Task.FromResult<IReadOnlyList<TrackerEntry>>([Entry("Report", 9), Entry("Meeting", 11)]));
         A.CallTo(() => repo.SaveAsync(A<IReadOnlyList<TrackerEntry>>._)).ThrowsAsync(new IOException("disk full"));
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
         string? reported = null;
         vm.ErrorOccurred += m => reported = m;
         var row = vm.Entries.Single(r => r.Task == "Report");
@@ -492,7 +492,7 @@ public sealed class TrackerViewModelTests
               { "task": "Meeting", "bookingElement": "", "start": "2026-09-19T11:00:00+02:00", "end": "2026-09-19T11:30:00+02:00", "duration": "00:30:00", "durationSeconds": 1800 }
             ]
             """);
-        using var vm = new TrackerViewModel(new JsonTrackerRepository(path), new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(new JsonTrackerRepository(path)));
         await vm.RefreshEntriesAsync();
         var row = vm.Entries.Single(r => r.Task == "Report");
 
@@ -513,7 +513,7 @@ public sealed class TrackerViewModelTests
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
         var idle = new FakeIdleTimeProvider();
-        using var vm = new TrackerViewModel(repo, timer, idle);
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo, timer, idle));
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
         vm.IsRunning.Should().BeTrue();
@@ -531,7 +531,7 @@ public sealed class TrackerViewModelTests
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
         var idle = new FakeIdleTimeProvider();
-        using var vm = new TrackerViewModel(repo, timer, idle);
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo, timer, idle));
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
 
@@ -551,7 +551,7 @@ public sealed class TrackerViewModelTests
         var timer = new FakeTimer();
         var idle = new FakeIdleTimeProvider();
         var now = new DateTimeOffset(2026, 9, 22, 9, 0, 0, TimeSpan.FromHours(2));
-        using var vm = new TrackerViewModel(repo, timer, idle, () => now);
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo, timer, idle), () => now);
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
 
@@ -574,7 +574,7 @@ public sealed class TrackerViewModelTests
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
         var idle = new FakeIdleTimeProvider();
-        using var vm = new TrackerViewModel(repo, timer, idle);
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo, timer, idle));
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
 
@@ -591,7 +591,7 @@ public sealed class TrackerViewModelTests
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
         var idle = new FakeIdleTimeProvider();
-        using var vm = new TrackerViewModel(repo, timer, idle);
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo, timer, idle));
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
 
@@ -609,7 +609,7 @@ public sealed class TrackerViewModelTests
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
         var idle = new FakeIdleTimeProvider();
-        using var vm = new TrackerViewModel(repo, timer, idle);
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo, timer, idle));
 
         idle.CurrentIdleTime = TimeSpan.FromHours(2);
         timer.RaiseTick();
@@ -624,7 +624,7 @@ public sealed class TrackerViewModelTests
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
         var idle = new FakeIdleTimeProvider();
-        using var vm = new TrackerViewModel(repo, timer, idle);
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo, timer, idle));
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
         idle.CurrentIdleTime = TimeSpan.FromMinutes(45);
@@ -648,7 +648,7 @@ public sealed class TrackerViewModelTests
     public async Task BuildEntry_WhenAPreviewBookingElementIsSet_ShouldUseItForTheNextSessionThenClearIt()
     {
         var (repo, _) = RepositoryFake.Create();
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
         vm.PreviewBookingElement = "Quarterly figures";
 
         vm.TaskName = "Report";
@@ -697,7 +697,7 @@ public sealed class TrackerViewModelTests
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 9), Entry("Review", 11), Entry("Meeting", 14));
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         vm.SetColumnFilter(nameof(EntryRow.Task), "re");
 
@@ -709,7 +709,7 @@ public sealed class TrackerViewModelTests
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", "Quarterly", 9), Entry("Meeting", "Project X", 11));
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         vm.SetColumnFilter(nameof(EntryRow.BookingElement), "project");
 
@@ -722,7 +722,7 @@ public sealed class TrackerViewModelTests
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 9), Entry("Meeting", 14));
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         vm.SetColumnFilter(nameof(EntryRow.StartText), "14:00");
 
@@ -736,7 +736,7 @@ public sealed class TrackerViewModelTests
             Entry("Report", "Quarterly", 9),
             Entry("Report", "Project X", 11),
             Entry("Meeting", "Quarterly", 14));
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         vm.SetColumnFilter(nameof(EntryRow.Task), "report");
         vm.SetColumnFilter(nameof(EntryRow.BookingElement), "project");
@@ -749,7 +749,7 @@ public sealed class TrackerViewModelTests
     public void SetColumnFilter_WhenCleared_ShouldShowEverythingAgain()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9), Entry("Meeting", 14));
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
         vm.SetColumnFilter(nameof(EntryRow.Task), "Report");
         vm.Entries.Should().ContainSingle();
 
@@ -762,7 +762,7 @@ public sealed class TrackerViewModelTests
     public void SetColumnFilter_WhenNothingMatches_ShouldShowNoRowsAndASinglePage()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9));
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         vm.SetColumnFilter(nameof(EntryRow.Task), "does-not-exist");
 
@@ -776,7 +776,7 @@ public sealed class TrackerViewModelTests
     {
         // 25 tasks named "Task NN"; "Task" matches all of them, so paging still applies.
         var repo = SeedTasks(25);
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         vm.SetColumnFilter(nameof(EntryRow.Task), "Task");
 
@@ -790,7 +790,7 @@ public sealed class TrackerViewModelTests
     public void IsColumnFiltered_WhenThatColumnHasAFilter_ShouldBeTrue()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9));
-        using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
         vm.IsFilterActive.Should().BeFalse("no filter is set initially");
         vm.IsColumnFiltered(nameof(EntryRow.Task)).Should().BeFalse();

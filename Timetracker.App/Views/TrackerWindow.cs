@@ -7,14 +7,17 @@ namespace Timetracker.Views;
 /// <summary>
 /// Application shell: hosts the tracker and week tabs, binds the window title and
 /// app-level events. All tab content lives in the dedicated tab views; add-in UI
-/// comes from the registered hooks.
+/// controls are resolved by the composition root and passed in pre-built.
 /// </summary>
 public sealed class TrackerWindow : Window
 {
     private readonly TrackerViewModel _vm;
     private readonly TrackerTabView _trackerView;
 
-    public TrackerWindow(TrackerViewModel viewModel, IServiceProvider services)
+    public TrackerWindow(
+        TrackerViewModel viewModel,
+        IReadOnlyList<Control> trackerContributors,
+        IReadOnlyList<Control> weekContributors)
     {
         _vm = viewModel;
 
@@ -26,8 +29,8 @@ public sealed class TrackerWindow : Window
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         Icon = LoadAppIcon();
 
-        _trackerView = new TrackerTabView(_vm, services);
-        var weekView = new WeekTabView(_vm.Week, services);
+        _trackerView = new TrackerTabView(_vm, trackerContributors);
+        var weekView = new WeekTabView(_vm.Week, weekContributors);
 
         var tabs = new TabControl();
         tabs.Items.Add(new TabItem { Header = "Tracker", Content = _trackerView });

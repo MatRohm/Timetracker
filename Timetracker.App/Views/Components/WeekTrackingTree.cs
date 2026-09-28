@@ -4,8 +4,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Timetracker.Plugins;
-using Timetracker.Plugins.Interfaces;
 using Timetracker.ViewModels;
 
 namespace Timetracker.Views.Components;
@@ -13,10 +11,10 @@ namespace Timetracker.Views.Components;
 /// <summary>
 /// The week's tracking tree: one collapsible day node per weekday (Monday first),
 /// expanding to that day's booking element groups and, below them, the tasks
-/// worked on that day. The gray PC activity line from the registered
-/// <see cref="IWeekDayContributor"/> hooks sits on the day node. Each booking
-/// element and task node carries a copy button that copies the node's task names.
-/// View-only; the tree data lives in <see cref="WeekViewModel"/>.
+/// worked on that day. The gray per-day contributor line (e.g. PC activity) comes
+/// from <see cref="WeekDayViewModel.ContributorText"/>. Each booking element and
+/// task node carries a copy button that copies the node's task names. View-only;
+/// the tree data lives in <see cref="WeekViewModel"/>.
 /// </summary>
 public sealed class WeekTrackingTree : UserControl
 {
@@ -44,19 +42,12 @@ public sealed class WeekTrackingTree : UserControl
         ElementRowIndent + ExpanderWidth + RowSpacing + IndentSize;
 
     private readonly WeekViewModel _week;
-    private readonly IReadOnlyList<IWeekDayContributor> _weekDayContributors;
-    private readonly IWeekStatusHost _statusHost;
 
     private readonly StackPanel _tree = new();
 
-    public WeekTrackingTree(
-        WeekViewModel week,
-        IReadOnlyList<IWeekDayContributor> weekDayContributors,
-        IWeekStatusHost statusHost)
+    public WeekTrackingTree(WeekViewModel week)
     {
         _week = week;
-        _weekDayContributors = weekDayContributors;
-        _statusHost = statusHost;
 
         // The seven day view models are updated in place, so their property changes
         // must repaint the tree (ObservableCollection only reports add/remove).
@@ -144,7 +135,7 @@ public sealed class WeekTrackingTree : UserControl
             });
         }
 
-        var activity = WeekDayContributorText(day);
+        var activity = day.ContributorText;
         if (activity.Length > 0)
         {
             row.Children.Add(new TextBlock
@@ -239,29 +230,18 @@ public sealed class WeekTrackingTree : UserControl
     {
         if (TopLevel.GetTopLevel(this)?.Clipboard is not { } clipboard)
         {
-            _statusHost.ShowStatus("Could not access the clipboard.", WeekStatusKind.Error);
+            _week.ShowStatus("Could not access the clipboard.", WeekStatus.Error);
             return;
         }
 
         try
         {
             await clipboard.SetTextAsync(copyText);
-            _statusHost.ShowStatus("Copied the tracked tasks.", WeekStatusKind.Success);
+            _week.ShowStatus("Copied the tracked tasks.", WeekStatus.Success);
         }
         catch (Exception ex)
         {
-            _statusHost.ShowStatus("Could not copy: " + ex.Message, WeekStatusKind.Error);
+            _week.ShowStatus("Could not copy: " + ex.Message, WeekStatus.Error);
         }
-    }
-
-    /// <summary>The day's contributor lines (e.g. PC activity), joined for the day row.</summary>
-    private string WeekDayContributorText(WeekDayViewModel day)
-    {
-        var date = DateOnly.FromDateTime(day.Date.Date);
-        return string.Join(
-            " · ",
-            _weekDayContributors
-                .Select(c => c.GetDayText(date))
-                .Where(text => text.Length > 0));
     }
 }

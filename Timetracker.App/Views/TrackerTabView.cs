@@ -1,12 +1,9 @@
-using Timetracker.Plugins.Interfaces;
 using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Microsoft.Extensions.DependencyInjection;
-using Timetracker.Plugins;
 using Timetracker.ViewModels;
 using Timetracker.Views.Components;
 
@@ -15,15 +12,13 @@ namespace Timetracker.Views;
 /// <summary>
 /// Tracker tab: composes the task input (with autocomplete), the start/stop toolbar
 /// with the elapsed clock, the history grid, the pager and the status line.
-/// View-only; logic lives in <see cref="TrackerViewModel"/>. UI bands from add-ins
-/// (e.g. the Azure DevOps import) come from the registered
-/// <see cref="IUiContributor"/> hooks.
+/// View-only; logic lives in <see cref="TrackerViewModel"/>. Add-in UI bands are
+/// passed in pre-built by the composition root and placed in the toolbar.
 /// </summary>
-public sealed class TrackerTabView : UserControl, ITrackerUiHost
+public sealed class TrackerTabView : UserControl
 {
     private readonly TrackerViewModel _vm;
-    private readonly IServiceProvider _services;
-    private readonly IReadOnlyList<IUiContributor> _uiContributors;
+    private readonly IReadOnlyList<Control> _contributorControls;
 
     private readonly TaskInputField _taskInput;
     private readonly EntryHistoryGrid _historyGrid;
@@ -40,19 +35,13 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
 
     public Button StopButton => _stopButton;
 
-    public TrackerTabView(TrackerViewModel viewModel, IServiceProvider services)
+    public TrackerTabView(TrackerViewModel viewModel, IReadOnlyList<Control> contributorControls)
     {
         _vm = viewModel;
-        _services = services;
-        _uiContributors = services.GetServices<IUiContributor>()
-            .Where(c => c.TargetTab == "Tracker")
-            .ToArray();
+        _contributorControls = contributorControls;
 
         _taskInput = new TaskInputField(_vm);
         _historyGrid = new EntryHistoryGrid(_vm);
-
-        // Add-in controls resolve the host interfaces through the registry.
-        UiHostAccessor.RegisterTrackerHost(this);
 
         BuildUi();
         BindToolbar();
@@ -73,9 +62,9 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         buttonRow.Children.Add(_stopButton);
 
         // Contributor controls go between Stop and the elapsed label.
-        foreach (var contributor in _uiContributors)
+        foreach (var control in _contributorControls)
         {
-            buttonRow.Children.Add(contributor.CreateControl(_services));
+            buttonRow.Children.Add(control);
         }
 
         _elapsedLabel.Text = "00:00:00";
@@ -205,21 +194,5 @@ public sealed class TrackerTabView : UserControl, ITrackerUiHost
         };
         _ = dialog.ShowDialog(owner);
         _taskInput.TaskBox.Focus();
-    }
-
-    void ITrackerUiHost.SetTaskName(string taskName) => _taskInput.TaskBox.Text = taskName;
-
-    void ITrackerUiHost.SetBookingElement(string bookingElement) =>
-        _vm.PreviewBookingElement = bookingElement;
-
-    void ITrackerUiHost.ShowStatus(string message, TrackerStatusKind kind)
-    {
-        _statusLabel.Text = message;
-        _statusLabel.Foreground = kind switch
-        {
-            TrackerStatusKind.Success => ViewBrushes.Success,
-            TrackerStatusKind.Error => ViewBrushes.Error,
-            _ => ViewBrushes.Info,
-        };
     }
 }

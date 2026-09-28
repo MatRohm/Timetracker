@@ -22,6 +22,8 @@ public sealed class WeekViewModel : ObservableObject
     private DateTimeOffset _weekStart;
     private string _weekTitle = "";
     private string _weekTotalText = "";
+    private string _statusText = "";
+    private WeekStatus _status = WeekStatus.Info;
 
     public WeekViewModel()
     {
@@ -51,6 +53,34 @@ public sealed class WeekViewModel : ObservableObject
         get => _weekTotalText;
         private set => SetProperty(ref _weekTotalText, value);
     }
+
+    /// <summary>Text of the shared status line, shown at the bottom of the view.</summary>
+    public string StatusText
+    {
+        get => _statusText;
+        private set => SetProperty(ref _statusText, value);
+    }
+
+    /// <summary>Kind of the current status message; the view maps it to a color.</summary>
+    public WeekStatus Status
+    {
+        get => _status;
+        private set => SetProperty(ref _status, value);
+    }
+
+    /// <summary>Shows a status message (from the app or an add-in) in the shared status line.</summary>
+    public void ShowStatus(string message, WeekStatus kind)
+    {
+        Status = kind;
+        StatusText = message;
+    }
+
+    /// <summary>
+    /// Supplies the per-day contributor line (e.g. PC activity) shown on each day
+    /// node. Wired by the composition root; kept as a delegate so the view model
+    /// stays free of the plugin contract.
+    /// </summary>
+    public Func<DateOnly, string>? DayContributorText { get; set; }
 
     public ICommand PreviousWeekCommand => _previousWeekCommand;
 
@@ -93,6 +123,8 @@ public sealed class WeekViewModel : ObservableObject
         {
             var day = _weekStart.AddDays(i);
             _days[i].Update(day, weekSessions.Where(s => s.Start.Date == day.Date));
+            _days[i].ContributorText =
+                DayContributorText?.Invoke(DateOnly.FromDateTime(day.Date)) ?? "";
         }
 
         WeekTotalText = $"Σ {WeekTimeFormat.HoursMinutes(weekSessions.Sum(s => s.DurationSeconds))}";

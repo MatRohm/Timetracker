@@ -1,5 +1,4 @@
 using Timetracker.Interfaces;
-using Timetracker.Plugins.Interfaces;
 using AwesomeAssertions;
 using Avalonia;
 using Avalonia.Controls;
@@ -8,10 +7,8 @@ using Avalonia.Headless.NUnit;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Timetracker.Models;
-using Timetracker.Plugins;
 using Timetracker.Tests.Unit;
 using Timetracker.ViewModels;
 using Timetracker.Views;
@@ -122,12 +119,8 @@ public sealed class ColumnResizeTests
                 Duration = "01:00:00", DurationSeconds = 3600,
             },
         ]);
-        var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
-        var services = new ServiceCollection();
-        services.AddSingleton<ITrackerRepository>(repo);
-        services.AddSingleton<IUiTimer, FakeTimer>();
-        services.AddSingleton<ITrackerUiHost, FakeHost>();
-        return (new TrackerTabView(vm, services.BuildServiceProvider()), vm);
+        var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        return (new TrackerTabView(vm, []), vm);
     }
 
     private static T? Find<T>(Control root) where T : Control =>
@@ -139,20 +132,5 @@ public sealed class ColumnResizeTests
         public Task<IReadOnlyList<TrackerEntry>> GetAllAsync() => Task.FromResult(entries);
         public Task AddAsync(TrackerEntry entry) => Task.CompletedTask;
         public Task SaveAsync(IReadOnlyList<TrackerEntry> e) => Task.CompletedTask;
-    }
-
-    private sealed class FakeTimer : IUiTimer
-    {
-        public event Action? Tick { add { } remove { } }
-        public void Start() { }
-        public void Stop() { }
-        public void Dispose() { }
-    }
-
-    private sealed class FakeHost : ITrackerUiHost
-    {
-        public void SetTaskName(string taskName) { }
-        public void SetBookingElement(string bookingElement) { }
-        public void ShowStatus(string message, TrackerStatusKind kind) { }
     }
 }

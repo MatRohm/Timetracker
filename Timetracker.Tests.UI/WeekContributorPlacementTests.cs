@@ -1,14 +1,11 @@
 using Timetracker.Interfaces;
-using Timetracker.Plugins.Interfaces;
 using AwesomeAssertions;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.NUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
-using Timetracker.Plugins;
 using Timetracker.Tests.Unit;
 using Timetracker.ViewModels;
 using Timetracker.Views;
@@ -27,15 +24,9 @@ public sealed class WeekContributorPlacementTests
     public void WeekTabView_WhenRendered_ShouldPlaceContributorControlsAboveTheStatusLine()
     {
         var repo = new FakeRepo();
-        using var tracker = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var tracker = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
 
-        var services = new ServiceCollection();
-        services.AddSingleton<ITrackerRepository>(repo);
-        services.AddSingleton<IUiTimer, FakeTimer>();
-        services.AddSingleton<ITrackerUiHost, FakeHost>();
-        services.AddSingleton<IWeekStatusHost>(new FakeWeekStatusHost());
-        services.AddSingleton<IUiContributor, FakeWeekContributor>();
-        var view = new WeekTabView(tracker.Week, services.BuildServiceProvider());
+        var view = new WeekTabView(tracker.Week, [new Button { Content = "Test contributor" }]);
 
         Realize(view);
 
@@ -64,31 +55,11 @@ public sealed class WeekContributorPlacementTests
         Dispatcher.UIThread.RunJobs();
     }
 
-    private sealed class FakeWeekContributor : IUiContributor
-    {
-        public string TargetTab => "Week view";
-
-        public Control CreateControl(IServiceProvider services) =>
-            new Button { Content = "Test contributor" };
-    }
-
     private sealed class FakeRepo : ITrackerRepository
     {
         public string FilePath => "memory.json";
         public Task<IReadOnlyList<Timetracker.Models.TrackerEntry>> GetAllAsync() => Task.FromResult<IReadOnlyList<Timetracker.Models.TrackerEntry>>([]);
         public Task AddAsync(Timetracker.Models.TrackerEntry entry) => Task.CompletedTask;
         public Task SaveAsync(IReadOnlyList<Timetracker.Models.TrackerEntry> e) => Task.CompletedTask;
-    }
-
-    private sealed class FakeHost : ITrackerUiHost
-    {
-        public void SetTaskName(string taskName) { }
-        public void SetBookingElement(string bookingElement) { }
-        public void ShowStatus(string message, TrackerStatusKind kind) { }
-    }
-
-    private sealed class FakeWeekStatusHost : IWeekStatusHost
-    {
-        public void ShowStatus(string message, WeekStatusKind kind) { }
     }
 }

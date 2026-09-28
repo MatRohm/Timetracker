@@ -1,12 +1,8 @@
-using Timetracker.Plugins.Interfaces;
 using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Microsoft.Extensions.DependencyInjection;
-using Avalonia.Threading;
-using Timetracker.Plugins;
 using Timetracker.ViewModels;
 using Timetracker.Views.Components;
 
@@ -14,16 +10,14 @@ namespace Timetracker.Views;
 
 /// <summary>
 /// Week view tab: composes the week header/toolbar, the seven day columns and the
-/// status line. View-only; state lives in <see cref="WeekViewModel"/>. Additional
-/// per-day lines (e.g. PC activity) and setup bands come from the registered
-/// <see cref="IWeekDayContributor"/> and <see cref="IUiContributor"/> hooks.
+/// status line. View-only; state lives in <see cref="WeekViewModel"/>. Add-in UI
+/// bands are passed in pre-built by the composition root and placed above the
+/// status line.
 /// </summary>
-public sealed class WeekTabView : UserControl, IWeekStatusHost
+public sealed class WeekTabView : UserControl
 {
     private readonly WeekViewModel _week;
-    private readonly IServiceProvider _services;
-    private readonly IReadOnlyList<IWeekDayContributor> _weekDayContributors;
-    private readonly IReadOnlyList<IUiContributor> _uiContributors;
+    private readonly IReadOnlyList<Control> _contributorControls;
 
     private readonly TextBlock _titleLabel = new();
     private readonly TextBlock _totalLabel = new();
@@ -34,20 +28,12 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
 
     private readonly WeekTrackingTree _tree;
 
-    public WeekTabView(WeekViewModel week, IServiceProvider services)
+    public WeekTabView(WeekViewModel week, IReadOnlyList<Control> contributorControls)
     {
         _week = week;
-        _services = services;
-        _weekDayContributors = services.GetServices<IWeekDayContributor>().ToArray();
-        _uiContributors = services.GetServices<IUiContributor>()
-            .Where(c => c.TargetTab == "Week view")
-            .ToArray();
+        _contributorControls = contributorControls;
 
-        _tree = new WeekTrackingTree(_week, _weekDayContributors, this);
-
-        // Add-in panels report results through the shared status line.
-        UiHostAccessor.RegisterWeekStatusSink((message, kind) =>
-            Dispatcher.UIThread.Post(() => ShowStatus(message, kind)));
+        _tree = new WeekTrackingTree(_week);
 
         BuildUi();
         BindViewModel();
@@ -91,11 +77,11 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
             Orientation = Orientation.Horizontal,
             Spacing = 8,
             Margin = new Thickness(0, 4, 0, 0),
-            IsVisible = _uiContributors.Count > 0,
+            IsVisible = _contributorControls.Count > 0,
         };
-        foreach (var contributor in _uiContributors)
+        foreach (var control in _contributorControls)
         {
-            contributorRow.Children.Add(contributor.CreateControl(_services));
+            contributorRow.Children.Add(control);
         }
 
         _statusLabel.TextTrimming = TextTrimming.CharacterEllipsis;
@@ -128,6 +114,7 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
 
         _week.PropertyChanged += OnWeekPropertyChanged;
         UpdateHeader();
+        UpdateStatus();
     }
 
     private void OnWeekPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -135,6 +122,10 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
         if (e.PropertyName is nameof(WeekViewModel.WeekTitle) or nameof(WeekViewModel.WeekTotalText))
         {
             UpdateHeader();
+        }
+        else if (e.PropertyName is nameof(WeekViewModel.StatusText) or nameof(WeekViewModel.Status))
+        {
+            UpdateStatus();
         }
     }
 
@@ -144,17 +135,14 @@ public sealed class WeekTabView : UserControl, IWeekStatusHost
         _totalLabel.Text = _week.WeekTotalText;
     }
 
-    /// <summary>One-line status at the bottom, styled like the tracker's status line.</summary>
-    private void ShowStatus(string message, WeekStatusKind kind)
+    private void UpdateStatus()
     {
-        _statusLabel.Text = message;
-        _statusLabel.Foreground = kind switch
+        _statusLabel.Text = _week.StatusText;
+        _statusLabel.Foreground = _week.Status switch
         {
-            WeekStatusKind.Success => ViewBrushes.Success,
-            WeekStatusKind.Error => ViewBrushes.Error,
+            WeekStatus.Success => ViewBrushes.Success,
+            WeekStatus.Error => ViewBrushes.Error,
             _ => ViewBrushes.Info,
         };
     }
-
-    void IWeekStatusHost.ShowStatus(string message, WeekStatusKind kind) => ShowStatus(message, kind);
 }

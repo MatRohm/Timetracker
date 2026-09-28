@@ -1,15 +1,12 @@
 using Timetracker.Interfaces;
-using Timetracker.Plugins.Interfaces;
 using AwesomeAssertions;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.NUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Timetracker.Models;
-using Timetracker.Plugins;
 using Timetracker.Tests.Unit;
 using Timetracker.ViewModels;
 using Timetracker.Views;
@@ -59,7 +56,7 @@ public sealed class WeekTreeIndentTests
     private static (WeekTabView View, WeekViewModel Week) Build()
     {
         var repo = new FakeRepo();
-        using var tracker = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var tracker = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
         tracker.Week.UpdateSessions(
         [
             new TrackerEntry
@@ -73,12 +70,7 @@ public sealed class WeekTreeIndentTests
             },
         ]);
 
-        var services = new ServiceCollection();
-        services.AddSingleton<ITrackerRepository>(repo);
-        services.AddSingleton<IUiTimer, FakeTimer>();
-        services.AddSingleton<ITrackerUiHost, FakeHost>();
-        services.AddSingleton<IWeekStatusHost>(new FakeWeekStatusHost());
-        return (new WeekTabView(tracker.Week, services.BuildServiceProvider()), tracker.Week);
+        return (new WeekTabView(tracker.Week, []), tracker.Week);
     }
 
     private static void Realize(Control root)
@@ -96,25 +88,5 @@ public sealed class WeekTreeIndentTests
         public Task<IReadOnlyList<TrackerEntry>> GetAllAsync() => Task.FromResult<IReadOnlyList<TrackerEntry>>([]);
         public Task AddAsync(TrackerEntry entry) => Task.CompletedTask;
         public Task SaveAsync(IReadOnlyList<TrackerEntry> e) => Task.CompletedTask;
-    }
-
-    private sealed class FakeTimer : IUiTimer
-    {
-        public event Action? Tick { add { } remove { } }
-        public void Start() { }
-        public void Stop() { }
-        public void Dispose() { }
-    }
-
-    private sealed class FakeHost : ITrackerUiHost
-    {
-        public void SetTaskName(string taskName) { }
-        public void SetBookingElement(string bookingElement) { }
-        public void ShowStatus(string message, TrackerStatusKind kind) { }
-    }
-
-    private sealed class FakeWeekStatusHost : IWeekStatusHost
-    {
-        public void ShowStatus(string message, WeekStatusKind kind) { }
     }
 }

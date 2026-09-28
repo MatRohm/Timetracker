@@ -19,6 +19,7 @@ public sealed class WeekDayViewModel : ObservableObject
     private string _totalText = "";
     private bool _isToday;
     private bool _isExpanded;
+    private string _contributorText = "";
 
     public WeekDayViewModel()
     {
@@ -53,6 +54,13 @@ public sealed class WeekDayViewModel : ObservableObject
     {
         get => _isExpanded;
         set => SetProperty(ref _isExpanded, value);
+    }
+
+    /// <summary>Per-day contributor line (e.g. "PC 7:15 active · 1:20 idle"); empty when none.</summary>
+    public string ContributorText
+    {
+        get => _contributorText;
+        set => SetProperty(ref _contributorText, value);
     }
 
     /// <summary>Expands or collapses the day.</summary>

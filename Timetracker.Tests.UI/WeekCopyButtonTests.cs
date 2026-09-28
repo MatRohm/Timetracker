@@ -1,15 +1,12 @@
 using Timetracker.Interfaces;
-using Timetracker.Plugins.Interfaces;
 using AwesomeAssertions;
 using Avalonia.Controls;
 using Avalonia.Headless.NUnit;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Timetracker.Models;
-using Timetracker.Plugins;
 using Timetracker.Tests.Unit;
 using Timetracker.ViewModels;
 using Timetracker.Views;
@@ -106,7 +103,7 @@ public sealed class WeekCopyButtonTests
         params (DateTimeOffset Start, string Task, string Booking)[] sessions)
     {
         var repo = new FakeRepo();
-        using var tracker = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
+        using var tracker = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
         tracker.Week.UpdateSessions(
         [
             .. sessions.Select(s => new TrackerEntry
@@ -120,12 +117,7 @@ public sealed class WeekCopyButtonTests
             }),
         ]);
 
-        var services = new ServiceCollection();
-        services.AddSingleton<ITrackerRepository>(repo);
-        services.AddSingleton<IUiTimer, FakeTimer>();
-        services.AddSingleton<ITrackerUiHost, FakeHost>();
-        services.AddSingleton<IWeekStatusHost>(new FakeWeekStatusHost());
-        return (new WeekTabView(tracker.Week, services.BuildServiceProvider()), tracker.Week);
+        return (new WeekTabView(tracker.Week, []), tracker.Week);
     }
 
     private static Window Realize(Control root)
@@ -156,17 +148,5 @@ public sealed class WeekCopyButtonTests
         public Task<IReadOnlyList<TrackerEntry>> GetAllAsync() => Task.FromResult<IReadOnlyList<TrackerEntry>>([]);
         public Task AddAsync(TrackerEntry entry) => Task.CompletedTask;
         public Task SaveAsync(IReadOnlyList<TrackerEntry> e) => Task.CompletedTask;
-    }
-
-    private sealed class FakeHost : ITrackerUiHost
-    {
-        public void SetTaskName(string taskName) { }
-        public void SetBookingElement(string bookingElement) { }
-        public void ShowStatus(string message, TrackerStatusKind kind) { }
-    }
-
-    private sealed class FakeWeekStatusHost : IWeekStatusHost
-    {
-        public void ShowStatus(string message, WeekStatusKind kind) { }
     }
 }
