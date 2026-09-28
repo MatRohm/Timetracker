@@ -3,8 +3,8 @@ using System.Windows.Input;
 namespace Timetracker.ViewModels;
 
 /// <summary>
-/// Basic command implementation for WinForms, where no <c>CommandManager</c> exists.
-/// The view model calls <see cref="RaiseCanExecuteChanged"/> when <see cref="CanExecute"/> might have changed.
+/// Basic <see cref="ICommand"/> implementation. The view model calls
+/// <see cref="RaiseCanExecuteChanged"/> when <see cref="CanExecute"/> might have changed.
 /// </summary>
 public sealed class RelayCommand : ICommand
 {
