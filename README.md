@@ -129,6 +129,12 @@ the whole range from the previously selected row, and **CTRL+CLICK** adds or
 removes single rows from the selection. Pressing **Del** removes every selected
 row together.
 
+**Per-item session editor**: the row's edit button opens a dialog listing every
+session of that task, oldest first. Each session's start and end are editable
+(`yyyy-MM-dd HH:mm`, typed as text), and the duration is always derived from the
+times; individual sessions can be deleted. Saving persists exactly the remaining
+sessions — other tasks are untouched, and the history and week view stay in sync.
+
 ## Azure DevOps integration
 
 The tracker can fetch task names from Azure DevOps work items. The integration
@@ -274,6 +280,8 @@ Timetracker/
 │   ├── ViewModels/
 │   │   ├── TrackerViewModel.cs      # All logic: start/stop, timer, state, sorting
 │   │   ├── EntryRow.cs              # Aggregated display row (grouped sessions)
+│   │   ├── EditEntriesViewModel.cs  # Per-item editor: list/edit/delete its sessions
+│   │   ├── SessionEditRow.cs        # One editable session (start/end text, derived duration)
 │   │   ├── WeekViewModel.cs         # Week view state: 7 day nodes, navigation, collapse
 │   │   ├── WeekDayViewModel.cs      # One day node (header, total, groups, expander)
 │   │   ├── WeekElementGroupViewModel.cs # Booking element node (total, tasks, copy)
@@ -282,11 +290,13 @@ Timetracker/
 │   │   ├── SuggestionItem.cs        # Autocomplete suggestion (name + total time)
 │   │   ├── ObservableObject.cs      # INotifyPropertyChanged base class
 │   │   ├── RelayCommand.cs          # ICommand implementation
+│   │   ├── AsyncRelayCommand.cs     # Async ICommand implementation (async handlers)
 │   │   └── TrackerStatus.cs         # Info / Success / Error status kinds
 │   ├── Views/
 │   │   ├── TrackerWindow.cs         # Shell: window, tabs, title binding, close handling
 │   │   ├── TrackerTabView.cs        # Tracker tab: composes input, toolbar, grid, pager
 │   │   ├── WeekTabView.cs           # Week tab: composes header, day columns, status line
+│   │   ├── EditEntriesWindow.cs     # Per-item editor dialog (edit/delete sessions)
 │   │   ├── Components/              # Reusable view pieces (Timetracker.Views.Components)
 │   │   │   ├── TaskInputField.cs    # Task-name input with autocomplete
 │   │   │   ├── ColumnFilterHeader.cs# Column caption + per-column filter funnel
