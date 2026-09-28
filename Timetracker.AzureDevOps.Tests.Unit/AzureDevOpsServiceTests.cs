@@ -93,7 +93,7 @@ public sealed class AzureDevOpsServiceTests
     [Test]
     public async Task ApplyIssueAsync_WhenTheWorkItemExists_ShouldFillTheHostWithNumberTitleAndAzeElement()
     {
-        using var service = new AzureDevOpsService(AzureDevOpsTestHelpers.Config(), () => new AzureDevOpsClient(
+        var service = new AzureDevOpsService(AzureDevOpsTestHelpers.Config(), () => new AzureDevOpsClient(
             AzureDevOpsTestHelpers.Config(), FakeHttp.WorkItem(42, "Fix login bug", "Quarterly figures")));
         var host = new FakeHost();
 
@@ -109,7 +109,7 @@ public sealed class AzureDevOpsServiceTests
     [Test]
     public async Task ApplyIssueAsync_WhenTheWorkItemIsMissing_ShouldKeepTheHostUntouched()
     {
-        using var service = new AzureDevOpsService(AzureDevOpsTestHelpers.Config(), () => new AzureDevOpsClient(
+        var service = new AzureDevOpsService(AzureDevOpsTestHelpers.Config(), () => new AzureDevOpsClient(
             AzureDevOpsTestHelpers.Config(), FakeHttp.WorkItemNotFound()));
         var host = new FakeHost();
 
@@ -123,7 +123,7 @@ public sealed class AzureDevOpsServiceTests
     [Test]
     public async Task ApplyIssueAsync_WhenTheIssueNumberIsNotNumeric_ShouldReportAnError()
     {
-        using var service = new AzureDevOpsService(AzureDevOpsTestHelpers.Config(), () => throw new InvalidOperationException());
+        var service = new AzureDevOpsService(AzureDevOpsTestHelpers.Config(), () => throw new InvalidOperationException());
         var host = new FakeHost();
 
         (await service.ApplyIssueAsync("abc", host)).Success.Should().BeFalse();
@@ -134,7 +134,7 @@ public sealed class AzureDevOpsServiceTests
     [Test]
     public async Task ApplyIssueAsync_WhenTheConfigIsMissing_ShouldReportWhereToPutIt()
     {
-        using var service = new AzureDevOpsService(new AzureDevOpsConfig());
+        var service = new AzureDevOpsService(new AzureDevOpsConfig());
         var host = new FakeHost();
 
         var result = await service.ApplyIssueAsync("42", host);
@@ -146,7 +146,7 @@ public sealed class AzureDevOpsServiceTests
     [Test]
     public void ConfigurationHint_WhenRead_ShouldNameThePathAndShowAnExample()
     {
-        using var service = new AzureDevOpsService(new AzureDevOpsConfig());
+        var service = new AzureDevOpsService(new AzureDevOpsConfig());
 
         var hint = service.ConfigurationHint;
 
@@ -160,7 +160,7 @@ public sealed class AzureDevOpsServiceTests
     [Test]
     public async Task ApplyIssueAsync_WhenTheHttpRequestFails_ShouldMapToAnErrorResult()
     {
-        using var service = new AzureDevOpsService(AzureDevOpsTestHelpers.Config(), () => new AzureDevOpsClient(
+        var service = new AzureDevOpsService(AzureDevOpsTestHelpers.Config(), () => new AzureDevOpsClient(
             AzureDevOpsTestHelpers.Config(), FakeHttp.Create((_) => new HttpResponseMessage(HttpStatusCode.Unauthorized))));
         var host = new FakeHost();
 

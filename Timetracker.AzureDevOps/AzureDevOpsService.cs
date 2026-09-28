@@ -8,7 +8,7 @@ namespace Timetracker.AzureDevOps;
 /// tracker inputs: task name becomes "&lt;issue number&gt; &lt;title&gt;". Owns the
 /// config load and error reporting so the host stays thin.
 /// </summary>
-public sealed class AzureDevOpsService : IDisposable
+public sealed class AzureDevOpsService
 {
     private readonly AzureDevOpsConfig _config;
     private readonly Func<AzureDevOpsClient> _clientFactory;
@@ -93,10 +93,6 @@ public sealed class AzureDevOpsService : IDisposable
 
         var result = ApplyResult.Successful(taskName, workItem.AzeElement);
         return result;
-    }
-
-    public void Dispose()
-    {
     }
 
     /// <summary>Outcome of an apply attempt; used for status display and tests.</summary>
