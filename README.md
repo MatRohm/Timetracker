@@ -307,14 +307,13 @@ Timetracker/
 │   ├── App.cs                       # Composition root: container, hooks, error handling
 │   ├── Program.cs                   # Entry point (Avalonia bootstrap)
 │   └── Timetracker.App.csproj
-├── Timetracker.Plugins/             # Hook interfaces + UI host accessor (no logic)
+├── Timetracker.Plugins/             # Hook interfaces (no logic)
 │   └── Interfaces/                  # IUiContributor, IAppHook, ITrackerUiHost, ...
 ├── Timetracker.AzureDevOps/         # Add-in: work item import (issue number → fields)
 ├── Timetracker.ActivityMonitor/     # Add-in: PC active/idle recording (background exe)
 │   └── Interfaces/                  # IActivityMonitorInstaller, IIdleTimeProvider
 ├── Timetracker.slnx                 # XML solution (app + add-ins + tests)
 ├── Timetracker.App.Tests.Unit/      # App unit tests (view models, services)
-├── Timetracker.Plugins.Tests.Unit/  # Plugins unit tests (UI host accessor)
 ├── Timetracker.AzureDevOps.Tests.Unit/  # Azure DevOps unit tests (config, client, service)
 ├── Timetracker.ActivityMonitor.Tests.Unit/  # Activity monitor unit tests
 ├── Timetracker.Tests.UI/            # UI tests: app views + add-in panels (headless Avalonia)
