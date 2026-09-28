@@ -231,7 +231,7 @@ public sealed class EntryHistoryGrid : UserControl
             return;
         }
 
-        _viewModel.ReplaceSessions(row.Task, sessions);
+        await _viewModel.ReplaceSessionsAsync(row.Task, sessions);
     }
 
     private void OnGridSorting(object? sender, DataGridColumnEventArgs e)
@@ -278,7 +278,7 @@ public sealed class EntryHistoryGrid : UserControl
         var confirmed = await DeleteConfirmation.ConfirmAsync(this, summary);
         if (confirmed)
         {
-            _viewModel.DeleteEntries(rows, _ => true);
+            await _viewModel.DeleteEntriesAsync(rows, _ => true);
         }
     }
 
@@ -296,7 +296,7 @@ public sealed class EntryHistoryGrid : UserControl
         }
 
         // Commit deferred, so a re-sort inside the view model cannot reenter the grid.
-        Dispatcher.UIThread.Post(() => _viewModel.UpdateEntryText(row, row.Task, row.BookingElement));
+        Dispatcher.UIThread.Post(async () => await _viewModel.UpdateEntryTextAsync(row, row.Task, row.BookingElement));
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)

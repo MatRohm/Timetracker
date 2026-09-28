@@ -51,10 +51,10 @@ public static class RepositoryFake
         var list = seed.ToList();
         var repo = A.Fake<ITrackerRepository>();
         A.CallTo(() => repo.FilePath).Returns(path);
-        A.CallTo(() => repo.GetAll()).ReturnsLazily(() => list.ToList());
-        A.CallTo(() => repo.Add(A<TrackerEntry>._))
+        A.CallTo(() => repo.GetAllAsync()).ReturnsLazily(() => Task.FromResult((IReadOnlyList<TrackerEntry>)list.ToList()));
+        A.CallTo(() => repo.AddAsync(A<TrackerEntry>._))
             .Invokes((TrackerEntry e) => list.Add(e));
-        A.CallTo(() => repo.Save(A<IReadOnlyList<TrackerEntry>>._))
+        A.CallTo(() => repo.SaveAsync(A<IReadOnlyList<TrackerEntry>>._))
             .Invokes((IReadOnlyList<TrackerEntry> entries) =>
             {
                 list.Clear();
@@ -63,5 +63,6 @@ public static class RepositoryFake
         return (repo, path);
     }
 
-    public static IReadOnlyList<TrackerEntry> Persisted(ITrackerRepository repo) => repo.GetAll();
+    public static IReadOnlyList<TrackerEntry> Persisted(ITrackerRepository repo) =>
+        repo.GetAllAsync().GetAwaiter().GetResult();
 }

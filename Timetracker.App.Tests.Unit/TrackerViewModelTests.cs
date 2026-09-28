@@ -61,7 +61,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void Stop_WhenStopped_ShouldAppendSessionAndResetRunningState()
+    public async Task Stop_WhenStopped_ShouldAppendSessionAndResetRunningState()
     {
         var (repo, path) = RepositoryFake.Create();
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
@@ -71,8 +71,8 @@ public sealed class TrackerViewModelTests
         vm.StopCommand.Execute(null);
 
         vm.IsRunning.Should().BeFalse();
-        repo.GetAll().Should().HaveCount(1);
-        var entry = repo.GetAll().Single();
+        (await repo.GetAllAsync()).Should().HaveCount(1);
+        var entry = (await repo.GetAllAsync()).Single();
         entry.Task.Should().Be("Report");
         entry.DurationSeconds.Should().BeGreaterThanOrEqualTo(0);
     }
@@ -131,7 +131,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void UpdateEntryText_WhenTheBookingElementIsEdited_ShouldSurviveAddingANewSession()
+    public async Task UpdateEntryTextAsync_WhenTheBookingElementIsEdited_ShouldSurviveAddingANewSession()
     {
         // Regression: the booking element used to revert to empty after a new session.
         var (repo, _) = RepositoryFake.Create(
@@ -147,7 +147,7 @@ public sealed class TrackerViewModelTests
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         var row = vm.Entries[0];
         row.BookingElement = "edited via grid"; // binding stages first, as in the real grid
-        vm.UpdateEntryText(row, row.Task, row.BookingElement).Should().BeTrue();
+        (await vm.UpdateEntryTextAsync(row, row.Task, row.BookingElement)).Should().BeTrue();
 
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
@@ -157,7 +157,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void UpdateEntryText_WhenTheTaskNameIsEmpty_ShouldReject()
+    public async Task UpdateEntryTextAsync_WhenTheTaskNameIsEmpty_ShouldReject()
     {
         var (repo, _) = RepositoryFake.Create(
             new TrackerEntry
@@ -171,7 +171,7 @@ public sealed class TrackerViewModelTests
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         var row = vm.Entries[0];
 
-        var result = vm.UpdateEntryText(row, "   ", row.BookingElement);
+        var result = await vm.UpdateEntryTextAsync(row, "   ", row.BookingElement);
 
         result.Should().BeFalse();
         vm.Entries.Should().ContainSingle().Which.Task.Should().Be("Report");
@@ -295,7 +295,7 @@ public sealed class TrackerViewModelTests
     {
         var repo = A.Fake<ITrackerRepository>();
         A.CallTo(() => repo.FilePath).Returns(Path.Combine(Path.GetTempPath(), "does-not-matter.json"));
-        A.CallTo(() => repo.Add(A<TrackerEntry>._)).Throws(new IOException("disk full"));
+        A.CallTo(() => repo.AddAsync(A<TrackerEntry>._)).ThrowsAsync(new IOException("disk full"));
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         string? reported = null;
         vm.ErrorOccurred += m => reported = m;
@@ -386,91 +386,92 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void DeleteEntries_WhenSelectingSomeRows_ShouldRemoveOnlyThoseAndPersist()
+    public async Task DeleteEntriesAsync_WhenSelectingSomeRows_ShouldRemoveOnlyThoseAndPersist()
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 9), Entry("Meeting", 11), Entry("Review", 13));
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         var row = vm.Entries.Single(r => r.Task == "Meeting");
 
-        var deleted = vm.DeleteEntries([row], _ => true);
+        var deleted = await vm.DeleteEntriesAsync([row], _ => true);
 
         deleted.Should().BeTrue();
         vm.Entries.Select(e => e.Task).Should().BeEquivalentTo(["Report", "Review"]);
-        repo.GetAll().Select(e => e.Task).Should().BeEquivalentTo(["Report", "Review"],
+        (await repo.GetAllAsync()).Select(e => e.Task).Should().BeEquivalentTo(["Report", "Review"],
             "the repository receives the remaining entries");
     }
 
     [Test]
-    public void DeleteEntries_WhenDeletingATask_ShouldRemoveEverySession()
+    public async Task DeleteEntriesAsync_WhenDeletingATask_ShouldRemoveEverySession()
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 9), Entry("Report", 14), Entry("Meeting", 11));
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         var row = vm.Entries.Single(r => r.Task == "Report");
 
-        vm.DeleteEntries([row], _ => true);
+        await vm.DeleteEntriesAsync([row], _ => true);
 
-        repo.GetAll().Should().ContainSingle().Which.Task.Should().Be("Meeting");
+        (await repo.GetAllAsync()).Should().ContainSingle().Which.Task.Should().Be("Meeting");
         vm.Entries.Should().ContainSingle().Which.Task.Should().Be("Meeting");
     }
 
     [Test]
-    public void DeleteEntries_WhenSelectingMultipleTasks_ShouldRemoveThemAll()
+    public async Task DeleteEntriesAsync_WhenSelectingMultipleTasks_ShouldRemoveThemAll()
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 9), Entry("Meeting", 11), Entry("Review", 13));
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
         var rows = vm.Entries.Where(r => r.Task != "Meeting").ToList();
-        var deleted = vm.DeleteEntries(rows, _ => true);
+        var deleted = await vm.DeleteEntriesAsync(rows, _ => true);
 
         deleted.Should().BeTrue();
         vm.Entries.Should().ContainSingle().Which.Task.Should().Be("Meeting");
-        repo.GetAll().Should().ContainSingle().Which.Task.Should().Be("Meeting");
+        (await repo.GetAllAsync()).Should().ContainSingle().Which.Task.Should().Be("Meeting");
     }
 
     [Test]
-    public void DeleteEntries_WhenUserDeclines_ShouldDoNothing()
+    public async Task DeleteEntriesAsync_WhenUserDeclines_ShouldDoNothing()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9), Entry("Meeting", 11));
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         var row = vm.Entries.Single(r => r.Task == "Report");
 
-        var declined = vm.DeleteEntries([row], _ => false);
+        var declined = await vm.DeleteEntriesAsync([row], _ => false);
 
         declined.Should().BeFalse();
         vm.Entries.Should().HaveCount(2);
-        repo.GetAll().Should().HaveCount(2);
+        (await repo.GetAllAsync()).Should().HaveCount(2);
         vm.StatusText.Should().NotContain("Deleted");
     }
 
     [Test]
-    public void DeleteEntries_WhenThereAreNoRows_ShouldDoNothing()
+    public async Task DeleteEntriesAsync_WhenThereAreNoRows_ShouldDoNothing()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9));
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
 
-        vm.DeleteEntries([], _ => true).Should().BeFalse();
-        vm.DeleteEntries(null!, _ => true).Should().BeFalse();
+        (await vm.DeleteEntriesAsync([], _ => true)).Should().BeFalse();
+        (await vm.DeleteEntriesAsync(null!, _ => true)).Should().BeFalse();
 
         vm.Entries.Should().ContainSingle();
         vm.StatusText.Should().NotContain("Deleted");
     }
 
     [Test]
-    public void DeleteEntries_WhenTheSaveFails_ShouldRollBackStateAndReportError()
+    public async Task DeleteEntriesAsync_WhenTheSaveFails_ShouldRollBackStateAndReportError()
     {
         var repo = A.Fake<ITrackerRepository>();
         A.CallTo(() => repo.FilePath).Returns("unused.json");
-        A.CallTo(() => repo.GetAll()).Returns([Entry("Report", 9), Entry("Meeting", 11)]);
-        A.CallTo(() => repo.Save(A<IReadOnlyList<TrackerEntry>>._)).Throws(new IOException("disk full"));
+        A.CallTo(() => repo.GetAllAsync()).Returns(
+            Task.FromResult<IReadOnlyList<TrackerEntry>>([Entry("Report", 9), Entry("Meeting", 11)]));
+        A.CallTo(() => repo.SaveAsync(A<IReadOnlyList<TrackerEntry>>._)).ThrowsAsync(new IOException("disk full"));
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
         string? reported = null;
         vm.ErrorOccurred += m => reported = m;
         var row = vm.Entries.Single(r => r.Task == "Report");
 
-        var deleted = vm.DeleteEntries([row], _ => true);
+        var deleted = await vm.DeleteEntriesAsync([row], _ => true);
 
         deleted.Should().BeFalse();
         vm.Entries.Should().HaveCount(2, "the in-memory state is restored after a failed save");
@@ -479,7 +480,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void DeleteEntries_WhenItSucceeds_ShouldWriteRemainingEntriesToFile()
+    public async Task DeleteEntriesAsync_WhenItSucceeds_ShouldWriteRemainingEntriesToFile()
     {
         // End-to-end with the real repository: file contents after delete.
         var dir = Path.Combine(Path.GetTempPath(), "opencode", "tt-delete-tests");
@@ -492,11 +493,12 @@ public sealed class TrackerViewModelTests
             ]
             """);
         using var vm = new TrackerViewModel(new JsonTrackerRepository(path), new FakeTimer(), new FakeIdleTimeProvider());
+        await vm.RefreshEntriesAsync();
         var row = vm.Entries.Single(r => r.Task == "Report");
 
-        vm.DeleteEntries([row], _ => true);
+        await vm.DeleteEntriesAsync([row], _ => true);
 
-        var onDisk = new JsonTrackerRepository(path).GetAll();
+        var onDisk = await new JsonTrackerRepository(path).GetAllAsync();
         onDisk.Should().ContainSingle().Which.Task.Should().Be("Meeting");
     }
 
@@ -506,7 +508,7 @@ public sealed class TrackerViewModelTests
     /// began, so idle time is not billed to the task.
     /// </summary>
     [Test]
-    public void OnTimerTick_WhenIdleThresholdIsReached_ShouldStopRunningSession()
+    public async Task OnTimerTick_WhenIdleThresholdIsReached_ShouldStopRunningSession()
     {
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
@@ -520,11 +522,11 @@ public sealed class TrackerViewModelTests
         timer.RaiseTick();
 
         vm.IsRunning.Should().BeFalse("30 minutes without input stops the timer");
-        repo.GetAll().Should().ContainSingle("the session was saved");
+        (await repo.GetAllAsync()).Should().ContainSingle("the session was saved");
     }
 
     [Test]
-    public void OnTimerTick_WhenIdleIsBelowThreshold_ShouldKeepSessionRunning()
+    public async Task OnTimerTick_WhenIdleIsBelowThreshold_ShouldKeepSessionRunning()
     {
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
@@ -537,11 +539,11 @@ public sealed class TrackerViewModelTests
         timer.RaiseTick();
 
         vm.IsRunning.Should().BeTrue("the threshold is 30 minutes, not less");
-        repo.GetAll().Should().BeEmpty();
+        (await repo.GetAllAsync()).Should().BeEmpty();
     }
 
     [Test]
-    public void StopForIdle_WhenAnIdleSpanOccurs_ShouldNotCountItAsWorkTime()
+    public async Task StopForIdleAsync_WhenAnIdleSpanOccurs_ShouldNotCountItAsWorkTime()
     {
         // A 15-minute session, then 45 minutes away: only the 15 worked minutes
         // are billed, and the entry ends when the user walked away.
@@ -560,14 +562,14 @@ public sealed class TrackerViewModelTests
         idle.CurrentIdleTime = idleFor;
         timer.RaiseTick();
 
-        var entry = repo.GetAll().Single();
+        var entry = (await repo.GetAllAsync()).Single();
         entry.DurationSeconds.Should().Be(worked.TotalSeconds, "only worked time is billed");
         entry.Duration.Should().Be("00:15:00");
         entry.End.Should().Be(now - idleFor, "the entry ends when the idle stretch began");
     }
 
     [Test]
-    public void StopForIdle_WhenItStops_ShouldExplainItInTheStatusLine()
+    public void StopForIdleAsync_WhenItStops_ShouldExplainItInTheStatusLine()
     {
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
@@ -584,7 +586,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void OnTimerTick_WhenTheSessionIsAlreadyStopped_ShouldNotStopItAgain()
+    public async Task OnTimerTick_WhenTheSessionIsAlreadyStopped_ShouldNotStopItAgain()
     {
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
@@ -598,11 +600,11 @@ public sealed class TrackerViewModelTests
         timer.RaiseTick();
         timer.RaiseTick();
 
-        repo.GetAll().Should().ContainSingle("only one entry is saved");
+        (await repo.GetAllAsync()).Should().ContainSingle("only one entry is saved");
     }
 
     [Test]
-    public void OnTimerTick_WhenTheSessionIsNotRunning_ShouldNotStopItForIdle()
+    public async Task OnTimerTick_WhenTheSessionIsNotRunning_ShouldNotStopItForIdle()
     {
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
@@ -613,11 +615,11 @@ public sealed class TrackerViewModelTests
         timer.RaiseTick();
 
         vm.IsRunning.Should().BeFalse();
-        repo.GetAll().Should().BeEmpty("nothing was running, so nothing is saved");
+        (await repo.GetAllAsync()).Should().BeEmpty("nothing was running, so nothing is saved");
     }
 
     [Test]
-    public void Start_WhenStartingAgainAfterAnIdleStop_ShouldWorkNormally()
+    public async Task Start_WhenStartingAgainAfterAnIdleStop_ShouldWorkNormally()
     {
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
@@ -634,7 +636,7 @@ public sealed class TrackerViewModelTests
         vm.IsRunning.Should().BeTrue();
         vm.StopCommand.Execute(null);
 
-        repo.GetAll().Should().HaveCount(2, "the idle-stopped session and the new one");
+        (await repo.GetAllAsync()).Should().HaveCount(2, "the idle-stopped session and the new one");
     }
 
     /// <summary>
@@ -643,7 +645,7 @@ public sealed class TrackerViewModelTests
     /// session, so the test lives with the tracker rather than the add-in.
     /// </summary>
     [Test]
-    public void BuildEntry_WhenAPreviewBookingElementIsSet_ShouldUseItForTheNextSessionThenClearIt()
+    public async Task BuildEntry_WhenAPreviewBookingElementIsSet_ShouldUseItForTheNextSessionThenClearIt()
     {
         var (repo, _) = RepositoryFake.Create();
         using var vm = new TrackerViewModel(repo, new FakeTimer(), new FakeIdleTimeProvider());
@@ -653,7 +655,7 @@ public sealed class TrackerViewModelTests
         vm.StartCommand.Execute(null);
         vm.StopCommand.Execute(null);
 
-        repo.GetAll().Single().BookingElement.Should().Be("Quarterly figures");
+        (await repo.GetAllAsync()).Single().BookingElement.Should().Be("Quarterly figures");
         vm.PreviewBookingElement.Should().BeEmpty("the preview is consumed by one session");
     }
 

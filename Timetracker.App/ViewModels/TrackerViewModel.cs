@@ -26,7 +26,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     private readonly Func<DateTimeOffset> _now;
 
     private readonly RelayCommand _startCommand;
-    private readonly RelayCommand _stopCommand;
+    private readonly AsyncRelayCommand _stopCommand;
     private readonly RelayCommand _previousPageCommand;
     private readonly RelayCommand _nextPageCommand;
 
@@ -81,13 +81,15 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         _timer.Tick += OnTimerTick;
 
         _startCommand = new RelayCommand(Start, () => !IsRunning);
-        _stopCommand = new RelayCommand(Stop, () => IsRunning);
+        _stopCommand = new AsyncRelayCommand(Stop, () => IsRunning);
         _previousPageCommand = new RelayCommand(() => GoToPage(CurrentPage - 1), () => CurrentPage > 1);
         _nextPageCommand = new RelayCommand(() => GoToPage(CurrentPage + 1), () => CurrentPage < TotalPages);
 
         StatusText = "Entries are appended to " + _repository.FilePath;
 
-        RefreshEntries();
+        // Load the history in the background; Avalonia posts the continuation back
+        // to the UI thread, so the entries populate as soon as the read completes.
+        _ = RefreshEntriesAsync();
     }
 
     public ICommand StartCommand => _startCommand;
@@ -256,10 +258,10 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
             : $"{rows.Count} tasks ({rows.Sum(r => r.Sessions.Count)} sessions)";
 
     /// <summary>Saves the running entry (if any); called by the view when the app is closing.</summary>
-    public void SaveRunningEntryOnClose()
+    public async Task SaveRunningEntryOnCloseAsync()
     {
         if (IsRunning)
-            HaltAndSave(_now(), _watch.Elapsed);
+            await HaltAndSaveAsync(_now(), _watch.Elapsed);
     }
 
     /// <summary>Puts a suggestion's task name into the input field.</summary>
@@ -269,7 +271,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// Deletes the given rows (all their sessions) from the log after asking the
     /// user to confirm. Returns false when the user declined or the save failed.
     /// </summary>
-    public bool DeleteEntries(IReadOnlyList<EntryRow> rows, Func<string, bool> confirm)
+    public async Task<bool> DeleteEntriesAsync(IReadOnlyList<EntryRow> rows, Func<string, bool> confirm)
     {
         if (rows is null || rows.Count == 0)
         {
@@ -294,18 +296,18 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
         try
         {
-            _repository.Save(remaining);
+            await _repository.SaveAsync(remaining);
 
             Status = TrackerStatus.Success;
             StatusText = $"✓ Deleted {summary}";
-            RefreshEntries();
+            await RefreshEntriesAsync();
             return true;
         }
         catch (Exception ex)
         {
             // Roll back the in-memory state to the pre-delete snapshot.
             _sessions = backup;
-            RefreshEntries();
+            await RefreshEntriesAsync();
 
             ErrorLog.Log("DeleteEntries", ex);
             Status = TrackerStatus.Error;
@@ -320,7 +322,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// refreshes every affected view. Used by the per-item editor: it replaces all
     /// stored sessions of that task with the edited/remaining ones.
     /// </summary>
-    public bool ReplaceSessions(string task, IReadOnlyList<TrackerEntry> sessions)
+    public async Task<bool> ReplaceSessionsAsync(string task, IReadOnlyList<TrackerEntry> sessions)
     {
         var key = task.Trim();
         var unaffected = _sessions
@@ -332,18 +334,18 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
         try
         {
-            _repository.Save(updated);
+            await _repository.SaveAsync(updated);
 
             Status = TrackerStatus.Success;
             StatusText = $"✓ Updated \"{key}\"";
-            RefreshEntries();
+            await RefreshEntriesAsync();
             RevealTask(key);
             return true;
         }
         catch (Exception ex)
         {
             _sessions = backup;
-            RefreshEntries();
+            await RefreshEntriesAsync();
 
             ErrorLog.Log("ReplaceSessions", ex);
             Status = TrackerStatus.Error;
@@ -372,7 +374,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// whole log. Returns false when the edit was rejected (empty task name or
     /// save failure).
     /// </summary>
-    public bool UpdateEntryText(EntryRow row, string task, string bookingElement)
+    public async Task<bool> UpdateEntryTextAsync(EntryRow row, string task, string bookingElement)
     {
         task = task.Trim();
         if (task.Length == 0)
@@ -403,21 +405,21 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         try
         {
             // Rewrite the file with the edited values; existing entries are preserved.
-            _repository.Save(_sessions);
+            await _repository.SaveAsync(_sessions);
 
             row.CommitText(task, bookingElement);
 
             Status = TrackerStatus.Success;
             StatusText = $"✓ Updated \"{task}\"";
 
-            RefreshEntries();
+            await RefreshEntriesAsync();
             RevealTask(task);
             return true;
         }
         catch (Exception ex)
         {
             // The file was not changed; rebuild the in-memory state from it.
-            RefreshEntries();
+            await RefreshEntriesAsync();
 
             ErrorLog.Log("UpdateEntryText", ex);
             Status = TrackerStatus.Error;
@@ -454,21 +456,21 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         RefreshCommands();
     }
 
-    private void Stop()
+    private async Task Stop()
     {
         if (!IsRunning)
             return;
-        HaltAndSave(_now(), _watch.Elapsed);
+        await HaltAndSaveAsync(_now(), _watch.Elapsed);
     }
 
-    private void HaltAndSave(DateTimeOffset endedAt, TimeSpan elapsed)
+    private async Task HaltAndSaveAsync(DateTimeOffset endedAt, TimeSpan elapsed)
     {
         _timer.Stop();
         _watch.Stop();
         IsRunning = false;
         Title = "Timetracker";
 
-        Save(BuildEntry(endedAt, elapsed));
+        await SaveAsync(BuildEntry(endedAt, elapsed));
         PreviewBookingElement = "";
 
         RefreshCommands();
@@ -491,16 +493,16 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         DurationSeconds = Math.Round(elapsed.TotalSeconds, 1),
     };
 
-    private void Save(TrackerEntry entry)
+    private async Task SaveAsync(TrackerEntry entry)
     {
         try
         {
-            _repository.Add(entry);
+            await _repository.AddAsync(entry);
 
             Status = TrackerStatus.Success;
             StatusText = $"✓ Saved {entry.Duration} to {_repository.FilePath}";
 
-            RefreshEntries();
+            await RefreshEntriesAsync();
             RevealTask(entry.Task);
         }
         catch (Exception ex)
@@ -575,9 +577,9 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         _ => "",
     };
 
-    private void RefreshEntries()
+    public async Task RefreshEntriesAsync()
     {
-        _sessions = [.. _repository.GetAll()];
+        _sessions = [.. await _repository.GetAllAsync()];
 
         // One row per distinct task name; durations are summed across its sessions.
         var rows = _sessions
@@ -707,7 +709,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         return SortAscending ? result : -result;
     }
 
-    private void OnTimerTick()
+    private async void OnTimerTick()
     {
         if (!_watch.IsRunning)
         {
@@ -717,7 +719,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         // No input for the threshold: stop and bill only up to the last input.
         if (_idleTime.CurrentIdleTime >= IdleStopThreshold)
         {
-            StopForIdle();
+            await StopForIdleAsync();
             return;
         }
 
@@ -729,7 +731,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// The entry is back-dated to the last input, so the idle stretch is not
     /// counted as work; the status line explains what happened.
     /// </summary>
-    private void StopForIdle()
+    private async Task StopForIdleAsync()
     {
         var idle = _idleTime.CurrentIdleTime;
 
@@ -738,7 +740,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         var endedAt = _now() - idle;
         var worked = endedAt > _startedAt ? endedAt - _startedAt : TimeSpan.Zero;
 
-        HaltAndSave(endedAt, worked);
+        await HaltAndSaveAsync(endedAt, worked);
 
         // Replace the generic save status with an explanation of the idle stop.
         Status = TrackerStatus.Info;

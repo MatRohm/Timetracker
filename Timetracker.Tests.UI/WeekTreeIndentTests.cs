@@ -93,9 +93,9 @@ public sealed class WeekTreeIndentTests
     private sealed class FakeRepo : ITrackerRepository
     {
         public string FilePath => "memory.json";
-        public IReadOnlyList<TrackerEntry> GetAll() => [];
-        public void Add(TrackerEntry entry) { }
-        public void Save(IReadOnlyList<TrackerEntry> e) { }
+        public Task<IReadOnlyList<TrackerEntry>> GetAllAsync() => Task.FromResult<IReadOnlyList<TrackerEntry>>([]);
+        public Task AddAsync(TrackerEntry entry) => Task.CompletedTask;
+        public Task SaveAsync(IReadOnlyList<TrackerEntry> e) => Task.CompletedTask;
     }
 
     private sealed class FakeTimer : IUiTimer

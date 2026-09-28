@@ -75,9 +75,9 @@ public sealed class WeekContributorPlacementTests
     private sealed class FakeRepo : ITrackerRepository
     {
         public string FilePath => "memory.json";
-        public IReadOnlyList<Timetracker.Models.TrackerEntry> GetAll() => [];
-        public void Add(Timetracker.Models.TrackerEntry entry) { }
-        public void Save(IReadOnlyList<Timetracker.Models.TrackerEntry> e) { }
+        public Task<IReadOnlyList<Timetracker.Models.TrackerEntry>> GetAllAsync() => Task.FromResult<IReadOnlyList<Timetracker.Models.TrackerEntry>>([]);
+        public Task AddAsync(Timetracker.Models.TrackerEntry entry) => Task.CompletedTask;
+        public Task SaveAsync(IReadOnlyList<Timetracker.Models.TrackerEntry> e) => Task.CompletedTask;
     }
 
     private sealed class FakeHost : ITrackerUiHost

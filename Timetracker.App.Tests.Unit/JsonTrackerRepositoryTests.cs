@@ -9,12 +9,12 @@ namespace Timetracker.Tests.Unit;
 public sealed class JsonTrackerRepositoryTests
 {
     [Test]
-    public void Add_WhenAnEntryIsAdded_ShouldPersistItToTheJsonFile()
+    public async Task AddAsync_WhenAnEntryIsAdded_ShouldPersistItToTheJsonFile()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
 
-        repo.Add(new TrackerEntry
+        await repo.AddAsync(new TrackerEntry
         {
             Task = "Report",
             Start = new DateTimeOffset(2026, 9, 18, 9, 0, 0, TimeSpan.FromHours(2)),
@@ -25,7 +25,7 @@ public sealed class JsonTrackerRepositoryTests
         });
 
         File.Exists(path).Should().BeTrue();
-        var all = new JsonTrackerRepository(path).GetAll();
+        var all = await new JsonTrackerRepository(path).GetAllAsync();
         all.Should().ContainSingle();
         all[0].Task.Should().Be("Report");
         all[0].BookingElement.Should().Be("quarterly");
@@ -33,44 +33,44 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void Add_WhenEntriesAreAdded_ShouldNeverRemoveExistingOnes()
+    public async Task AddAsync_WhenEntriesAreAdded_ShouldNeverRemoveExistingOnes()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
-        repo.Add(NewEntry("First"));
-        repo.Add(NewEntry("Second"));
-        repo.Add(NewEntry("Third"));
+        await repo.AddAsync(NewEntry("First"));
+        await repo.AddAsync(NewEntry("Second"));
+        await repo.AddAsync(NewEntry("Third"));
 
-        var all = repo.GetAll();
+        var all = await repo.GetAllAsync();
 
         all.Select(e => e.Task).Should().Equal("First", "Second", "Third");
     }
 
     [Test]
-    public void Save_WhenCalled_ShouldRewriteAllEntriesPreservingEachOne()
+    public async Task SaveAsync_WhenCalled_ShouldRewriteAllEntriesPreservingEachOne()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
-        repo.Add(NewEntry("First"));
-        repo.Add(NewEntry("Second"));
+        await repo.AddAsync(NewEntry("First"));
+        await repo.AddAsync(NewEntry("Second"));
 
-        var entries = repo.GetAll().ToList();
+        var entries = (await repo.GetAllAsync()).ToList();
         entries[0].Task = "Renamed";
-        repo.Save(entries);
+        await repo.SaveAsync(entries);
 
-        var all = repo.GetAll();
+        var all = await repo.GetAllAsync();
         all.Should().HaveCount(2, "editing must never delete entries");
         all[0].Task.Should().Be("Renamed");
         all[1].Task.Should().Be("Second");
     }
 
     [Test]
-    public void Save_WhenCalled_ShouldWriteTheVersionMarkerAndOneRecordPerTask()
+    public async Task SaveAsync_WhenCalled_ShouldWriteTheVersionMarkerAndOneRecordPerTask()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
-        repo.Add(NewEntry("Report", bookingElement: "Quarterly"));
-        repo.Add(NewEntry("Report", bookingElement: "Quarterly"));
+        await repo.AddAsync(NewEntry("Report", bookingElement: "Quarterly"));
+        await repo.AddAsync(NewEntry("Report", bookingElement: "Quarterly"));
 
         var text = File.ReadAllText(path);
 
@@ -82,64 +82,64 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void Save_WhenSessionsBelongToTheSameTask_ShouldStoreThemUnderOneRecord()
+    public async Task SaveAsync_WhenSessionsBelongToTheSameTask_ShouldStoreThemUnderOneRecord()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
-        repo.Add(NewEntry("Report", hour: 9));
-        repo.Add(NewEntry("Meeting", hour: 11));
-        repo.Add(NewEntry("Report", hour: 14));
+        await repo.AddAsync(NewEntry("Report", hour: 9));
+        await repo.AddAsync(NewEntry("Meeting", hour: 11));
+        await repo.AddAsync(NewEntry("Report", hour: 14));
 
-        var all = repo.GetAll();
+        var all = await repo.GetAllAsync();
 
         all.Should().HaveCount(3);
         all.Count(e => e.Task == "Report").Should().Be(2);
     }
 
     [Test]
-    public void Save_WhenSessionsAreSaved_ShouldStoreThemOldestFirst()
+    public async Task SaveAsync_WhenSessionsAreSaved_ShouldStoreThemOldestFirst()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
-        repo.Add(NewEntry("Report", hour: 14));
-        repo.Add(NewEntry("Report", hour: 9));
+        await repo.AddAsync(NewEntry("Report", hour: 14));
+        await repo.AddAsync(NewEntry("Report", hour: 9));
 
-        var all = repo.GetAll();
+        var all = await repo.GetAllAsync();
 
         all.Select(e => e.Start.Hour).Should().Equal(9, 14);
     }
 
     [Test]
-    public void Save_WhenATaskHasSeveralBookingElements_ShouldUseTheFirstNonEmptyOne()
+    public async Task SaveAsync_WhenATaskHasSeveralBookingElements_ShouldUseTheFirstNonEmptyOne()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
-        repo.Add(NewEntry("Report", hour: 9, bookingElement: ""));
-        repo.Add(NewEntry("Report", hour: 14, bookingElement: "Quarterly"));
+        await repo.AddAsync(NewEntry("Report", hour: 9, bookingElement: ""));
+        await repo.AddAsync(NewEntry("Report", hour: 14, bookingElement: "Quarterly"));
 
-        var all = repo.GetAll();
+        var all = await repo.GetAllAsync();
 
         all.Should().OnlyContain(e => e.BookingElement == "Quarterly");
     }
 
     [Test]
-    public void Save_WhenTasksDifferOnlyByCase_ShouldMergeThemIntoOneRecord()
+    public async Task SaveAsync_WhenTasksDifferOnlyByCase_ShouldMergeThemIntoOneRecord()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
-        repo.Add(NewEntry("Report"));
-        repo.Add(NewEntry("report"));
+        await repo.AddAsync(NewEntry("Report"));
+        await repo.AddAsync(NewEntry("report"));
 
         File.ReadAllText(path).Split("\"name\":").Length.Should().Be(2,
             "the two spellings are one record");
 
-        var all = repo.GetAll();
+        var all = await repo.GetAllAsync();
         all.Should().HaveCount(2);
         all.Should().OnlyContain(e => e.Task == "Report", "the first spelling is kept");
     }
 
     [Test]
-    public void GetAll_WhenTheBookingElementIsMissing_ShouldReturnItEmpty()
+    public async Task GetAllAsync_WhenTheBookingElementIsMissing_ShouldReturnItEmpty()
     {
         var path = TempPath();
         WriteVersionOne(path, """
@@ -148,13 +148,13 @@ public sealed class JsonTrackerRepositoryTests
             ]
             """);
 
-        var all = new JsonTrackerRepository(path).GetAll();
+        var all = await new JsonTrackerRepository(path).GetAllAsync();
 
         all.Should().ContainSingle().Which.BookingElement.Should().BeEmpty();
     }
 
     [Test]
-    public void GetAll_WhenTheLegacyDescriptionFieldIsPresent_ShouldMapItToTheBookingElement()
+    public async Task GetAllAsync_WhenTheLegacyDescriptionFieldIsPresent_ShouldMapItToTheBookingElement()
     {
         var path = TempPath();
         WriteVersionOne(path, """
@@ -164,20 +164,20 @@ public sealed class JsonTrackerRepositoryTests
             ]
             """);
 
-        var all = new JsonTrackerRepository(path).GetAll();
+        var all = await new JsonTrackerRepository(path).GetAllAsync();
 
         all[0].BookingElement.Should().Be("old note", "the legacy JSON name is migrated");
         all[1].BookingElement.Should().Be("new note", "the current JSON name is preferred");
     }
 
     [Test]
-    public void Save_WhenCalled_ShouldWriteTheBookingElementUnderItsNewName()
+    public async Task SaveAsync_WhenCalled_ShouldWriteTheBookingElementUnderItsNewName()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
-        repo.Add(NewEntry("Report"));
+        await repo.AddAsync(NewEntry("Report"));
 
-        repo.Save(repo.GetAll());
+        await repo.SaveAsync(await repo.GetAllAsync());
 
         var text = File.ReadAllText(path);
         text.Should().Contain("\"bookingElement\"");
@@ -185,9 +185,9 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
-    public void GetAll_WhenTheFileIsMissing_ShouldReturnAnEmptyList()
+    public async Task GetAllAsync_WhenTheFileIsMissing_ShouldReturnAnEmptyList()
     {
-        var all = new JsonTrackerRepository(TempPath()).GetAll();
+        var all = await new JsonTrackerRepository(TempPath()).GetAllAsync();
 
         all.Should().BeEmpty();
     }

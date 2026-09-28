@@ -27,26 +27,27 @@ public sealed class JsonTrackerRepository : ITrackerRepository
 
     public string FilePath => _jsonPath;
 
-    public IReadOnlyList<TrackerEntry> GetAll() => LoadEntries();
+    public async Task<IReadOnlyList<TrackerEntry>> GetAllAsync() => await LoadEntriesAsync();
 
-    public void Add(TrackerEntry entry)
+    public async Task AddAsync(TrackerEntry entry)
     {
-        var entries = LoadEntries();
+        var entries = await LoadEntriesAsync();
         entries.Add(entry);
-        WriteAll(entries);
+        await WriteAllAsync(entries);
     }
 
-    public void Save(IReadOnlyList<TrackerEntry> entries) => WriteAll([.. entries]);
+    public async Task SaveAsync(IReadOnlyList<TrackerEntry> entries) =>
+        await WriteAllAsync([.. entries]);
 
-    private void WriteAll(List<TrackerEntry> entries)
+    private async Task WriteAllAsync(List<TrackerEntry> entries)
     {
         var document = TrackerFileFormat.ToDocument(entries);
         var json = JsonSerializer.Serialize(document, TrackerFileFormat.JsonOptions);
-        WriteText(json);
+        await WriteTextAsync(json);
     }
 
     /// <summary>Writes the file atomically, backing up a previously corrupt file first.</summary>
-    private void WriteText(string json)
+    private async Task WriteTextAsync(string json)
     {
         if (_fileWasCorrupt && File.Exists(_jsonPath))
         {
@@ -56,7 +57,7 @@ public sealed class JsonTrackerRepository : ITrackerRepository
         }
 
         var tempPath = _jsonPath + ".tmp";
-        File.WriteAllText(tempPath, json);
+        await File.WriteAllTextAsync(tempPath, json);
 
         if (File.Exists(_jsonPath))
         {
@@ -68,7 +69,7 @@ public sealed class JsonTrackerRepository : ITrackerRepository
             catch (IOException)
             {
                 // Fall back to a direct write if the replace is not possible.
-                File.WriteAllText(_jsonPath, json);
+                await File.WriteAllTextAsync(_jsonPath, json);
                 File.Delete(tempPath);
             }
         }
@@ -78,14 +79,14 @@ public sealed class JsonTrackerRepository : ITrackerRepository
         }
     }
 
-    private List<TrackerEntry> LoadEntries()
+    private async Task<List<TrackerEntry>> LoadEntriesAsync()
     {
         _fileWasCorrupt = false;
         try
         {
             if (!File.Exists(_jsonPath))
                 return [];
-            var text = File.ReadAllText(_jsonPath);
+            var text = await File.ReadAllTextAsync(_jsonPath);
             if (string.IsNullOrWhiteSpace(text))
                 return [];
             return [.. ReadEntries(text)];

@@ -67,7 +67,7 @@ public sealed class EditEntriesViewModelTests
     }
 
     [Test]
-    public void Save_WhenEditedTimesAreSaved_ShouldPersistThemAndUpdateTheHistoryRow()
+    public async Task Save_WhenEditedTimesAreSaved_ShouldPersistThemAndUpdateTheHistoryRow()
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 18, 9, 30), Entry("Meeting", 18, 11, 60));
@@ -80,16 +80,16 @@ public sealed class EditEntriesViewModelTests
         row.SetEnd(row.End.AddMinutes(30));
         editor.Save();
 
-        vm.ReplaceSessions(item.Task, editor.RemainingEntries()).Should().BeTrue();
+        (await vm.ReplaceSessionsAsync(item.Task, editor.RemainingEntries())).Should().BeTrue();
 
-        var stored = repo.GetAll().Single(e => e.Task == "Report");
+        var stored = (await repo.GetAllAsync()).Single(e => e.Task == "Report");
         stored.DurationSeconds.Should().Be(5400, "30 + 30 minutes are added to the original hour");
         stored.Duration.Should().Be("01:30:00");
         vm.Entries.Single(r => r.Task == "Report").Duration.Should().Be("01:30:00");
     }
 
     [Test]
-    public void Save_WhenAnItemIsSaved_ShouldLeaveOtherItemsUntouched()
+    public async Task Save_WhenAnItemIsSaved_ShouldLeaveOtherItemsUntouched()
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 18, 9, 30), Entry("Meeting", 18, 11, 60));
@@ -99,13 +99,13 @@ public sealed class EditEntriesViewModelTests
         editor.Sessions.Single().SetEnd(editor.Sessions.Single().End.AddMinutes(15));
         editor.Save();
 
-        vm.ReplaceSessions(item.Task, editor.RemainingEntries());
+        await vm.ReplaceSessionsAsync(item.Task, editor.RemainingEntries());
 
-        repo.GetAll().Single(e => e.Task == "Meeting").DurationSeconds.Should().Be(3600);
+        (await repo.GetAllAsync()).Single(e => e.Task == "Meeting").DurationSeconds.Should().Be(3600);
     }
 
     [Test]
-    public void RemoveSession_WhenTheLastSessionIsDeleted_ShouldRemoveTheHistoryRow()
+    public async Task RemoveSession_WhenTheLastSessionIsDeleted_ShouldRemoveTheHistoryRow()
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 18, 9, 30), Entry("Meeting", 18, 11, 60));
@@ -114,14 +114,14 @@ public sealed class EditEntriesViewModelTests
         var editor = new EditEntriesViewModel(item);
 
         editor.RemoveSession(editor.Sessions.Single());
-        vm.ReplaceSessions(item.Task, editor.RemainingEntries());
+        await vm.ReplaceSessionsAsync(item.Task, editor.RemainingEntries());
 
         vm.Entries.Should().ContainSingle().Which.Task.Should().Be("Meeting");
-        repo.GetAll().Should().ContainSingle().Which.Task.Should().Be("Meeting");
+        (await repo.GetAllAsync()).Should().ContainSingle().Which.Task.Should().Be("Meeting");
     }
 
     [Test]
-    public void RemoveSession_WhenOneOfSeveralSessionsIsDeleted_ShouldKeepTheItemWithTheRemainingTime()
+    public async Task RemoveSession_WhenOneOfSeveralSessionsIsDeleted_ShouldKeepTheItemWithTheRemainingTime()
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 18, 9, 30), Entry("Report", 18, 14, 60));
@@ -132,16 +132,16 @@ public sealed class EditEntriesViewModelTests
 
         // Remove the 60-minute session, keep the 30-minute one.
         editor.RemoveSession(editor.Sessions.Single(s => s.DurationSeconds == 3600));
-        vm.ReplaceSessions(item.Task, editor.RemainingEntries());
+        await vm.ReplaceSessionsAsync(item.Task, editor.RemainingEntries());
 
         var row = vm.Entries.Single();
         row.Sessions.Should().ContainSingle();
         row.Duration.Should().Be("00:30:00");
-        repo.GetAll().Should().ContainSingle().Which.DurationSeconds.Should().Be(1800);
+        (await repo.GetAllAsync()).Should().ContainSingle().Which.DurationSeconds.Should().Be(1800);
     }
 
     [Test]
-    public void Save_WhenSessionsAreSaved_ShouldUpdateTheWeekViewTotals()
+    public async Task Save_WhenSessionsAreSaved_ShouldUpdateTheWeekViewTotals()
     {
         // Use today so the session lands in the week the view starts on.
         var today = DateTimeOffset.Now.Date.AddHours(9);
@@ -161,7 +161,7 @@ public sealed class EditEntriesViewModelTests
         row.SetEnd(row.End.AddHours(1));
         editor.Save();
 
-        vm.ReplaceSessions(item.Task, editor.RemainingEntries());
+        await vm.ReplaceSessionsAsync(item.Task, editor.RemainingEntries());
 
         // The edited duration (1:30) shows in the day node of the week tree.
         vm.Week.Days.Single(d => d.IsToday).TotalText.Should().Contain("1:30");

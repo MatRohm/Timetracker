@@ -42,7 +42,7 @@ public sealed class TrackerFileMigratorTests
     }
 
     [Test]
-    public void MigrateIfNeeded_WhenTheFileIsVersionOne_ShouldUpgradeItToVersionTwo()
+    public async Task MigrateIfNeeded_WhenTheFileIsVersionOne_ShouldUpgradeItToVersionTwo()
     {
         var path = TempPath();
         WriteVersionOne(path, """
@@ -65,7 +65,7 @@ public sealed class TrackerFileMigratorTests
         text.Split("\"name\":").Length.Should().Be(3, "Report and Meeting are two records");
 
         // The data survives the migration, grouped as asked.
-        var all = repo.GetAll();
+        var all = await repo.GetAllAsync();
         all.Should().HaveCount(3);
         all.Where(e => e.Task == "Report").Should().OnlyContain(e => e.BookingElement == "Quarterly",
             "the task takes the first non-empty booking element");
@@ -93,11 +93,11 @@ public sealed class TrackerFileMigratorTests
     }
 
     [Test]
-    public void MigrateIfNeeded_WhenThereIsNothingToMigrate_ShouldNotBackUpTheFile()
+    public async Task MigrateIfNeeded_WhenThereIsNothingToMigrate_ShouldNotBackUpTheFile()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
-        repo.Add(NewEntry("Report"));
+        await repo.AddAsync(NewEntry("Report"));
         var migrator = MigratorFor(path);
 
         migrator.MigrateIfNeeded();
@@ -106,11 +106,11 @@ public sealed class TrackerFileMigratorTests
     }
 
     [Test]
-    public void MigrateIfNeeded_WhenTheFileIsAlreadyVersionTwo_ShouldLeaveItUntouched()
+    public async Task MigrateIfNeeded_WhenTheFileIsAlreadyVersionTwo_ShouldLeaveItUntouched()
     {
         var path = TempPath();
         var repo = new JsonTrackerRepository(path);
-        repo.Add(NewEntry("Report"));
+        await repo.AddAsync(NewEntry("Report"));
         var before = File.ReadAllText(path);
         var migrator = MigratorFor(path);
 
@@ -158,13 +158,13 @@ public sealed class TrackerFileMigratorTests
     }
 
     [Test]
-    public void MigrateIfNeeded_WhenTheFileHasAnUnsupportedNewerVersion_ShouldReportItAsCorruptAndNotOverwriteIt()
+    public async Task MigrateIfNeeded_WhenTheFileHasAnUnsupportedNewerVersion_ShouldReportItAsCorruptAndNotOverwriteIt()
     {
         var path = TempPath();
         File.WriteAllText(path, """{ "version": 99, "tasks": [] }""");
         var repo = new JsonTrackerRepository(path);
 
-        repo.GetAll().Should().BeEmpty("an unknown version cannot be read");
+        (await repo.GetAllAsync()).Should().BeEmpty("an unknown version cannot be read");
 
         // Loading must not have destroyed the unknown file.
         File.ReadAllText(path).Should().Contain("\"version\": 99");
