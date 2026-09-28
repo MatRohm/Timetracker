@@ -1,4 +1,4 @@
-namespace Timetracker.ViewModels;
+namespace Timetracker.App.ViewModels;
 
 /// <summary>
 /// One task node in the week tree: a task worked on the day, merged across its

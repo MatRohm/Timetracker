@@ -1,4 +1,4 @@
-using Timetracker.Interfaces;
+using Timetracker.App.Interfaces;
 using AwesomeAssertions;
 using Avalonia;
 using Avalonia.Controls;
@@ -8,11 +8,11 @@ using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using NUnit.Framework;
-using Timetracker.Models;
+using Timetracker.App.Models;
 using Timetracker.Tests.Unit;
-using Timetracker.ViewModels;
-using Timetracker.Views;
-using Timetracker.Views.Components;
+using Timetracker.App.ViewModels;
+using Timetracker.App.Views;
+using Timetracker.App.Views.Components;
 
 namespace Timetracker.Tests.UI;
 

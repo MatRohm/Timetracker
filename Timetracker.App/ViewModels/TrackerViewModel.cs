@@ -1,9 +1,9 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows.Input;
-using Timetracker.Models;
+using Timetracker.App.Models;
 
-namespace Timetracker.ViewModels;
+namespace Timetracker.App.ViewModels;
 
 public sealed class TrackerViewModel : ObservableObject, IDisposable
 {

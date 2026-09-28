@@ -2,9 +2,9 @@ using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Input;
-using Timetracker.ViewModels;
+using Timetracker.App.ViewModels;
 
-namespace Timetracker.Views.Components;
+namespace Timetracker.App.Views.Components;
 
 /// <summary>
 /// The task-name input with its autocomplete list. Typing shows matching known

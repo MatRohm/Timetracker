@@ -1,8 +1,8 @@
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using Timetracker.Models;
+using Timetracker.App.Models;
 
-namespace Timetracker.Services;
+namespace Timetracker.App.Services;
 
 /// <summary>
 /// Maps between the in-memory sessions (<see cref="TrackerEntry"/>, one per

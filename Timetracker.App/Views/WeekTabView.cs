@@ -3,10 +3,10 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Timetracker.ViewModels;
-using Timetracker.Views.Components;
+using Timetracker.App.ViewModels;
+using Timetracker.App.Views.Components;
 
-namespace Timetracker.Views;
+namespace Timetracker.App.Views;
 
 /// <summary>
 /// Week view tab: composes the week header/toolbar, the seven day columns and the

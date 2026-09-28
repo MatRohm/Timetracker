@@ -1,8 +1,8 @@
 using System.Text.Json;
-using Timetracker.Interfaces;
-using Timetracker.Models;
+using Timetracker.App.Interfaces;
+using Timetracker.App.Models;
 
-namespace Timetracker.Services;
+namespace Timetracker.App.Services;
 
 /// <summary>
 /// JSON persistence for the time entries. The file carries a version marker

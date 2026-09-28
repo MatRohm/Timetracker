@@ -1,4 +1,4 @@
-namespace Timetracker.ViewModels;
+namespace Timetracker.App.ViewModels;
 
 public enum TrackerStatus
 {

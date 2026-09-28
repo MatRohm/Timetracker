@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
 
-namespace Timetracker.ViewModels;
+namespace Timetracker.App.ViewModels;
 
 /// <summary>
 /// State and behavior of the per-item editor dialog: shows every session of one

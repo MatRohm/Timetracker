@@ -1,4 +1,4 @@
-namespace Timetracker.Services;
+namespace Timetracker.App.Services;
 
 /// <summary>
 /// Append-only error log next to the executable (execution directory). Every entry

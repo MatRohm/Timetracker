@@ -1,6 +1,6 @@
-using Timetracker.Models;
+using Timetracker.App.Models;
 
-namespace Timetracker.Interfaces;
+namespace Timetracker.App.Interfaces;
 
 /// <summary>
 /// Reads and writes the tracker entries. The concrete repository owns the file

@@ -1,6 +1,6 @@
 using Avalonia;
 
-namespace Timetracker;
+namespace Timetracker.App;
 
 /// <summary>Process entry point; all application behavior lives in <see cref="App"/>.</summary>
 internal static class Program

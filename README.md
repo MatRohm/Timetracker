@@ -328,8 +328,8 @@ Every project that defines interfaces keeps them in its `Interfaces/` folder
 one place. An architecture rule enforces this.
 
 The app project keeps the assembly name `Timetracker`, so the shipped executable
-is still `Timetracker` (`Timetracker.exe` on Windows). Only the project folder and
-file changed. C# namespaces remain `Timetracker.*` for the same reason.
+is still `Timetracker` (`Timetracker.exe` on Windows). The C# namespaces use the
+project name (`Timetracker.App.*`).
 
 Test projects follow the `<ProjectName>.Tests.<TestType>` convention and are
 kept next to the project they cover (one test project per source project where

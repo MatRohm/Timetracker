@@ -1,8 +1,8 @@
 using System.Globalization;
 using System.Windows.Input;
-using Timetracker.Models;
+using Timetracker.App.Models;
 
-namespace Timetracker.ViewModels;
+namespace Timetracker.App.ViewModels;
 
 /// <summary>
 /// One day node in the week tree: the weekday caption, the day's summed time and

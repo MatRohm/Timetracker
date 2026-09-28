@@ -5,9 +5,9 @@ using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Threading;
-using Timetracker.ViewModels;
+using Timetracker.App.ViewModels;
 
-namespace Timetracker.Views.Components;
+namespace Timetracker.App.Views.Components;
 
 /// <summary>
 /// The sortable, inline-editable history grid with its per-row actions (open the

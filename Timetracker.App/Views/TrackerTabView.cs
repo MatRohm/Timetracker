@@ -4,10 +4,10 @@ using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Timetracker.ViewModels;
-using Timetracker.Views.Components;
+using Timetracker.App.ViewModels;
+using Timetracker.App.Views.Components;
 
-namespace Timetracker.Views;
+namespace Timetracker.App.Views;
 
 /// <summary>
 /// Tracker tab: composes the task input (with autocomplete), the start/stop toolbar

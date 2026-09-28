@@ -3,7 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 
-namespace Timetracker.Views.Components;
+namespace Timetracker.App.Views.Components;
 
 /// <summary>
 /// Modal confirmations shared by the tracker views. Kept out of the components so

@@ -1,8 +1,8 @@
 using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Contracts.Interfaces;
-using Timetracker.ViewModels;
+using Timetracker.App.ViewModels;
 
-namespace Timetracker.Services;
+namespace Timetracker.App.Services;
 
 /// <summary>
 /// Host implementation for the tracker tab: forwards an add-in's requests to the

@@ -1,4 +1,4 @@
-namespace Timetracker.Models;
+namespace Timetracker.App.Models;
 
 public sealed class TrackerEntry
 {

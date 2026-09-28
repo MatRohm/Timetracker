@@ -1,4 +1,4 @@
-namespace Timetracker.ViewModels;
+namespace Timetracker.App.ViewModels;
 
 /// <summary>
 /// Duration formatting shared by the week view: the short "h:mm" form the week

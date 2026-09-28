@@ -1,6 +1,6 @@
 using System.Windows.Input;
 
-namespace Timetracker.ViewModels;
+namespace Timetracker.App.ViewModels;
 
 /// <summary>
 /// One booking element node in the week tree: the element's name (or "&lt;None&gt;"

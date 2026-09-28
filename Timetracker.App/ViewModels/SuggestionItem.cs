@@ -1,4 +1,4 @@
-namespace Timetracker.ViewModels;
+namespace Timetracker.App.ViewModels;
 
 /// <summary>One autocomplete suggestion: a known task name and its total time.</summary>
 public sealed class SuggestionItem

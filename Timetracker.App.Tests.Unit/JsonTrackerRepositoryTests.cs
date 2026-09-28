@@ -1,7 +1,7 @@
 using NUnit.Framework;
 using AwesomeAssertions;
-using Timetracker.Models;
-using Timetracker.Services;
+using Timetracker.App.Models;
+using Timetracker.App.Services;
 
 namespace Timetracker.Tests.Unit;
 

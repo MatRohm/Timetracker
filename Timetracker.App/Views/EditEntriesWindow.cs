@@ -4,9 +4,9 @@ using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Timetracker.ViewModels;
+using Timetracker.App.ViewModels;
 
-namespace Timetracker.Views;
+namespace Timetracker.App.Views;
 
 /// <summary>
 /// Dialog for one tracking item (a history row's task): lists every session with

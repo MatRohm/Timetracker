@@ -1,14 +1,14 @@
-using Timetracker.Interfaces;
+using Timetracker.App.Interfaces;
 using Timetracker.Plugins.Contracts.Interfaces;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml.Styling;
 using Microsoft.Extensions.DependencyInjection;
-using Timetracker.Services;
-using Timetracker.Views;
+using Timetracker.App.Services;
+using Timetracker.App.Views;
 
-namespace Timetracker;
+namespace Timetracker.App;
 
 /// <summary>
 /// Avalonia application entry point and composition root. Global error handling

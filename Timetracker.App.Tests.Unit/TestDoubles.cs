@@ -1,9 +1,9 @@
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
-using Timetracker.Interfaces;
+using Timetracker.App.Interfaces;
 using FakeItEasy;
-using Timetracker.Models;
-using Timetracker.Services;
-using Timetracker.ViewModels;
+using Timetracker.App.Models;
+using Timetracker.App.Services;
+using Timetracker.App.ViewModels;
 
 namespace Timetracker.Tests.Unit;
 

@@ -1,8 +1,8 @@
 using System.Text.Json;
-using Timetracker.Interfaces;
-using Timetracker.Models;
+using Timetracker.App.Interfaces;
+using Timetracker.App.Models;
 
-namespace Timetracker.Services;
+namespace Timetracker.App.Services;
 
 /// <summary>
 /// Upgrades a tracker file to the current version by applying migration steps in

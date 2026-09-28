@@ -1,4 +1,4 @@
-using Timetracker.Interfaces;
+using Timetracker.App.Interfaces;
 using AwesomeAssertions;
 using Avalonia;
 using Avalonia.Controls;
@@ -7,9 +7,9 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using NUnit.Framework;
 using Timetracker.Tests.Unit;
-using Timetracker.ViewModels;
-using Timetracker.Views;
-using Timetracker.Views.Components;
+using Timetracker.App.ViewModels;
+using Timetracker.App.Views;
+using Timetracker.App.Views.Components;
 
 namespace Timetracker.Tests.UI;
 
@@ -58,8 +58,8 @@ public sealed class WeekContributorPlacementTests
     private sealed class FakeRepo : ITrackerRepository
     {
         public string FilePath => "memory.json";
-        public Task<IReadOnlyList<Timetracker.Models.TrackerEntry>> GetAllAsync() => Task.FromResult<IReadOnlyList<Timetracker.Models.TrackerEntry>>([]);
-        public Task AddAsync(Timetracker.Models.TrackerEntry entry) => Task.CompletedTask;
-        public Task SaveAsync(IReadOnlyList<Timetracker.Models.TrackerEntry> e) => Task.CompletedTask;
+        public Task<IReadOnlyList<Timetracker.App.Models.TrackerEntry>> GetAllAsync() => Task.FromResult<IReadOnlyList<Timetracker.App.Models.TrackerEntry>>([]);
+        public Task AddAsync(Timetracker.App.Models.TrackerEntry entry) => Task.CompletedTask;
+        public Task SaveAsync(IReadOnlyList<Timetracker.App.Models.TrackerEntry> e) => Task.CompletedTask;
     }
 }

@@ -1,7 +1,7 @@
 using System.Globalization;
-using Timetracker.Models;
+using Timetracker.App.Models;
 
-namespace Timetracker.ViewModels;
+namespace Timetracker.App.ViewModels;
 
 /// <summary>
 /// One editable session inside the per-item editor. The start and end are staged

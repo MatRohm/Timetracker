@@ -1,4 +1,4 @@
-namespace Timetracker.Models;
+namespace Timetracker.App.Models;
 
 /// <summary>
 /// The versioned, human-readable tracker file: one record per task with its name,

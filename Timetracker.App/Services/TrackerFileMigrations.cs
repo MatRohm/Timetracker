@@ -1,8 +1,8 @@
 using System.Text.Json;
-using Timetracker.Models;
-using Timetracker.Interfaces;
+using Timetracker.App.Models;
+using Timetracker.App.Interfaces;
 
-namespace Timetracker.Services;
+namespace Timetracker.App.Services;
 
 /// <summary>
 /// Migrates the unversioned version-1 file (a flat array of sessions) to version 2

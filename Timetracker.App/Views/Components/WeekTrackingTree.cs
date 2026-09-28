@@ -4,9 +4,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Timetracker.ViewModels;
+using Timetracker.App.ViewModels;
 
-namespace Timetracker.Views.Components;
+namespace Timetracker.App.Views.Components;
 
 /// <summary>
 /// The week's tracking tree: one collapsible day node per weekday (Monday first),

@@ -1,4 +1,4 @@
-namespace Timetracker.ViewModels;
+namespace Timetracker.App.ViewModels;
 
 /// <summary>
 /// Severity of a status message shown in the week view's shared status line. Mirrors

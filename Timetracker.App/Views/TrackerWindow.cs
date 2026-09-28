@@ -1,8 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Platform;
-using Timetracker.ViewModels;
+using Timetracker.App.ViewModels;
 
-namespace Timetracker.Views;
+namespace Timetracker.App.Views;
 
 /// <summary>
 /// Application shell: hosts the tracker and week tabs, binds the window title and

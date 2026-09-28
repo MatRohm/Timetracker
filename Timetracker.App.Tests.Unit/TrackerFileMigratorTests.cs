@@ -1,8 +1,8 @@
-using Timetracker.Interfaces;
+using Timetracker.App.Interfaces;
 using AwesomeAssertions;
 using NUnit.Framework;
-using Timetracker.Models;
-using Timetracker.Services;
+using Timetracker.App.Models;
+using Timetracker.App.Services;
 
 namespace Timetracker.Tests.Unit;
 

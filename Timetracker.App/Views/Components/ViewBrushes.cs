@@ -1,6 +1,6 @@
 using Avalonia.Media;
 
-namespace Timetracker.Views.Components;
+namespace Timetracker.App.Views.Components;
 
 /// <summary>
 /// Shared brushes for the view layer, so the same colors are defined once and used

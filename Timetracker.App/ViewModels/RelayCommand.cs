@@ -1,6 +1,6 @@
 using System.Windows.Input;
 
-namespace Timetracker.ViewModels;
+namespace Timetracker.App.ViewModels;
 
 /// <summary>
 /// Basic <see cref="ICommand"/> implementation. The view model calls

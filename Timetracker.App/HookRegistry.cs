@@ -1,8 +1,8 @@
-using Timetracker.Interfaces;
+using Timetracker.App.Interfaces;
 using Timetracker.Plugins.Contracts.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Timetracker;
+namespace Timetracker.App;
 
 /// <summary>
 /// Single place where every component registers itself with the DI container.

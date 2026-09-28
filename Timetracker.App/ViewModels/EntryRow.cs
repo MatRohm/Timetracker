@@ -1,6 +1,6 @@
-using Timetracker.Models;
+using Timetracker.App.Models;
 
-namespace Timetracker.ViewModels;
+namespace Timetracker.App.ViewModels;
 
 /// <summary>
 /// Display and edit row for one task in the history list. A row aggregates every

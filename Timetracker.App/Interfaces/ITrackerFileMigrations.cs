@@ -1,6 +1,6 @@
-using Timetracker.Models;
+using Timetracker.App.Models;
 
-namespace Timetracker.Interfaces;
+namespace Timetracker.App.Interfaces;
 
 /// <summary>
 /// One step in upgrading a tracker file. Each step reads one version and produces
