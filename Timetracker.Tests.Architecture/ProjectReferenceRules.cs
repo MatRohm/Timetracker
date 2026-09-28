@@ -19,7 +19,7 @@ public sealed class ProjectReferenceRules
     private const string AppProject = "Timetracker.App";
 
     /// <summary>The only product project a non-App product project may reference.</summary>
-    private const string PluginsProject = "Timetracker.Plugins";
+    private const string PluginsProject = "Timetracker.Plugins.Contracts";
 
     /// <summary>The architecture project itself, which builds every project to analyse it.</summary>
     private const string ArchitectureProject = "Timetracker.Tests.Architecture";
@@ -66,7 +66,7 @@ public sealed class ProjectReferenceRules
 
         IsTest(uiTest.Name).Should().BeTrue("UI tests are a test project");
         IsTest(unitTest.Name).Should().BeTrue("unit tests are a test project");
-        uiTest.References("Timetracker.AzureDevOps").Should().BeTrue(
+        uiTest.References("Timetracker.Plugins.AzureDevOps").Should().BeTrue(
             "the UI test project references the add-in it renders, which the rules must allow");
     }
 

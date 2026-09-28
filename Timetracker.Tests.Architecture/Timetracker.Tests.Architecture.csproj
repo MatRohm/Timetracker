@@ -25,24 +25,24 @@
     test host for analysis.
   -->
   <ItemGroup>
-    <ProjectReference Include="..\Timetracker.Plugins\Timetracker.Plugins.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Timetracker.Plugins.Contracts\Timetracker.Plugins.Contracts.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Timetracker.App\Timetracker.App.csproj" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="..\Timetracker.AzureDevOps\Timetracker.AzureDevOps.csproj" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="..\Timetracker.ActivityMonitor\Timetracker.ActivityMonitor.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Timetracker.Plugins.AzureDevOps\Timetracker.Plugins.AzureDevOps.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Timetracker.Plugins.ActivityMonitor\Timetracker.Plugins.ActivityMonitor.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Timetracker.App.Tests.Unit\Timetracker.App.Tests.Unit.csproj" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="..\Timetracker.AzureDevOps.Tests.Unit\Timetracker.AzureDevOps.Tests.Unit.csproj" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="..\Timetracker.ActivityMonitor.Tests.Unit\Timetracker.ActivityMonitor.Tests.Unit.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Timetracker.Plugins.AzureDevOps.Tests.Unit\Timetracker.Plugins.AzureDevOps.Tests.Unit.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Timetracker.Plugins.ActivityMonitor.Tests.Unit\Timetracker.Plugins.ActivityMonitor.Tests.Unit.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Timetracker.Tests.UI\Timetracker.Tests.UI.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
     <AnalysisAssembly Include="..\Timetracker.App\bin\$(Configuration)\$(TargetFramework)\Timetracker.dll" />
-    <AnalysisAssembly Include="..\Timetracker.Plugins\bin\$(Configuration)\$(TargetFramework)\Timetracker.Plugins.dll" />
-    <AnalysisAssembly Include="..\Timetracker.AzureDevOps\bin\$(Configuration)\$(TargetFramework)\Timetracker.AzureDevOps.dll" />
-    <AnalysisAssembly Include="..\Timetracker.ActivityMonitor\bin\$(Configuration)\$(TargetFramework)\Timetracker.ActivityMonitor.dll" />
+    <AnalysisAssembly Include="..\Timetracker.Plugins.Contracts\bin\$(Configuration)\$(TargetFramework)\Timetracker.Plugins.Contracts.dll" />
+    <AnalysisAssembly Include="..\Timetracker.Plugins.AzureDevOps\bin\$(Configuration)\$(TargetFramework)\Timetracker.Plugins.AzureDevOps.dll" />
+    <AnalysisAssembly Include="..\Timetracker.Plugins.ActivityMonitor\bin\$(Configuration)\$(TargetFramework)\Timetracker.Plugins.ActivityMonitor.dll" />
     <AnalysisAssembly Include="..\Timetracker.App.Tests.Unit\bin\$(Configuration)\$(TargetFramework)\Timetracker.App.Tests.Unit.dll" />
-    <AnalysisAssembly Include="..\Timetracker.AzureDevOps.Tests.Unit\bin\$(Configuration)\$(TargetFramework)\Timetracker.AzureDevOps.Tests.Unit.dll" />
-    <AnalysisAssembly Include="..\Timetracker.ActivityMonitor.Tests.Unit\bin\$(Configuration)\$(TargetFramework)\Timetracker.ActivityMonitor.Tests.Unit.dll" />
+    <AnalysisAssembly Include="..\Timetracker.Plugins.AzureDevOps.Tests.Unit\bin\$(Configuration)\$(TargetFramework)\Timetracker.Plugins.AzureDevOps.Tests.Unit.dll" />
+    <AnalysisAssembly Include="..\Timetracker.Plugins.ActivityMonitor.Tests.Unit\bin\$(Configuration)\$(TargetFramework)\Timetracker.Plugins.ActivityMonitor.Tests.Unit.dll" />
     <AnalysisAssembly Include="..\Timetracker.Tests.UI\bin\$(Configuration)\$(TargetFramework)\Timetracker.Tests.UI.dll" />
   </ItemGroup>
 

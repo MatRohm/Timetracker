@@ -1,4 +1,4 @@
-using Timetracker.ActivityMonitor.Interfaces;
+using Timetracker.Plugins.ActivityMonitor.Interfaces;
 using Timetracker.Interfaces;
 using FakeItEasy;
 using Timetracker.Models;

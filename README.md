@@ -138,7 +138,7 @@ sessions — other tasks are untouched, and the history and week view stay in sy
 ## Azure DevOps integration
 
 The tracker can fetch task names from Azure DevOps work items. The integration
-lives in its own project (`Timetracker.AzureDevOps`) and adds an
+lives in its own project (`Timetracker.Plugins.AzureDevOps`) and adds an
 **Azure DevOps issue** band to the tracker tab: enter an issue number and press
 **⇩ Apply** (or **Enter**).
 
@@ -150,7 +150,7 @@ which is used for the next started session on that task.
 
 Create **`timetracker-azdo.json`** in your user folder
 (`%USERPROFILE%` on Windows, `$HOME` on Linux). An example file lives at
-`Timetracker.AzureDevOps/timetracker-azdo.example.json`:
+`Timetracker.Plugins.AzureDevOps/timetracker-azdo.example.json`:
 
 ```json
 {
@@ -170,7 +170,7 @@ attempts fail with a clear message; the tracker works normally without it.
 
 ## PC activity monitor
 
-The separate project **`Timetracker.ActivityMonitor`** records when the computer
+The separate project **`Timetracker.Plugins.ActivityMonitor`** records when the computer
 is actively used: it watches for idle periods and writes one JSON span per period
 to **`timetracker-activity.json`** in your user folder (`%USERPROFILE%` on
 Windows, `$HOME` on Linux).
@@ -186,7 +186,7 @@ Idle detection is platform-specific: Windows uses the Win32 last-input timestamp
 where neither is available the monitor still records active time, it just never
 detects idle.
 
-The monitor keeps a plain-text log **`Timetracker.ActivityMonitor.log` next to its
+The monitor keeps a plain-text log **`Timetracker.Plugins.ActivityMonitor.log` next to its
 executable**: one timestamped entry per event, tagged with the method that wrote it
 (startup, a polling heartbeat every five minutes, state-file handling, and
 shutdown).
@@ -253,14 +253,16 @@ untouched rather than overwritten.
 
 ## Project structure (MVVM + add-in hooks)
 
-The solution follows a small hook system: `Timetracker.Plugins` defines the
+The solution follows a small hook system: `Timetracker.Plugins.Contracts` defines the
 interfaces (`IUiContributor` for tab UI bands, `IWeekDayContributor` for per-day
 summary lines, `IAppHook` for startup/close, plus host interfaces the add-ins
 call). Every add-in registers its services in **one** place —
 `Timetracker/HookRegistry.cs` — which builds a
 `Microsoft.Extensions.DependencyInjection` container. The shell and tab views
 resolve only the hook interfaces, never concrete add-in types; add-ins never
-reference the main app project (they get hosts via `UiHostAccessor`).
+reference the main app project (they receive the host interfaces
+`ITrackerUiHost` / `IWeekStatusHost` through the container, which the app
+implements).
 
 ```
 Timetracker/
@@ -307,22 +309,22 @@ Timetracker/
 │   ├── App.cs                       # Composition root: container, hooks, error handling
 │   ├── Program.cs                   # Entry point (Avalonia bootstrap)
 │   └── Timetracker.App.csproj
-├── Timetracker.Plugins/             # Hook interfaces (no logic)
+├── Timetracker.Plugins.Contracts/   # Hook interfaces + host contracts (no logic)
 │   └── Interfaces/                  # IUiContributor, IAppHook, ITrackerUiHost, ...
-├── Timetracker.AzureDevOps/         # Add-in: work item import (issue number → fields)
-├── Timetracker.ActivityMonitor/     # Add-in: PC active/idle recording (background exe)
+├── Timetracker.Plugins.AzureDevOps/ # Add-in: work item import (issue number → fields)
+├── Timetracker.Plugins.ActivityMonitor/ # Add-in: PC active/idle recording (background exe)
 │   └── Interfaces/                  # IActivityMonitorInstaller, IIdleTimeProvider
 ├── Timetracker.slnx                 # XML solution (app + add-ins + tests)
 ├── Timetracker.App.Tests.Unit/      # App unit tests (view models, services)
-├── Timetracker.AzureDevOps.Tests.Unit/  # Azure DevOps unit tests (config, client, service)
-├── Timetracker.ActivityMonitor.Tests.Unit/  # Activity monitor unit tests
+├── Timetracker.Plugins.AzureDevOps.Tests.Unit/  # Azure DevOps unit tests (config, client, service)
+├── Timetracker.Plugins.ActivityMonitor.Tests.Unit/  # Activity monitor unit tests
 ├── Timetracker.Tests.UI/            # UI tests: app views + add-in panels (headless Avalonia)
 └── Timetracker.Tests.Architecture/  # Architecture rules (references, test naming)
 ```
 
 Every project that defines interfaces keeps them in its `Interfaces/` folder
-(`Timetracker.Interfaces`, `Timetracker.Plugins.Interfaces`,
-`Timetracker.ActivityMonitor.Interfaces`), so a project's contracts are found in
+(`Timetracker.Interfaces`, `Timetracker.Plugins.Contracts.Interfaces`,
+`Timetracker.Plugins.ActivityMonitor.Interfaces`), so a project's contracts are found in
 one place. An architecture rule enforces this.
 
 The app project keeps the assembly name `Timetracker`, so the shipped executable
@@ -349,7 +351,7 @@ are named `<ClassTested>Tests` and carry `[TestFixture]`.
 the rest of the suite:
 
 - A product project must not reference `Timetracker.App`.
-- A product project other than the app may only reference `Timetracker.Plugins`.
+- A product project other than the app may only reference `Timetracker.Plugins.Contracts`.
 - UI-test methods must follow the naming pattern above.
 - A unit-test class must carry `[TestFixture]` and be named `<ClassTested>Tests`
   after a production class or interface.
@@ -358,7 +360,7 @@ the rest of the suite:
 
 Test projects (`*.Tests.Unit`, `*.Tests.UI`) are exempt from the reference rules:
 they may reference whatever they verify, so the merged UI project can reference
-both `Timetracker.App` and `Timetracker.AzureDevOps`.
+both `Timetracker.App` and `Timetracker.Plugins.AzureDevOps`.
 
 It checks project references against the `.csproj` files and test names through
 ArchUnitNET, so the other projects are built but not referenced (their assemblies
@@ -437,4 +439,4 @@ The app icon (a fist smashing a clock) lives at `Timetracker.App/Timetracker.png
 and `Timetracker.ico`. The PNG is embedded as the window icon (title bar); the ICO
 is set as `<ApplicationIcon>`, which Windows uses for the taskbar, Alt-Tab and
 Explorer. The Azure DevOps favicon is likewise embedded as a PNG
-(`Timetracker.AzureDevOps/azure-favicon.png`).
+(`Timetracker.Plugins.AzureDevOps/azure-favicon.png`).

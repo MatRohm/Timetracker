@@ -1,5 +1,5 @@
 using Timetracker.Interfaces;
-using Timetracker.Plugins.Interfaces;
+using Timetracker.Plugins.Contracts.Interfaces;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;

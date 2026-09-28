@@ -1,5 +1,5 @@
-using Timetracker.Plugins;
-using Timetracker.Plugins.Interfaces;
+using Timetracker.Plugins.Contracts;
+using Timetracker.Plugins.Contracts.Interfaces;
 using Timetracker.ViewModels;
 
 namespace Timetracker.Services;

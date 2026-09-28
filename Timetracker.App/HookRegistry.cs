@@ -1,5 +1,5 @@
 using Timetracker.Interfaces;
-using Timetracker.Plugins.Interfaces;
+using Timetracker.Plugins.Contracts.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Timetracker;
@@ -34,8 +34,8 @@ public static class HookRegistry
                 Services.ErrorLog.Log));
         services.AddSingleton<IUiTimer, Services.AvaloniaUiTimer>();
         // Idle detection comes from the monitor project's platform-specific provider.
-        services.AddSingleton<ActivityMonitor.Interfaces.IIdleTimeProvider>(
-            _ => ActivityMonitor.IdleTimeProvider.CreateForCurrentPlatform());
+        services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IIdleTimeProvider>(
+            _ => Plugins.ActivityMonitor.IdleTimeProvider.CreateForCurrentPlatform());
         services.AddSingleton<ViewModels.TrackerDependencies>(BuildTrackerDependencies);
         services.AddSingleton<ViewModels.TrackerViewModel>();
         services.AddSingleton<ViewModels.WeekViewModel>();
@@ -54,7 +54,7 @@ public static class HookRegistry
     {
         var repository = services.GetRequiredService<ITrackerRepository>();
         var timer = services.GetRequiredService<IUiTimer>();
-        var idleTime = services.GetRequiredService<ActivityMonitor.Interfaces.IIdleTimeProvider>();
+        var idleTime = services.GetRequiredService<Plugins.ActivityMonitor.Interfaces.IIdleTimeProvider>();
         return new ViewModels.TrackerDependencies(
             repository.GetAllAsync,
             repository.AddAsync,
@@ -79,18 +79,18 @@ public static class HookRegistry
         services.AddSingleton<IWeekStatusHost, Services.WeekStatusHost>();
 
         // Azure DevOps import.
-        services.AddSingleton<AzureDevOps.AzureDevOpsConfig>(_ =>
-            AzureDevOps.AzureDevOpsConfig.Load());
-        services.AddSingleton<AzureDevOps.AzureDevOpsService>(sp =>
-            new AzureDevOps.AzureDevOpsService(
-                sp.GetRequiredService<AzureDevOps.AzureDevOpsConfig>()));
-        services.AddSingleton<IUiContributor, AzureDevOps.Views.AzureDevOpsUiContributor>();
+        services.AddSingleton<Plugins.AzureDevOps.AzureDevOpsConfig>(_ =>
+            Plugins.AzureDevOps.AzureDevOpsConfig.Load());
+        services.AddSingleton<Plugins.AzureDevOps.AzureDevOpsService>(sp =>
+            new Plugins.AzureDevOps.AzureDevOpsService(
+                sp.GetRequiredService<Plugins.AzureDevOps.AzureDevOpsConfig>()));
+        services.AddSingleton<IUiContributor, Plugins.AzureDevOps.Views.AzureDevOpsUiContributor>();
 
         // PC activity monitor: activity log, per-day lines, installer UI.
-        services.AddSingleton<ActivityMonitor.ActivityLog>();
-        services.AddSingleton<ActivityMonitor.Interfaces.IActivityMonitorInstaller>(
-            _ => ActivityMonitor.ActivityMonitorInstallerFactory.CreateForCurrentPlatform());
-        services.AddSingleton<IWeekDayContributor, ActivityMonitor.ActivityWeekDayContributor>();
-        services.AddSingleton<IUiContributor, ActivityMonitor.MonitorSetupUiContributor>();
+        services.AddSingleton<Plugins.ActivityMonitor.ActivityLog>();
+        services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IActivityMonitorInstaller>(
+            _ => Plugins.ActivityMonitor.ActivityMonitorInstallerFactory.CreateForCurrentPlatform());
+        services.AddSingleton<IWeekDayContributor, Plugins.ActivityMonitor.ActivityWeekDayContributor>();
+        services.AddSingleton<IUiContributor, Plugins.ActivityMonitor.MonitorSetupUiContributor>();
     }
 }

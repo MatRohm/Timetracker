@@ -1,5 +1,5 @@
-using Timetracker.Plugins;
-using Timetracker.Plugins.Interfaces;
+using Timetracker.Plugins.Contracts;
+using Timetracker.Plugins.Contracts.Interfaces;
 using Timetracker.ViewModels;
 
 namespace Timetracker.Services;
@@ -7,8 +7,8 @@ namespace Timetracker.Services;
 /// <summary>
 /// Host implementation for the tracker tab: forwards an add-in's requests to the
 /// tracker view model, which drives the task input, booking-element preview and
-/// status line through its normal bindings. Replaces the previous static
-/// <c>UiHostAccessor</c> bridge, so the view no longer implements the host itself.
+/// status line through its normal bindings. The add-in resolves this through the
+/// DI container, so the view no longer implements the host itself.
 /// </summary>
 public sealed class TrackerUiHost : ITrackerUiHost
 {

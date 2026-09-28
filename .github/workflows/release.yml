@@ -69,9 +69,9 @@ jobs:
           # below (and gh) expects to find them. Running zip from $WIN_DIR would
           # otherwise drop the zip next to the publish folder and break the release.
           tar -czf "$LINUX_ARCHIVE" \
-            -C "$LINUX_DIR" Timetracker Timetracker.ActivityMonitor
-          (cd "$WIN_DIR" && zip -q "$OLDPWD/$WIN_ARCHIVE" Timetracker.exe Timetracker.ActivityMonitor.exe) || \
-            (cd "$WIN_DIR" && tar -acf "$OLDPWD/$WIN_ARCHIVE" Timetracker.exe Timetracker.ActivityMonitor.exe)
+            -C "$LINUX_DIR" Timetracker Timetracker.Plugins.ActivityMonitor
+          (cd "$WIN_DIR" && zip -q "$OLDPWD/$WIN_ARCHIVE" Timetracker.exe Timetracker.Plugins.ActivityMonitor.exe) || \
+            (cd "$WIN_DIR" && tar -acf "$OLDPWD/$WIN_ARCHIVE" Timetracker.exe Timetracker.Plugins.ActivityMonitor.exe)
 
       - name: Create GitHub Release
         shell: bash

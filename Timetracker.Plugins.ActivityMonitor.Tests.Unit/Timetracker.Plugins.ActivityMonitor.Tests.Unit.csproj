@@ -9,8 +9,6 @@
 
   <ItemGroup>
     <PackageReference Include="AwesomeAssertions" Version="9.6.0" />
-    <PackageReference Include="Avalonia.Headless.NUnit" Version="$(AvaloniaVersion)" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVersion)" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageReference Include="NUnit" Version="4.6.1" />
     <PackageReference Include="NUnit.Analyzers" Version="4.15.0" />
@@ -18,10 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Timetracker.App\Timetracker.App.csproj" />
-    <ProjectReference Include="..\Timetracker.Plugins.AzureDevOps\Timetracker.Plugins.AzureDevOps.csproj" />
-    <!-- Shared test doubles (fakes) live in the app's unit-test project. -->
-    <ProjectReference Include="..\Timetracker.App.Tests.Unit\Timetracker.App.Tests.Unit.csproj" />
+    <ProjectReference Include="..\Timetracker.Plugins.ActivityMonitor\Timetracker.Plugins.ActivityMonitor.csproj" />
   </ItemGroup>
 
 </Project>

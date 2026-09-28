@@ -1,10 +1,10 @@
-using Timetracker.Plugins.Interfaces;
+using Timetracker.Plugins.Contracts.Interfaces;
 using AwesomeAssertions;
 using Avalonia.Headless.NUnit;
 using NUnit.Framework;
-using Timetracker.AzureDevOps;
-using Timetracker.AzureDevOps.Views;
-using Timetracker.Plugins;
+using Timetracker.Plugins.AzureDevOps;
+using Timetracker.Plugins.AzureDevOps.Views;
+using Timetracker.Plugins.Contracts;
 
 namespace Timetracker.Tests.UI;
 
@@ -23,7 +23,7 @@ public sealed class AzureDevOpsPanelRenderTests
 
         panel.ImportButton.Should().NotBeNull();
         var icon = AzureDevOpsPanel.LoadBitmap(
-            "Timetracker.AzureDevOps.azure-favicon.png", 16);
+            "Timetracker.Plugins.AzureDevOps.azure-favicon.png", 16);
         icon.Should().NotBeNull("the favicon is embedded as a PNG resource");
     }
 

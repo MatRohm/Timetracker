@@ -28,9 +28,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Timetracker.AzureDevOps\Timetracker.AzureDevOps.csproj" />
-    <ProjectReference Include="..\Timetracker.ActivityMonitor\Timetracker.ActivityMonitor.csproj" />
-    <ProjectReference Include="..\Timetracker.Plugins\Timetracker.Plugins.csproj" />
+    <ProjectReference Include="..\Timetracker.Plugins.AzureDevOps\Timetracker.Plugins.AzureDevOps.csproj" />
+    <ProjectReference Include="..\Timetracker.Plugins.ActivityMonitor\Timetracker.Plugins.ActivityMonitor.csproj" />
+    <ProjectReference Include="..\Timetracker.Plugins.Contracts\Timetracker.Plugins.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -59,20 +59,20 @@
     platform-specific (no extension on Linux).
   -->
   <PropertyGroup>
-    <ActivityMonitorFileName Condition="'$(RuntimeIdentifier)' == ''">Timetracker.ActivityMonitor</ActivityMonitorFileName>
-    <ActivityMonitorFileName Condition="$(RuntimeIdentifier.StartsWith('win'))">Timetracker.ActivityMonitor.exe</ActivityMonitorFileName>
-    <ActivityMonitorFileName Condition="'$(ActivityMonitorFileName)' == ''">Timetracker.ActivityMonitor</ActivityMonitorFileName>
+    <ActivityMonitorFileName Condition="'$(RuntimeIdentifier)' == ''">Timetracker.Plugins.ActivityMonitor</ActivityMonitorFileName>
+    <ActivityMonitorFileName Condition="$(RuntimeIdentifier.StartsWith('win'))">Timetracker.Plugins.ActivityMonitor.exe</ActivityMonitorFileName>
+    <ActivityMonitorFileName Condition="'$(ActivityMonitorFileName)' == ''">Timetracker.Plugins.ActivityMonitor</ActivityMonitorFileName>
   </PropertyGroup>
 
   <Target Name="PublishActivityMonitor" AfterTargets="Publish">
     <PropertyGroup>
-      <ActivityMonitorOutputDir>$(MSBuildThisFileDirectory)..\Timetracker.ActivityMonitor\bin\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\publish\</ActivityMonitorOutputDir>
+      <ActivityMonitorOutputDir>$(MSBuildThisFileDirectory)..\Timetracker.Plugins.ActivityMonitor\bin\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\publish\</ActivityMonitorOutputDir>
       <ActivityMonitorPublishOut>$(PublishDir)</ActivityMonitorPublishOut>
     </PropertyGroup>
 
     <!-- Publish the monitor for the same RID so its single-file exe sits next to the app. -->
     <MSBuild
-      Projects="$(MSBuildThisFileDirectory)..\Timetracker.ActivityMonitor\Timetracker.ActivityMonitor.csproj"
+      Projects="$(MSBuildThisFileDirectory)..\Timetracker.Plugins.ActivityMonitor\Timetracker.Plugins.ActivityMonitor.csproj"
       Targets="Publish"
       Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=$(SelfContained);PublishSingleFile=$(PublishSingleFile);EnableCompressionInSingleFile=$(EnableCompressionInSingleFile);PublishDir=$(ActivityMonitorOutputDir)" />
 
