@@ -22,8 +22,9 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
     private readonly RelayCommand _startCommand;
     private readonly AsyncRelayCommand _stopCommand;
-    private readonly RelayCommand _previousPageCommand;
-    private readonly RelayCommand _nextPageCommand;
+
+    private readonly SuggestionListViewModel _suggestions = new();
+    private readonly HistoryListViewModel _history = new();
 
     private DateTimeOffset _startedAt;
     private bool _isRunning;
@@ -34,30 +35,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     private TrackerStatus _status = TrackerStatus.Info;
     private string _title = "Timetracker";
 
-    private readonly ObservableCollection<EntryRow> _entries = new();
-    private readonly SuggestionListViewModel _suggestions = new();
     private List<TrackerEntry> _sessions = [];
-    private string _sortColumn = nameof(EntryRow.StartText);
-    private bool _sortAscending;
-
-    /// <summary>Rows shown in the history grid per page; paging appears above this size.</summary>
-    private const int PageSize = 10;
-
-    /// <summary>All rows in sort order, before filtering; the visible page is drawn from the filtered set.</summary>
-    private List<EntryRow> _allRows = [];
-
-    /// <summary>The rows that pass the current filter, in sort order; paging runs over these.</summary>
-    private List<EntryRow> _visibleRows = [];
-
-    private int _currentPage = 1;
-    private int _totalPages = 1;
-
-    /// <summary>
-    /// Per-column filters, keyed by the <see cref="EntryRow"/> property they apply
-    /// to (Task, BookingElement, StartText, EndText). A row must match every filled
-    /// filter; an absent key means that column is unfiltered.
-    /// </summary>
-    private readonly Dictionary<string, string> _columnFilters = new(StringComparer.Ordinal);
 
     /// <summary>Raised when Start was attempted without a task name; the view shows a hint.</summary>
     public event Action? InvalidTaskName;
@@ -77,10 +55,11 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         // (Suggestions / ShowSuggestions) stay live through the forward.
         _suggestions.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
 
+        // Same for the history list: the grid binds to this view model's forwards.
+        _history.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
+
         _startCommand = new RelayCommand(Start, () => !IsRunning);
         _stopCommand = new AsyncRelayCommand(Stop, () => IsRunning);
-        _previousPageCommand = new RelayCommand(() => GoToPage(CurrentPage - 1), () => CurrentPage > 1);
-        _nextPageCommand = new RelayCommand(() => GoToPage(CurrentPage + 1), () => CurrentPage < TotalPages);
 
         StatusText = "Entries are appended to " + _dependencies.FilePath();
 
@@ -166,7 +145,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>Tasks (grouped sessions) of the current history page; refreshed after every save.</summary>
-    public ObservableCollection<EntryRow> Entries => _entries;
+    public ObservableCollection<EntryRow> Entries => _history.Entries;
 
     /// <summary>Autocomplete suggestions for the current task-name input.</summary>
     public ObservableCollection<SuggestionItem> Suggestions => _suggestions.Suggestions;
@@ -178,89 +157,37 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     public WeekViewModel Week { get; } = new();
 
     /// <summary>Property name the history list is currently sorted by.</summary>
-    public string SortColumn
-    {
-        get => _sortColumn;
-        private set => SetProperty(ref _sortColumn, value);
-    }
+    public string SortColumn => _history.SortColumn;
 
-    public bool SortAscending
-    {
-        get => _sortAscending;
-        private set => SetProperty(ref _sortAscending, value);
-    }
+    public bool SortAscending => _history.SortAscending;
 
-    public ICommand PreviousPageCommand => _previousPageCommand;
+    public ICommand PreviousPageCommand => _history.PreviousPageCommand;
 
-    public ICommand NextPageCommand => _nextPageCommand;
+    public ICommand NextPageCommand => _history.NextPageCommand;
 
     /// <summary>1-based page number shown in the history grid.</summary>
-    public int CurrentPage
-    {
-        get => _currentPage;
-        private set
-        {
-            if (SetProperty(ref _currentPage, value))
-            {
-                OnPropertyChanged(nameof(PageText));
-            }
-        }
-    }
+    public int CurrentPage => _history.CurrentPage;
 
-    public int TotalPages
-    {
-        get => _totalPages;
-        private set
-        {
-            if (SetProperty(ref _totalPages, value))
-            {
-                OnPropertyChanged(nameof(HasMultiplePages));
-                OnPropertyChanged(nameof(PageText));
-            }
-        }
-    }
+    public int TotalPages => _history.TotalPages;
 
     /// <summary>True when the history has more than one page of rows.</summary>
-    public bool HasMultiplePages => TotalPages > 1;
+    public bool HasMultiplePages => _history.HasMultiplePages;
 
     /// <summary>Text for the pager label, e.g. "Page 2 of 5".</summary>
-    public string PageText => $"Page {CurrentPage} of {TotalPages}";
+    public string PageText => _history.PageText;
 
     /// <summary>
     /// Sets the filter for one column (by the <see cref="EntryRow"/> property name)
     /// and refreshes the list. Empty clears that column's filter. Filtering spans all
     /// pages, like sorting; a row must match every filled column filter.
     /// </summary>
-    public void SetColumnFilter(string column, string filter)
-    {
-        filter = filter.Trim();
-        var changed = filter.Length == 0
-            ? _columnFilters.Remove(column)
-            : SetOrUpdate(column, filter);
-
-        if (changed)
-        {
-            OnPropertyChanged(nameof(IsFilterActive));
-            ApplyFilter();
-        }
-    }
+    public void SetColumnFilter(string column, string filter) => _history.SetColumnFilter(column, filter);
 
     /// <summary>True while any column filter is set; the view highlights active funnels.</summary>
-    public bool IsFilterActive => _columnFilters.Count > 0;
+    public bool IsFilterActive => _history.IsFilterActive;
 
     /// <summary>True when the given column currently has a filter.</summary>
-    public bool IsColumnFiltered(string column) => _columnFilters.ContainsKey(column);
-
-    private bool SetOrUpdate(string column, string filter)
-    {
-        if (_columnFilters.TryGetValue(column, out var existing) && existing == filter)
-        {
-            return false;
-        }
-
-        _columnFilters[column] = filter;
-        return true;
-    }
+    public bool IsColumnFiltered(string column) => _history.IsColumnFiltered(column);
 
     /// <summary>
     /// Human-readable description of what a delete would remove, e.g.
@@ -354,7 +281,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
             Status = TrackerStatus.Success;
             StatusText = $"✓ Updated \"{key}\"";
             await RefreshEntriesAsync();
-            RevealTask(key);
+            _history.RevealTask(key);
             return true;
         }
         catch (Exception ex)
@@ -428,7 +355,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
             StatusText = $"✓ Updated \"{task}\"";
 
             await RefreshEntriesAsync();
-            RevealTask(task);
+            _history.RevealTask(task);
             return true;
         }
         catch (Exception ex)
@@ -518,7 +445,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
             StatusText = $"✓ Saved {entry.Duration} to {_dependencies.FilePath()}";
 
             await RefreshEntriesAsync();
-            RevealTask(entry.Task);
+            _history.RevealTask(entry.Task);
         }
         catch (Exception ex)
         {
@@ -535,75 +462,15 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// Non-sortable columns (BookingElement) are ignored, so clicking them keeps the
     /// current sort and never produces a sort glyph on a NotSortable column.
     /// </summary>
-    public void ApplySort(string column)
-    {
-        if (column == nameof(EntryRow.BookingElement))
-        {
-            return;
-        }
-
-        if (column == SortColumn)
-        {
-            SortAscending = !SortAscending;
-        }
-        else
-        {
-            SortColumn = column;
-            SortAscending = column is not (nameof(EntryRow.StartText) or nameof(EntryRow.EndText));
-        }
-
-        SortEntries();
-    }
-
-    private void SortEntries()
-    {
-        var rows = _allRows.ToList();
-        rows.Sort(CompareRows);
-        _allRows = rows;
-        ApplyFilter();
-    }
-
-    /// <summary>
-    /// Recomputes the visible rows from the column filters and shows the first page
-    /// of them. Called whenever the rows or a filter change.
-    /// </summary>
-    private void ApplyFilter()
-    {
-        _visibleRows = _columnFilters.Count == 0
-            ? [.. _allRows]
-            : [.. _allRows.Where(MatchesFilters)];
-
-        CurrentPage = 1;
-        FillEntries();
-    }
-
-    /// <summary>A row passes when every filled column filter matches its column's text.</summary>
-    private bool MatchesFilters(EntryRow row) =>
-        _columnFilters.All(filter => ColumnValue(row, filter.Key)
-            .Contains(filter.Value, StringComparison.CurrentCultureIgnoreCase));
-
-    /// <summary>The text a filter on the given column compares against.</summary>
-    private static string ColumnValue(EntryRow row, string column) => column switch
-    {
-        nameof(EntryRow.Task) => row.Task,
-        nameof(EntryRow.BookingElement) => row.BookingElement,
-        nameof(EntryRow.StartText) => row.StartText,
-        nameof(EntryRow.EndText) => row.EndText,
-        _ => "",
-    };
+    public void ApplySort(string column) => _history.ApplySort(column);
 
     public async Task RefreshEntriesAsync()
     {
         _sessions = [.. await _dependencies.LoadEntries()];
 
-        // One row per distinct task name; durations are summed across its sessions.
-        var rows = _sessions
-            .GroupBy(e => e.Task.Trim(), StringComparer.CurrentCultureIgnoreCase)
-            .Select(g => new EntryRow([.. g]))
-            .ToList();
-        rows.Sort(CompareRows);
-        _allRows = rows;
-        ApplyFilter();
+        // The history list groups the sessions into one row per task, applies the
+        // active sort and filter, and pages the result.
+        _history.SetSessions(_sessions);
 
         // Keep the week view in sync with the session log and text edits.
         Week.UpdateSessions(_sessions);
@@ -611,95 +478,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         RefreshSuggestions();
     }
 
-    /// <summary>Shows the current page of the visible (filtered) rows.</summary>
-    private void FillEntries()
-    {
-        TotalPages = Math.Max(1, (_visibleRows.Count + PageSize - 1) / PageSize);
-        CurrentPage = Math.Clamp(CurrentPage, 1, TotalPages);
-
-        var pageRows = _visibleRows
-            .Skip((CurrentPage - 1) * PageSize)
-            .Take(PageSize)
-            .ToList();
-
-        // One reset instead of a change event per row, so the grid redraws in one go.
-        Entries.Clear();
-        foreach (var row in pageRows)
-        {
-            Entries.Add(row);
-        }
-
-        RefreshPageCommands();
-    }
-
-    private void GoToPage(int page)
-    {
-        var target = Math.Clamp(page, 1, TotalPages);
-        if (target == CurrentPage)
-        {
-            return;
-        }
-
-        CurrentPage = target;
-        FillEntries();
-    }
-
-    /// <summary>
-    /// Flips to the page containing the row for the given task, so the row the user
-    /// just saved or edited stays visible even if its sort position is on another page.
-    /// Clears a filter that would hide the row, so the reveal always succeeds.
-    /// </summary>
-    private void RevealTask(string task)
-    {
-        var row = _allRows.FirstOrDefault(r =>
-            r.Task.Equals(task.Trim(), StringComparison.CurrentCultureIgnoreCase));
-        if (row is null)
-        {
-            return;
-        }
-
-        // A filter that excludes the row would make it unreachable; drop them all.
-        if (!_visibleRows.Contains(row))
-        {
-            _columnFilters.Clear();
-            OnPropertyChanged(nameof(IsFilterActive));
-            ApplyFilter();
-        }
-
-        var index = _visibleRows.IndexOf(row);
-        if (index < 0)
-        {
-            return;
-        }
-
-        var page = index / PageSize + 1;
-        if (page != CurrentPage)
-        {
-            CurrentPage = page;
-            FillEntries();
-        }
-    }
-
-    private void RefreshPageCommands()
-    {
-        _previousPageCommand.RaiseCanExecuteChanged();
-        _nextPageCommand.RaiseCanExecuteChanged();
-    }
-
     private void RefreshSuggestions() => _suggestions.Refresh(TaskName, _sessions);
-
-    private int CompareRows(EntryRow a, EntryRow b)
-    {
-        var result = SortColumn switch
-        {
-            nameof(EntryRow.Task) => string.Compare(a.Task, b.Task, StringComparison.CurrentCultureIgnoreCase),
-            nameof(EntryRow.Duration) => a.DurationSeconds.CompareTo(b.DurationSeconds),
-            nameof(EntryRow.EndText) => a.End.CompareTo(b.End),
-            _ => a.Start.CompareTo(b.Start),
-        };
-
-        return SortAscending ? result : -result;
-    }
 
     private async void OnTimerTick()
     {
