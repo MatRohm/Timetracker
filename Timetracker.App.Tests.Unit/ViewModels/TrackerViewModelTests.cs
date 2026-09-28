@@ -178,37 +178,6 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void TaskName_WhenTheQueryIsASubstring_ShouldSuggestMatchesWithTotalsAndExcludeExactMatch()
-    {
-        var (repo, _) = RepositoryFake.Create(
-            new TrackerEntry
-            {
-                Task = "Report",
-                Start = new DateTimeOffset(2026, 9, 18, 9, 0, 0, TimeSpan.FromHours(2)),
-                End = new DateTimeOffset(2026, 9, 18, 10, 0, 0, TimeSpan.FromHours(2)),
-                Duration = "01:00:00",
-                DurationSeconds = 3600,
-            },
-            new TrackerEntry
-            {
-                Task = "Meeting",
-                Start = new DateTimeOffset(2026, 9, 18, 11, 0, 0, TimeSpan.FromHours(2)),
-                End = new DateTimeOffset(2026, 9, 18, 11, 30, 0, TimeSpan.FromHours(2)),
-                Duration = "00:30:00",
-                DurationSeconds = 1800,
-            });
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
-
-        vm.TaskName = "rep";
-
-        vm.Suggestions.Should().ContainSingle().Which.Name.Should().Be("Report");
-        vm.Suggestions[0].TotalText.Should().Be("01:00:00");
-
-        vm.TaskName = "report";
-        vm.Suggestions.Should().BeEmpty("an exact match is not suggested");
-    }
-
-    [Test]
     public void AcceptSuggestion_WhenAccepted_ShouldFillTheTaskName()
     {
         var (repo, _) = RepositoryFake.Create(

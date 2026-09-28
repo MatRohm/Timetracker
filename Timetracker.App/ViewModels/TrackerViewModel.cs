@@ -35,7 +35,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     private string _title = "Timetracker";
 
     private readonly ObservableCollection<EntryRow> _entries = new();
-    private readonly ObservableCollection<SuggestionItem> _suggestions = new();
+    private readonly SuggestionListViewModel _suggestions = new();
     private List<TrackerEntry> _sessions = [];
     private string _sortColumn = nameof(EntryRow.StartText);
     private bool _sortAscending;
@@ -72,6 +72,10 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         _dependencies = dependencies;
         _now = now ?? (() => DateTimeOffset.Now);
         _dependencies.SubscribeTick(OnTimerTick);
+
+        // Re-raise the suggestion list's changes so bindings on this view model
+        // (Suggestions / ShowSuggestions) stay live through the forward.
+        _suggestions.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
 
         _startCommand = new RelayCommand(Start, () => !IsRunning);
         _stopCommand = new AsyncRelayCommand(Stop, () => IsRunning);
@@ -165,10 +169,10 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     public ObservableCollection<EntryRow> Entries => _entries;
 
     /// <summary>Autocomplete suggestions for the current task-name input.</summary>
-    public ObservableCollection<SuggestionItem> Suggestions => _suggestions;
+    public ObservableCollection<SuggestionItem> Suggestions => _suggestions.Suggestions;
 
     /// <summary>True while the suggestion list should be shown below the task input.</summary>
-    public bool ShowSuggestions => Suggestions.Count > 0;
+    public bool ShowSuggestions => _suggestions.ShowSuggestions;
 
     /// <summary>Week view: seven weekday columns with week navigation.</summary>
     public WeekViewModel Week { get; } = new();
@@ -682,30 +686,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         _nextPageCommand.RaiseCanExecuteChanged();
     }
 
-    private void RefreshSuggestions()
-    {
-        var typed = TaskName.Trim();
-
-        Suggestions.Clear();
-
-        if (typed.Length > 0)
-        {
-            var matches = _sessions
-                .GroupBy(e => e.Task.Trim(), StringComparer.CurrentCultureIgnoreCase)
-                .Select(g => new SuggestionItem(g.Key, g.Sum(e => e.DurationSeconds)))
-                .Where(s => s.Name.Contains(typed, StringComparison.CurrentCultureIgnoreCase)
-                            && !s.Name.Equals(typed, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(s => s.TotalSeconds)
-                .Take(8);
-
-            foreach (var suggestion in matches)
-            {
-                Suggestions.Add(suggestion);
-            }
-        }
-
-        OnPropertyChanged(nameof(ShowSuggestions));
-    }
+    private void RefreshSuggestions() => _suggestions.Refresh(TaskName, _sessions);
 
     private int CompareRows(EntryRow a, EntryRow b)
     {
