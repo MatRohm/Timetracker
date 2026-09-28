@@ -9,7 +9,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using NUnit.Framework;
 using Timetracker.App.Models;
-using Timetracker.Tests.Unit;
+using Timetracker.App.Tests.Unit;
 using Timetracker.App.ViewModels;
 using Timetracker.App.Views;
 

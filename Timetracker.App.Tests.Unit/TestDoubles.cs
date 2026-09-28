@@ -5,7 +5,7 @@ using Timetracker.App.Models;
 using Timetracker.App.Services;
 using Timetracker.App.ViewModels;
 
-namespace Timetracker.Tests.Unit;
+namespace Timetracker.App.Tests.Unit;
 
 /// <summary>
 /// Manual fake for the UI timer abstraction: <see cref="IUiTimer.Tick"/> is an

@@ -3,7 +3,7 @@ using NUnit.Framework;
 using Timetracker.App.Models;
 using Timetracker.App.ViewModels;
 
-namespace Timetracker.Tests.Unit;
+namespace Timetracker.App.Tests.Unit.ViewModels;
 
 /// <summary>
 /// Behavior of the per-item session editor dialog: it shows every session of one

@@ -3,7 +3,7 @@ using AwesomeAssertions;
 using Timetracker.App.Models;
 using Timetracker.App.Services;
 
-namespace Timetracker.Tests.Unit;
+namespace Timetracker.App.Tests.Unit.Services;
 
 [TestFixture]
 public sealed class JsonTrackerRepositoryTests

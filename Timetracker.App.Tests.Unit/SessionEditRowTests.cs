@@ -3,7 +3,7 @@ using NUnit.Framework;
 using Timetracker.App.Models;
 using Timetracker.App.ViewModels;
 
-namespace Timetracker.Tests.Unit;
+namespace Timetracker.App.Tests.Unit.ViewModels;
 
 /// <summary>
 /// Behavior of one editable session row inside the per-item editor: editing the

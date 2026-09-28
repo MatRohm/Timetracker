@@ -2,7 +2,7 @@ using AwesomeAssertions;
 using NUnit.Framework;
 using Timetracker.App.ViewModels;
 
-namespace Timetracker.Tests.Unit;
+namespace Timetracker.App.Tests.Unit.ViewModels;
 
 [TestFixture]
 public sealed class WeekElementGroupViewModelTests

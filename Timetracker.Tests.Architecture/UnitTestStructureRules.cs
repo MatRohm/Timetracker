@@ -17,6 +17,9 @@ namespace Timetracker.Tests.Architecture;
 /// <item>a test method must be named
 /// <c>&lt;MethodTested&gt;_When&lt;StateCondition&gt;_Should&lt;ExpectedResult&gt;</c>,
 /// where <c>&lt;MethodTested&gt;</c> is a method of that same production type.</item>
+/// <item>a test class must live in the sub-namespace of the type it tests (the
+/// type's namespace relative to its production root), under the test project's
+/// own root namespace (e.g. <c>Timetracker.App.Tests.Unit.ViewModels</c>).</item>
 /// </list>
 /// Helpers and test doubles hold no tests and are therefore ignored.
 /// </summary>
@@ -104,6 +107,39 @@ public sealed class UnitTestStructureRules
             + Environment.NewLine + string.Join(Environment.NewLine, offenders));
     }
 
+    [Test]
+    public void Unit_test_classes_live_in_the_sub_namespace_of_the_class_under_test()
+    {
+        var productionTypes = ProductionTypes();
+        var offenders = new List<string>();
+
+        foreach (var fixture in UnitTestFixtures())
+        {
+            var name = fixture.Name;
+            if (!name.EndsWith("Tests"))
+            {
+                continue; // reported by the class-name rule
+            }
+
+            var tested = name[..^"Tests".Length];
+            var subject = FindProductionType(productionTypes, tested);
+            if (subject is null)
+            {
+                continue; // reported by the class-name rule
+            }
+
+            var expected = ExpectedNamespace(fixture, subject);
+            if (fixture.Namespace?.Name != expected)
+            {
+                offenders.Add($"  {fixture.FullName}: expected {expected}");
+            }
+        }
+
+        offenders.Should().BeEmpty("unit-test classes must live in the sub-namespace "
+            + "of the class under test, but found:"
+            + Environment.NewLine + string.Join(Environment.NewLine, offenders));
+    }
+
     /// <summary>Unit-test classes that contain at least one test method.</summary>
     private static IEnumerable<IType> UnitTestFixtures() =>
         SolutionArchitecture.Instance.Types
@@ -137,6 +173,22 @@ public sealed class UnitTestStructureRules
         return productionTypes.TryGetValue(interfaceName, out var asInterface)
             ? asInterface
             : null;
+    }
+
+    /// <summary>
+    /// The namespace a fixture should live in: the test project's root (its assembly
+    /// name) plus the subject's sub-namespace (its namespace relative to its
+    /// production root).
+    /// </summary>
+    private static string ExpectedNamespace(IType fixture, IType subject)
+    {
+        var root = ProductionNamespaces.RootNamespace(subject.Assembly.Name);
+        var subjectNamespace = subject.Namespace?.Name ?? root;
+        var sub = subjectNamespace.Length > root.Length
+            ? subjectNamespace[(root.Length + 1)..]
+            : "";
+        var result = sub.Length > 0 ? fixture.Assembly.Name + "." + sub : fixture.Assembly.Name;
+        return result;
     }
 
     /// <summary>

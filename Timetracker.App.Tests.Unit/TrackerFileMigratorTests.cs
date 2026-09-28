@@ -4,7 +4,7 @@ using NUnit.Framework;
 using Timetracker.App.Models;
 using Timetracker.App.Services;
 
-namespace Timetracker.Tests.Unit;
+namespace Timetracker.App.Tests.Unit.Services;
 
 /// <summary>
 /// The migrator chains one step per version, so adding a future version means

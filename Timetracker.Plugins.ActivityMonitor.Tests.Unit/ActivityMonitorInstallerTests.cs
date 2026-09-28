@@ -1,7 +1,7 @@
 using AwesomeAssertions;
 using NUnit.Framework;
 
-namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit;
+namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit.Interfaces;
 
 [TestFixture]
 public sealed class ActivityMonitorInstallerTests

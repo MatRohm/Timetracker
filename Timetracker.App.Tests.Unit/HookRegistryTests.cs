@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using Timetracker.App.Services;
 
-namespace Timetracker.Tests.Unit;
+namespace Timetracker.App.Tests.Unit;
 
 /// <summary>
 /// The composition root must register the migration step and its runner against the

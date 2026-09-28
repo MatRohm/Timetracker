@@ -47,13 +47,5 @@ public sealed class InterfaceNamespaceRules
 
     /// <summary>The namespace the interface should live in (its assembly's root + .Interfaces).</summary>
     private static string ExpectedNamespace(Interface type) =>
-        RootNamespace(type.Assembly.Name) + InterfaceNamespaceSuffix;
-
-    /// <summary>
-    /// The assembly's root namespace. The app's assembly is named "Timetracker" but
-    /// its namespaces use the project name "Timetracker.App"; every other project's
-    /// root namespace matches its assembly name.
-    /// </summary>
-    private static string RootNamespace(string assemblyName) =>
-        assemblyName == "Timetracker" ? "Timetracker.App" : assemblyName;
+        ProductionNamespaces.RootNamespace(type.Assembly.Name) + InterfaceNamespaceSuffix;
 }
