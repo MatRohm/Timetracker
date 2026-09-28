@@ -25,6 +25,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
     private readonly SuggestionListViewModel _suggestions = new();
     private readonly HistoryListViewModel _history = new();
+    private readonly EntryEditor _editor;
 
     private DateTimeOffset _startedAt;
     private bool _isRunning;
@@ -57,6 +58,8 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
         // Same for the history list: the grid binds to this view model's forwards.
         _history.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
+
+        _editor = new EntryEditor(_dependencies.SaveEntries, _dependencies.LogError);
 
         _startCommand = new RelayCommand(Start, () => !IsRunning);
         _stopCommand = new AsyncRelayCommand(Stop, () => IsRunning);
@@ -195,9 +198,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// asynchronously without blocking the UI thread.
     /// </summary>
     public static string BuildDeleteSummary(IReadOnlyList<EntryRow> rows) =>
-        rows.Count == 1
-            ? $"\"{rows[0].Task}\" (all {rows[0].Sessions.Count} sessions)"
-            : $"{rows.Count} tasks ({rows.Sum(r => r.Sessions.Count)} sessions)";
+        EntryEditor.BuildDeleteSummary(rows);
 
     /// <summary>Saves the running entry (if any); called by the view when the app is closing.</summary>
     public async Task SaveRunningEntryOnCloseAsync()
@@ -215,47 +216,30 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// </summary>
     public async Task<bool> DeleteEntriesAsync(IReadOnlyList<EntryRow> rows, Func<string, bool> confirm)
     {
-        if (rows is null || rows.Count == 0)
-        {
-            return false;
-        }
-
-        var summary = BuildDeleteSummary(rows);
-        if (!confirm(summary))
-        {
-            return false;
-        }
-
         // Snapshot so a failed save can restore exactly the previous state.
         var backup = _sessions.Select(e => e.Clone()).ToList();
-        var removeKeys = rows.SelectMany(r => r.Sessions)
-            .Select(s => (s.Task, s.Start))
-            .ToHashSet();
+        var result = await _editor.DeleteAsync(rows, _sessions, confirm);
 
-        var remaining = _sessions
-            .Where(s => !removeKeys.Contains((s.Task, s.Start)))
-            .ToList();
-
-        try
+        switch (result.Status)
         {
-            await _dependencies.SaveEntries(remaining);
+            case EntryEditStatus.Declined:
+                return false;
 
-            Status = TrackerStatus.Success;
-            StatusText = $"✓ Deleted {summary}";
-            await RefreshEntriesAsync();
-            return true;
-        }
-        catch (Exception ex)
-        {
-            // Roll back the in-memory state to the pre-delete snapshot.
-            _sessions = backup;
-            await RefreshEntriesAsync();
+            case EntryEditStatus.Saved:
+                Status = TrackerStatus.Success;
+                StatusText = $"✓ Deleted {result.Summary}";
+                await RefreshEntriesAsync();
+                return true;
 
-            _dependencies.LogError("DeleteEntries", ex);
-            Status = TrackerStatus.Error;
-            StatusText = "✗ Delete failed: " + ex.Message;
-            ErrorOccurred?.Invoke("Could not delete the entry:\n" + ex.Message);
-            return false;
+            default:
+                // Roll back the in-memory state to the pre-delete snapshot.
+                _sessions = backup;
+                await RefreshEntriesAsync();
+
+                Status = TrackerStatus.Error;
+                StatusText = "✗ Delete failed: " + result.Error!.Message;
+                ErrorOccurred?.Invoke("Could not delete the entry:\n" + result.Error.Message);
+                return false;
         }
     }
 
@@ -266,35 +250,25 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// </summary>
     public async Task<bool> ReplaceSessionsAsync(string task, IReadOnlyList<SessionEditRow> sessions)
     {
-        var key = task.Trim();
-        var unaffected = _sessions
-            .Where(s => !s.Task.Trim().Equals(key, StringComparison.CurrentCultureIgnoreCase))
-            .Select(s => s.Clone())
-            .ToList();
         var backup = _sessions.Select(e => e.Clone()).ToList();
-        var updated = unaffected.Concat(sessions.Select(s => s.Entry)).ToList();
+        var result = await _editor.ReplaceSessionsAsync(task, sessions, _sessions);
 
-        try
+        if (result.Status == EntryEditStatus.Saved)
         {
-            await _dependencies.SaveEntries(updated);
-
             Status = TrackerStatus.Success;
-            StatusText = $"✓ Updated \"{key}\"";
+            StatusText = $"✓ Updated \"{result.Summary}\"";
             await RefreshEntriesAsync();
-            _history.RevealTask(key);
+            _history.RevealTask(result.Summary);
             return true;
         }
-        catch (Exception ex)
-        {
-            _sessions = backup;
-            await RefreshEntriesAsync();
 
-            _dependencies.LogError("ReplaceSessions", ex);
-            Status = TrackerStatus.Error;
-            StatusText = "✗ Update failed: " + ex.Message;
-            ErrorOccurred?.Invoke("Could not save the changes:\n" + ex.Message);
-            return false;
-        }
+        _sessions = backup;
+        await RefreshEntriesAsync();
+
+        Status = TrackerStatus.Error;
+        StatusText = "✗ Update failed: " + result.Error!.Message;
+        ErrorOccurred?.Invoke("Could not save the changes:\n" + result.Error.Message);
+        return false;
     }
 
     /// <summary>
@@ -318,56 +292,32 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// </summary>
     public async Task<bool> UpdateEntryTextAsync(EntryRow row, string task, string bookingElement)
     {
-        task = task.Trim();
-        if (task.Length == 0)
+        var result = await _editor.UpdateTextAsync(row, task, bookingElement, _sessions);
+
+        switch (result.Status)
         {
-            InvalidTaskName?.Invoke();
-            return false;
-        }
+            case EntryEditStatus.Saved:
+                Status = TrackerStatus.Success;
+                StatusText = $"✓ Updated \"{result.Summary}\"";
+                await RefreshEntriesAsync();
+                _history.RevealTask(result.Summary);
+                return true;
 
-        // Compare against the committed snapshot: the grid binding stages the edited
-        // text in the row BEFORE this method runs, so row.Task/row.BookingElement
-        // already hold the new values and cannot be used to detect a change.
-        var originalTask = row.CommittedTask;
-        var originalBookingElement = row.CommittedBookingElement;
+            case EntryEditStatus.Unchanged:
+                return true;
 
-        if (task == originalTask && bookingElement == originalBookingElement)
-        {
-            // Nothing changed; drop the staged edit and restore the committed text.
-            row.CommitText(originalTask, originalBookingElement);
-            return true;
-        }
+            case EntryEditStatus.InvalidTaskName:
+                InvalidTaskName?.Invoke();
+                return false;
 
-        foreach (var session in row.Sessions)
-        {
-            session.Task = task;
-            session.BookingElement = bookingElement;
-        }
+            default:
+                // The file was not changed; rebuild the in-memory state from it.
+                await RefreshEntriesAsync();
 
-        try
-        {
-            // Rewrite the file with the edited values; existing entries are preserved.
-            await _dependencies.SaveEntries(_sessions);
-
-            row.CommitText(task, bookingElement);
-
-            Status = TrackerStatus.Success;
-            StatusText = $"✓ Updated \"{task}\"";
-
-            await RefreshEntriesAsync();
-            _history.RevealTask(task);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            // The file was not changed; rebuild the in-memory state from it.
-            await RefreshEntriesAsync();
-
-            _dependencies.LogError("UpdateEntryText", ex);
-            Status = TrackerStatus.Error;
-            StatusText = "✗ Update failed: " + ex.Message;
-            ErrorOccurred?.Invoke("Could not save the change:\n" + ex.Message);
-            return false;
+                Status = TrackerStatus.Error;
+                StatusText = "✗ Update failed: " + result.Error!.Message;
+                ErrorOccurred?.Invoke("Could not save the change:\n" + result.Error.Message);
+                return false;
         }
     }
 
