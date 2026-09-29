@@ -77,6 +77,16 @@ public sealed class App : Application
                     .Select(c => c.GetDayText(day))
                     .Where(text => text.Length > 0));
 
+            // The day's active time (e.g. from the PC activity monitor) lets the week
+            // view show what was not tracked. With several sources the longest wins,
+            // since they measure the same computer use.
+            var activitySources = _services.GetServices<IDayActivitySource>().ToArray();
+            viewModel.Week.DayActiveTime = day =>
+                activitySources
+                    .Select(source => source.GetActiveTime(day))
+                    .DefaultIfEmpty(TimeSpan.Zero)
+                    .Max();
+
             var window = new TrackerWindow(viewModel, trackerContributors, weekContributors);
             desktop.MainWindow = window;
 

@@ -3,10 +3,12 @@ using Timetracker.Plugins.Contracts.Interfaces;
 namespace Timetracker.Plugins.ActivityMonitor;
 
 /// <summary>
-/// Contributes the PC activity line to the week view: sums the active/idle
-/// spans of the log per day, shown as e.g. "PC 7:15 active · 1:20 idle".
+/// Feeds the week view from the activity log: the PC activity line per day (e.g.
+/// "PC 7:15 active · 1:20 idle") and the day's active time, which the week view
+/// compares with the booked time. Both come from the same per-day sum of the
+/// log's active/idle spans.
 /// </summary>
-public sealed class ActivityWeekDayContributor : IWeekDayContributor
+public sealed class ActivityWeekDayContributor : IWeekDayContributor, IDayActivitySource
 {
     private readonly ActivityLog _log;
 
@@ -17,25 +19,45 @@ public sealed class ActivityWeekDayContributor : IWeekDayContributor
 
     public string GetDayText(DateOnly day)
     {
-        var spans = _log.GetAll();
+        var (activeSeconds, idleSeconds) = SumDay(day);
+        if (activeSeconds <= 0 && idleSeconds <= 0)
+        {
+            return "";
+        }
+
+        var result = "PC " + HoursMinutes(activeSeconds) + " active";
+        if (idleSeconds > 0)
+        {
+            result += " · " + HoursMinutes(idleSeconds) + " idle";
+        }
+
+        var text = result;
+        return text;
+    }
+
+    public TimeSpan GetActiveTime(DateOnly day)
+    {
+        var (activeSeconds, _) = SumDay(day);
+        var result = TimeSpan.FromSeconds(activeSeconds);
+        return result;
+    }
+
+    /// <summary>
+    /// Sums the active and idle spans of the log that fall on <paramref name="day"/>;
+    /// spans crossing midnight count with their per-day part.
+    /// </summary>
+    private (double ActiveSeconds, double IdleSeconds) SumDay(DateOnly day)
+    {
         var activeSeconds = 0.0;
         var idleSeconds = 0.0;
-        foreach (var span in spans)
+        foreach (var span in _log.GetAll())
         {
-            var spanStart = DateOnly.FromDateTime(span.Start.Date);
-            var spanEnd = DateOnly.FromDateTime(span.End.Date);
-            if (day < spanStart || day > spanEnd)
-            {
-                continue;
-            }
-
-            // Spans crossing midnight count with their per-day part.
-            var overlapStart = span.Start.Date > day.ToDateTime(TimeOnly.MinValue)
-                ? span.Start
-                : new DateTimeOffset(day.ToDateTime(TimeOnly.MinValue), span.Start.Offset);
-            var overlapEnd = span.End.Date < day.ToDateTime(TimeOnly.MinValue).AddDays(1)
-                ? span.End
-                : new DateTimeOffset(day.ToDateTime(TimeOnly.MinValue).AddDays(1), span.End.Offset);
+            // Clip the span to the day by comparing instants, so a span starting
+            // mid-day counts from its start rather than from midnight.
+            var dayStart = new DateTimeOffset(day.ToDateTime(TimeOnly.MinValue), span.Start.Offset);
+            var dayEnd = dayStart.AddDays(1);
+            var overlapStart = span.Start > dayStart ? span.Start : dayStart;
+            var overlapEnd = span.End < dayEnd ? span.End : dayEnd;
             if (overlapEnd <= overlapStart)
             {
                 continue;
@@ -52,19 +74,8 @@ public sealed class ActivityWeekDayContributor : IWeekDayContributor
             }
         }
 
-        if (activeSeconds <= 0 && idleSeconds <= 0)
-        {
-            return "";
-        }
-
-        var result = "PC " + HoursMinutes(activeSeconds) + " active";
-        if (idleSeconds > 0)
-        {
-            result += " · " + HoursMinutes(idleSeconds) + " idle";
-        }
-
-        var text = result;
-        return text;
+        var result = (activeSeconds, idleSeconds);
+        return result;
     }
 
     private static string HoursMinutes(double seconds) =>

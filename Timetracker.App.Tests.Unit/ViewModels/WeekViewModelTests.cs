@@ -138,6 +138,22 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
+    public void UpdateSessions_WhenAnActiveTimeSourceIsWired_ShouldShowEachDaysUntrackedTime()
+    {
+        var week = new WeekViewModel();
+        var monday = DateTimeOffset.Now.Date.AddDays(-(((int)DateTimeOffset.Now.DayOfWeek + 6) % 7));
+        var mondayDate = DateOnly.FromDateTime(monday);
+        week.DayActiveTime = day => day == mondayDate ? TimeSpan.FromMinutes(120) : TimeSpan.Zero;
+
+        week.UpdateSessions([Session(monday, 9, 60, "A")]);
+
+        week.Days[0].ActiveTime.Should().Be(TimeSpan.FromMinutes(120));
+        week.Days[0].UntrackedText.Should().Be("⚠ 1:00 untracked");
+        week.Days.Skip(1).Should().OnlyContain(d => d.UntrackedText.Length == 0,
+            "days without recorded activity show no untracked time");
+    }
+
+    [Test]
     public void PreviousWeekCommand_WhenNavigating_ShouldMoveAFullWeekAndKeepTheSelection()
     {
         var week = new WeekViewModel();

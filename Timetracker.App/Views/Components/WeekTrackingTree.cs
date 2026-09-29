@@ -12,7 +12,8 @@ namespace Timetracker.App.Views.Components;
 /// The week's tracking tree: one collapsible day node per weekday (Monday first),
 /// expanding to that day's booking element groups and, below them, the tasks
 /// worked on that day. The gray per-day contributor line (e.g. PC activity) comes
-/// from <see cref="WeekDayViewModel.ContributorText"/>. Each booking element and
+/// from <see cref="WeekDayViewModel.ContributorText"/>, followed by the day's
+/// untracked time (<see cref="WeekDayViewModel.UntrackedText"/>). Each booking element and
 /// task node carries a copy button that copies the node's task names. View-only;
 /// the tree data lives in <see cref="WeekViewModel"/>.
 /// </summary>
@@ -105,7 +106,7 @@ public sealed class WeekTrackingTree : UserControl
         }
     }
 
-    /// <summary>Day node: expander, caption, the day's sum and the PC activity line.</summary>
+    /// <summary>Day node: expander, caption, the day's sum, the PC activity line and the untracked time.</summary>
     private Control BuildDayNode(WeekDayViewModel day)
     {
         var row = new StackPanel
@@ -145,6 +146,19 @@ public sealed class WeekTrackingTree : UserControl
                 FontStyle = FontStyle.Italic,
                 VerticalAlignment = VerticalAlignment.Center,
             });
+        }
+
+        if (day.UntrackedText.Length > 0)
+        {
+            var untracked = new TextBlock
+            {
+                Text = day.UntrackedText,
+                Foreground = day.IsUntrackedWarning ? ViewBrushes.Warning : ViewBrushes.Info,
+                FontWeight = day.IsUntrackedWarning ? FontWeight.Bold : FontWeight.Normal,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            ToolTip.SetTip(untracked, "PC active time that no tracked session covers");
+            row.Children.Add(untracked);
         }
 
         return row;

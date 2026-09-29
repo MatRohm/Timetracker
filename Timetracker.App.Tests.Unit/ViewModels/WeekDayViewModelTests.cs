@@ -131,6 +131,68 @@ public sealed class WeekDayViewModelTests
         day.Groups.Single().IsExpanded.Should().BeTrue();
     }
 
+    [Test]
+    public void UntrackedText_WhenActiveTimeExceedsTheBookedTimeByTheThreshold_ShouldWarnWithTheDifference()
+    {
+        var day = new WeekDayViewModel();
+        var date = new DateTimeOffset(2026, 9, 21, 0, 0, 0, TimeSpan.FromHours(2));
+        day.Update(date, [Session(date, 9, 60, "A"), Session(date, 14, 30, "B")]);
+
+        day.ActiveTime = TimeSpan.FromMinutes(155);
+
+        day.UntrackedText.Should().Be("⚠ 1:05 untracked");
+        day.IsUntrackedWarning.Should().BeTrue();
+    }
+
+    [Test]
+    public void UntrackedText_WhenTheGapIsBelowTheWarningThreshold_ShouldShowItWithoutWarning()
+    {
+        var day = new WeekDayViewModel();
+        var date = new DateTimeOffset(2026, 9, 21, 0, 0, 0, TimeSpan.FromHours(2));
+        day.Update(date, [Session(date, 9, 90, "A")]);
+
+        day.ActiveTime = TimeSpan.FromMinutes(100);
+
+        day.UntrackedText.Should().Be("0:10 untracked");
+        day.IsUntrackedWarning.Should().BeFalse();
+    }
+
+    [Test]
+    public void UntrackedText_WhenTheBookingsCoverTheActiveTime_ShouldBeEmpty()
+    {
+        var day = new WeekDayViewModel();
+        var date = new DateTimeOffset(2026, 9, 21, 0, 0, 0, TimeSpan.FromHours(2));
+        day.Update(date, [Session(date, 9, 90, "A")]);
+
+        day.ActiveTime = TimeSpan.FromMinutes(60);
+
+        day.UntrackedText.Should().BeEmpty("booking more than the PC was active is not a gap");
+        day.IsUntrackedWarning.Should().BeFalse();
+    }
+
+    [Test]
+    public void UntrackedText_WhenNoActivityWasRecorded_ShouldBeEmpty()
+    {
+        var day = new WeekDayViewModel();
+
+        day.Update(new DateTimeOffset(2026, 9, 21, 0, 0, 0, TimeSpan.FromHours(2)), []);
+
+        day.UntrackedText.Should().BeEmpty("without the activity monitor there is nothing to compare");
+    }
+
+    [Test]
+    public void UntrackedText_WhenTheSessionsChangeAfterTheActiveTimeWasSet_ShouldRecalculate()
+    {
+        var day = new WeekDayViewModel();
+        var date = new DateTimeOffset(2026, 9, 21, 0, 0, 0, TimeSpan.FromHours(2));
+        day.Update(date, []);
+        day.ActiveTime = TimeSpan.FromMinutes(60);
+
+        day.Update(date, [Session(date, 9, 50, "A")]);
+
+        day.UntrackedText.Should().Be("0:10 untracked");
+    }
+
     private static TrackerEntry Session(DateTimeOffset date, int startHour, int minutes, string task, string bookingElement = "") => new()
     {
         Task = task,

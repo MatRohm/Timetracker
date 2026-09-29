@@ -19,7 +19,8 @@ A small cross-platform desktop time tracker (Windows, Linux, macOS) built with
 - **Azure DevOps import:** enter a work-item number to fill the task name and
   booking element (see [Configuration](#configuration-and-data-files)).
 - **PC activity monitor:** an optional background process that records active and
-  idle time; the week view shows it per day.
+  idle time; the week view shows it per day, together with the **untracked time**
+  (PC active time no session covers, highlighted from 15 minutes).
 
 ## Getting started
 

@@ -14,6 +14,9 @@ internal static class ViewBrushes
     /// <summary>Error status text.</summary>
     public static readonly IBrush Error = new SolidColorBrush(Color.FromRgb(0xB2, 0x22, 0x22));
 
+    /// <summary>Warnings that need attention, e.g. a day's untracked time.</summary>
+    public static readonly IBrush Warning = new SolidColorBrush(Color.FromRgb(0xC0, 0x56, 0x00));
+
     /// <summary>Informational / secondary text.</summary>
     public static readonly IBrush Info = new SolidColorBrush(Color.FromRgb(0x69, 0x69, 0x69));
 

@@ -29,6 +29,17 @@ public interface IWeekDayContributor
     string GetDayText(DateOnly day);
 }
 
+/// <summary>
+/// Supplies how long the computer was actively used on a day (e.g. from the PC
+/// activity monitor). The week view compares it with the booked time to show how
+/// much of the day was not tracked.
+/// </summary>
+public interface IDayActivitySource
+{
+    /// <summary>Active time on the given day; <see cref="TimeSpan.Zero"/> when nothing was recorded.</summary>
+    TimeSpan GetActiveTime(DateOnly day);
+}
+
 /// <summary>Runs once when the application starts or closes.</summary>
 public interface IAppHook
 {

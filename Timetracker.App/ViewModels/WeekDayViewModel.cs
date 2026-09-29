@@ -15,11 +15,21 @@ public sealed class WeekDayViewModel : ObservableObject
     /// <summary>Group name used for entries that carry no booking element.</summary>
     public const string NoBookingElementLabel = "<None>";
 
+    /// <summary>Untracked time from which the day row warns (highlighted, "⚠").</summary>
+    public static readonly TimeSpan UntrackedWarningThreshold = TimeSpan.FromMinutes(15);
+
+    /// <summary>Gaps shorter than this are rounding noise and not shown at all.</summary>
+    private static readonly TimeSpan MinimumUntrackedTime = TimeSpan.FromMinutes(1);
+
     private string _header = "";
     private string _totalText = "";
     private bool _isToday;
     private bool _isExpanded;
     private string _contributorText = "";
+    private double _bookedSeconds;
+    private TimeSpan _activeTime;
+    private string _untrackedText = "";
+    private bool _isUntrackedWarning;
 
     public WeekDayViewModel()
     {
@@ -63,6 +73,39 @@ public sealed class WeekDayViewModel : ObservableObject
         set => SetProperty(ref _contributorText, value);
     }
 
+    /// <summary>
+    /// How long the computer was actively used on this day (from the PC activity
+    /// monitor); zero when nothing was recorded. Drives <see cref="UntrackedText"/>.
+    /// </summary>
+    public TimeSpan ActiveTime
+    {
+        get => _activeTime;
+        set
+        {
+            if (SetProperty(ref _activeTime, value))
+            {
+                RefreshUntracked();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Active time not covered by booked sessions, e.g. "⚠ 1:05 untracked"; empty
+    /// when there is no activity or the bookings cover it.
+    /// </summary>
+    public string UntrackedText
+    {
+        get => _untrackedText;
+        private set => SetProperty(ref _untrackedText, value);
+    }
+
+    /// <summary>True when the untracked time reaches <see cref="UntrackedWarningThreshold"/>.</summary>
+    public bool IsUntrackedWarning
+    {
+        get => _isUntrackedWarning;
+        private set => SetProperty(ref _isUntrackedWarning, value);
+    }
+
     /// <summary>Expands or collapses the day.</summary>
     public ICommand ToggleCommand { get; }
 
@@ -80,11 +123,29 @@ public sealed class WeekDayViewModel : ObservableObject
         Header = $"{date.ToString("ddd", CultureInfo.InvariantCulture)} {date.Day:00}.{date.Month:00}.";
 
         Groups = BuildGroups(items);
-        TotalText = items.Count > 0 ? $"Σ {WeekTimeFormat.HoursMinutes(items.Sum(e => e.DurationSeconds))}" : "";
+        _bookedSeconds = items.Sum(e => e.DurationSeconds);
+        TotalText = items.Count > 0 ? $"Σ {WeekTimeFormat.HoursMinutes(_bookedSeconds)}" : "";
         IsToday = date.Date == DateTimeOffset.Now.Date;
+        RefreshUntracked();
 
         OnPropertyChanged(nameof(Date));
         OnPropertyChanged(nameof(Groups));
+    }
+
+    /// <summary>Recomputes the untracked time from the active time and the booked sessions.</summary>
+    private void RefreshUntracked()
+    {
+        var untracked = _activeTime - TimeSpan.FromSeconds(_bookedSeconds);
+        if (untracked < MinimumUntrackedTime)
+        {
+            IsUntrackedWarning = false;
+            UntrackedText = "";
+            return;
+        }
+
+        IsUntrackedWarning = untracked >= UntrackedWarningThreshold;
+        var prefix = IsUntrackedWarning ? "⚠ " : "";
+        UntrackedText = $"{prefix}{WeekTimeFormat.HoursMinutes(untracked.TotalSeconds)} untracked";
     }
 
     /// <summary>Collapses the day and every group below it.</summary>

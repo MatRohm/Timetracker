@@ -90,7 +90,12 @@ public static class HookRegistry
         services.AddSingleton<Plugins.ActivityMonitor.ActivityLog>();
         services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IActivityMonitorInstaller>(
             _ => Plugins.ActivityMonitor.ActivityMonitorInstallerFactory.CreateForCurrentPlatform());
-        services.AddSingleton<IWeekDayContributor, Plugins.ActivityMonitor.ActivityWeekDayContributor>();
+        // One contributor instance serves the per-day line and the day's active time.
+        services.AddSingleton<Plugins.ActivityMonitor.ActivityWeekDayContributor>();
+        services.AddSingleton<IWeekDayContributor>(
+            sp => sp.GetRequiredService<Plugins.ActivityMonitor.ActivityWeekDayContributor>());
+        services.AddSingleton<IDayActivitySource>(
+            sp => sp.GetRequiredService<Plugins.ActivityMonitor.ActivityWeekDayContributor>());
         services.AddSingleton<IUiContributor, Plugins.ActivityMonitor.MonitorSetupUiContributor>();
     }
 }

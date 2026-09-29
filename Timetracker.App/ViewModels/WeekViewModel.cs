@@ -82,6 +82,13 @@ public sealed class WeekViewModel : ObservableObject
     /// </summary>
     public Func<DateOnly, string>? DayContributorText { get; set; }
 
+    /// <summary>
+    /// Supplies how long the computer was actively used on a day (e.g. from the PC
+    /// activity monitor); each day node compares it with its booked time to show the
+    /// untracked time. Wired by the composition root like <see cref="DayContributorText"/>.
+    /// </summary>
+    public Func<DateOnly, TimeSpan>? DayActiveTime { get; set; }
+
     public ICommand PreviousWeekCommand => _previousWeekCommand;
 
     public ICommand NextWeekCommand => _nextWeekCommand;
@@ -123,8 +130,9 @@ public sealed class WeekViewModel : ObservableObject
         {
             var day = _weekStart.AddDays(i);
             _days[i].Update(day, weekSessions.Where(s => s.Start.Date == day.Date));
-            _days[i].ContributorText =
-                DayContributorText?.Invoke(DateOnly.FromDateTime(day.Date)) ?? "";
+            var date = DateOnly.FromDateTime(day.Date);
+            _days[i].ContributorText = DayContributorText?.Invoke(date) ?? "";
+            _days[i].ActiveTime = DayActiveTime?.Invoke(date) ?? TimeSpan.Zero;
         }
 
         WeekTotalText = $"Σ {WeekTimeFormat.HoursMinutes(weekSessions.Sum(s => s.DurationSeconds))}";
