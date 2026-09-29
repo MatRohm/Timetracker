@@ -18,6 +18,16 @@ This repository contains a .NET/C# application.
 - Do not modify unrelated files.
 - Do not suppress compiler or analyzer warnings without explaining why.
 
+## Planning
+
+- Always start a task with a plan, and present it fast: explore only as much
+  as the plan needs, then state briefly what will change, which files are
+  affected, and how the change will be verified.
+- In the plan, suggest a beads issue that documents it (the plan as the
+  issue description), so the decision survives the session.
+- Do not create the beads issue preemptively. Create it only once the user
+  has agreed to the plan or explicitly asked for the issue.
+
 ## C# guidelines
 
 - Follow the repository's .editorconfig.
@@ -143,8 +153,9 @@ bd close <id>           # Complete work
 - Use `bd remember` for persistent knowledge — do NOT create ad hoc memory files
   such as MEMORY.md.
 - Every task commit must have a beads issue associated with it; if none is
-  given, create one yourself. Committing against a closed issue is allowed when
-  a fix for that issue is needed.
+  given, create the one suggested in the plan once the user has agreed to it
+  (see Planning). Committing against a closed issue is allowed when a fix for
+  that issue is needed.
 
 ## Agent Context Profiles
 
@@ -159,7 +170,7 @@ repository, user, or orchestrator instructions.
 
 This protocol applies when ending a Beads implementation workflow. It is subordinate to explicit user, repository, and orchestrator instructions.
 
-1. **File issues for remaining work** - Create beads for anything that needs follow-up
+1. **Propose issues for remaining work** - Suggest beads for anything that needs follow-up; create them once the user agrees
 2. **Run quality gates** (if code changed) - Tests, linters, builds
 3. **Update issue status** - Close finished work, update in-progress items
 4. **Handle git/sync by active profile**:
