@@ -1,6 +1,5 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "instructions": [".claude/CLAUDE.md"],
   "agent": {
     "architecture-review": {
       "description": "Runs the architecture tests and reviews the code against SOLID; reports the findings as tables. Read-only.",

@@ -1,12 +1,12 @@
 # Agent Instructions
 
 > This file is shared by Claude Code and opencode. Claude Code reads it directly;
-> opencode loads it through `instructions` in the root `opencode.json`, reads
-> the skills from `.claude/skills` natively, and gets the subagents in
-> `.claude/agents` through `agent` entries in `opencode.json` that point at the
-> same files. Keep agent configuration here rather
-> than adding copies elsewhere; the architecture test `AgentConfigurationRules`
-> fails when a duplicate or another agent's configuration appears.
+> opencode loads it through the root `AGENTS.md` symlink, reads the skills from
+> `.claude/skills` natively, and gets the subagents in `.claude/agents` through
+> `agent` entries in `opencode.json` that point at the same files. Keep agent
+> configuration here rather than adding copies elsewhere; the architecture test
+> `AgentConfigurationRules` fails when a duplicate or another agent's
+> configuration appears.
 
 This repository contains a .NET/C# application.
 

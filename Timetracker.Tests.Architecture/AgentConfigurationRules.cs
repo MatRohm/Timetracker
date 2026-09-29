@@ -7,11 +7,11 @@ namespace Timetracker.Tests.Architecture;
 /// <summary>
 /// Rules for the AI coding-agent configuration. Claude Code and opencode share one
 /// set of files in <c>.claude/</c>: the instructions (<c>.claude/CLAUDE.md</c>,
-/// which opencode loads through <c>instructions</c> in the root <c>opencode.json</c>)
-/// the skills (<c>.claude/skills</c>, which opencode reads natively) and the
-/// subagents (<c>.claude/agents</c>, which opencode gets through <c>agent</c> entries
-/// in <c>opencode.json</c> that point at the same files). There are
-/// no copies to keep in sync, so these rules keep duplicates and other agents'
+/// which opencode loads through a root <c>AGENTS.md</c> symlink), the skills
+/// (<c>.claude/skills</c>, which opencode reads natively) and the subagents
+/// (<c>.claude/agents</c>, which opencode gets through <c>agent</c> entries in
+/// <c>opencode.json</c> that point at the same files). There are no copies to
+/// keep in sync, so these rules keep duplicates and other agents'
 /// configurations from coming back.
 /// </summary>
 public sealed class AgentConfigurationRules
@@ -19,31 +19,42 @@ public sealed class AgentConfigurationRules
     private const string SharedInstructions = ".claude/CLAUDE.md";
     private const string SharedSkills = ".claude/skills";
     private const string SharedAgents = ".claude/agents";
+    private const string AgentsFile = "AGENTS.md";
 
     /// <summary>
     /// Configuration that must not come back: other agents' files, the former root
     /// instruction files, and opencode-only copies of the shared instructions or
-    /// skills (opencode would see every skill twice).
+    /// skills (opencode would see every skill twice). <c>AGENTS.md</c> is expected
+    /// to exist as the symlink the <see cref="Agents_md_points_to_the_shared_instructions"/>
+    /// rule verifies.
     /// </summary>
     private static readonly string[] RemovedConfigurations =
     [
         ".agents", ".codex", ".cursor", ".omp", ".gemini", ".windsurf", ".kiro",
-        "AGENTS.md", "CLAUDE.md", "GEMINI.md", ".github/copilot-instructions.md",
+        "CLAUDE.md", "GEMINI.md", ".github/copilot-instructions.md",
         ".opencode/AGENTS.md", ".opencode/skills", ".opencode/agents",
     ];
 
     [Test]
-    public void Opencode_config_loads_the_shared_instructions()
+    public void Agents_md_points_to_the_shared_instructions()
     {
-        // opencode does not read .claude/CLAUDE.md on its own; without this entry it
-        // would get no project instructions at all.
-        using var config = JsonDocument.Parse(ReadText("opencode.json"));
-        var instructions = config.RootElement.TryGetProperty("instructions", out var list)
-            ? list.EnumerateArray().Select(e => e.GetString()).ToList()
-            : [];
+        // opencode V2 reads AGENTS.md only (it never falls back to CLAUDE.md, and its
+        // `instructions` config is not resolved), so the root AGENTS.md must be a
+        // symlink to the shared instructions rather than a duplicate copy.
+        var root = SolutionFiles.RepositoryRoot();
+        var link = new FileInfo(Path.Combine(root, AgentsFile));
 
-        instructions.Should().Contain(SharedInstructions,
-            $"opencode.json must list {SharedInstructions} under \"instructions\"");
+        link.Exists.Should().BeTrue(
+            $"{AgentsFile} must exist so opencode loads the shared instructions");
+        link.LinkTarget.Should().NotBeNull(
+            $"{AgentsFile} must be a symlink, not a duplicate copy");
+
+        var resolved = link.ResolveLinkTarget(returnFinalTarget: true);
+        resolved.Should().NotBeNull(
+            $"{AgentsFile} must resolve to {SharedInstructions}");
+        Path.GetFullPath(resolved!.FullName).Should().Be(
+            Path.GetFullPath(Path.Combine(root, SharedInstructions)),
+            $"{AgentsFile} must point at {SharedInstructions} so there is no copy to keep in sync");
     }
 
     [Test]
@@ -98,4 +109,5 @@ public sealed class AgentConfigurationRules
         var result = File.ReadAllText(Path.Combine(SolutionFiles.RepositoryRoot(), relativePath));
         return result;
     }
+
 }
