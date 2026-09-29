@@ -6,3 +6,8 @@ obj/
 # Beads workspace operation gate lock lives beside .beads/ (repo root), so it is
 # not covered by .beads/.gitignore. It is runtime-only and must not be committed.
 .beads.gate.lock
+
+# Beads JSONL export: a local, passive view of the issues. Beads syncs through
+# refs/dolt/data (bd dolt push), so tracking the export only produced
+# follow-up "sync beads issue export" commits.
+.beads/issues.jsonl
