@@ -272,6 +272,7 @@ Timetracker/
 │   ├── Models/
 │   │   └── TrackerEntry.cs          # One finished time entry
 │   ├── Services/
+│   │   ├── AtomicFile.cs            # Crash-safe replace: temp file, flush, rename, retry
 │   │   ├── JsonTrackerRepository.cs # Versioned JSON persistence (atomic writes)
 │   │   ├── TrackerFileFormat.cs     # Maps sessions to/from the one-record-per-task shape
 │   │   ├── TrackerFileMigrator.cs   # Chains file upgrades, one step per version

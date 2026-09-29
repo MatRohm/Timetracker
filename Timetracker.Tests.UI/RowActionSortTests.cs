@@ -7,7 +7,6 @@ using Avalonia.Headless.NUnit;
 using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using NUnit.Framework;
 using Timetracker.App.Models;
 using Timetracker.App.Tests.Unit;
 using Timetracker.App.ViewModels;

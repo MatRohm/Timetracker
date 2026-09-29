@@ -56,27 +56,9 @@ public sealed class JsonTrackerRepository : ITrackerRepository
             _fileWasCorrupt = false;
         }
 
-        var tempPath = _jsonPath + ".tmp";
-        await File.WriteAllTextAsync(tempPath, json);
-
-        if (File.Exists(_jsonPath))
-        {
-            try
-            {
-                // Atomic replace: readers never see a half-written file.
-                File.Replace(tempPath, _jsonPath, destinationBackupFileName: null);
-            }
-            catch (IOException)
-            {
-                // Fall back to a direct write if the replace is not possible.
-                await File.WriteAllTextAsync(_jsonPath, json);
-                File.Delete(tempPath);
-            }
-        }
-        else
-        {
-            File.Move(tempPath, _jsonPath);
-        }
+        // Atomic replace: readers never see a half-written file, and a failed write
+        // leaves the previous file intact (the caller reports the error).
+        await AtomicFile.WriteAllTextAsync(_jsonPath, json);
     }
 
     private async Task<List<TrackerEntry>> LoadEntriesAsync()

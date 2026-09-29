@@ -82,8 +82,15 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
         // Load the history in the background; Avalonia posts the continuation back
         // to the UI thread, so the entries populate as soon as the read completes.
-        _ = RefreshEntriesAsync();
+        InitialLoad = RefreshEntriesAsync();
     }
+
+    /// <summary>
+    /// The history load started by the constructor. Await it before reading
+    /// <see cref="Entries"/> when no UI thread serializes the continuations (tests):
+    /// a second refresh started meanwhile would fill the same collection concurrently.
+    /// </summary>
+    public Task InitialLoad { get; }
 
     public ICommand StartCommand => _startCommand;
 

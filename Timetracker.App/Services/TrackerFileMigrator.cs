@@ -117,21 +117,9 @@ public sealed class TrackerFileMigrator : ITrackerFileMigrationRunner
 
     private void WriteDocument(TrackerDocument document)
     {
-        var json = JsonSerializer.Serialize(document, TrackerFileFormat.JsonOptions);
-        var tempPath = _jsonPath + ".tmp";
-        File.WriteAllText(tempPath, json);
-
-        try
-        {
-            // Atomic replace: readers never see a half-written file.
-            File.Replace(tempPath, _jsonPath, destinationBackupFileName: null);
-        }
-        catch (IOException)
-        {
-            // Fall back to a direct write if the replace is not possible.
-            File.WriteAllText(_jsonPath, json);
-            File.Delete(tempPath);
-        }
+        // Atomic replace: readers never see a half-written file, and a failed write
+        // leaves the original version in place (MigrateIfNeeded logs the error).
+        AtomicFile.WriteAllText(_jsonPath, Serialize(document));
     }
 
     private static string Serialize(TrackerDocument document) =>

@@ -493,7 +493,7 @@ public sealed class TrackerViewModelTests
             ]
             """);
         using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(new JsonTrackerRepository(path)));
-        await vm.RefreshEntriesAsync();
+        await vm.InitialLoad;
         var row = vm.Entries.Single(r => r.Task == "Report");
 
         await vm.DeleteEntriesAsync([row], _ => true);
