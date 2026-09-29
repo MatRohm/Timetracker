@@ -1,9 +1,10 @@
 # Agent Instructions
 
-> This file exists twice with identical content: `.claude/CLAUDE.md` (Claude Code)
-> and `.opencode/AGENTS.md` (opencode, loaded via `instructions` in the root
-> `opencode.json`). Edit both together; the architecture test
-> `AgentConfigurationRules` fails when they differ.
+> This file is shared by Claude Code and opencode. Claude Code reads it directly;
+> opencode loads it through `instructions` in the root `opencode.json`, and reads
+> the skills from `.claude/skills` natively. Keep agent configuration here rather
+> than adding copies elsewhere; the architecture test `AgentConfigurationRules`
+> fails when a duplicate or another agent's configuration appears.
 
 This repository contains a .NET/C# application.
 
