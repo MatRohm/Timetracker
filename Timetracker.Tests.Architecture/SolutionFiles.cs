@@ -1,6 +1,6 @@
 namespace Timetracker.Tests.Architecture;
 
-/// <summary>Locates the solution's .csproj files from the running test host.</summary>
+/// <summary>Locates the solution's files (project files, repository root) from the running test host.</summary>
 internal static class SolutionFiles
 {
     /// <summary>Every project file of the solution, in a stable order.</summary>
@@ -15,7 +15,7 @@ internal static class SolutionFiles
     /// The repository root, found by walking up from the test host until the
     /// solution file is reached.
     /// </summary>
-    private static string RepositoryRoot()
+    public static string RepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null && directory.GetFiles("*.slnx").Length == 0)

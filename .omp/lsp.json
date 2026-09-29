@@ -1,8 +1,0 @@
-{
-  "servers": {
-    "csharp": {
-      "command": "C:\\Users\\haukc\\.dotnet\\tools\\roslyn-language-server.cmd",
-      "args": ["--stdio"]
-    }
-  }
-}

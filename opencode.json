@@ -1,5 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "instructions": [".opencode/AGENTS.md"],
   "lsp": {
     "csharp": {
       "command": ["csharp-ls", "--solution", "Timetracker.App/Timetracker.App.csproj"],
