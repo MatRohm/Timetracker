@@ -17,6 +17,12 @@ public sealed class ActivityWeekDayContributor : IWeekDayQuery, IDayActivityQuer
 
     private readonly ActivityLog _log;
 
+    /// <summary>Spans of the last read, reused until the log file changes on disk.</summary>
+    private IReadOnlyList<ActivitySpan>? _cachedSpans;
+
+    /// <summary>Last-write time the cache was read from; a changed file invalidates it.</summary>
+    private DateTime _cachedWriteTimeUtc;
+
     public ActivityWeekDayContributor(ActivityLog log)
     {
         _log = log;
@@ -85,7 +91,7 @@ public sealed class ActivityWeekDayContributor : IWeekDayQuery, IDayActivityQuer
     /// </summary>
     private IEnumerable<(string Kind, DateTimeOffset Start, DateTimeOffset End)> DayParts(DateOnly day)
     {
-        foreach (var span in _log.GetAll())
+        foreach (var span in Spans())
         {
             // Clip the span to the day by comparing instants, so a span starting
             // mid-day counts from its start rather than from midnight.
@@ -102,4 +108,22 @@ public sealed class ActivityWeekDayContributor : IWeekDayQuery, IDayActivityQuer
 
     private static string HoursMinutes(double seconds) =>
         TimeSpan.FromSeconds(Math.Round(seconds)).ToString(@"h\:mm");
+
+    /// <summary>
+    /// The log's spans, read once and reused while the file is unchanged: the week
+    /// view queries every day, so three calls per day would otherwise re-read and
+    /// re-deserialize the whole file on every rebuild.
+    /// </summary>
+    private IReadOnlyList<ActivitySpan> Spans()
+    {
+        var writeTime = File.GetLastWriteTimeUtc(_log.FilePath);
+        if (_cachedSpans is not null && writeTime == _cachedWriteTimeUtc)
+        {
+            return _cachedSpans;
+        }
+
+        _cachedSpans = _log.GetAll();
+        _cachedWriteTimeUtc = writeTime;
+        return _cachedSpans;
+    }
 }
