@@ -72,8 +72,31 @@ public sealed class WeekUntrackedTimeTests
 
         var gapRow = view.GetVisualDescendants().OfType<TextBlock>()
             .Single(t => t.Text == "⚠ 10:00–12:00 untracked (2:00)");
-        gapRow.Parent.Should().BeOfType<StackPanel>().Which.Children.OfType<Button>()
-            .Should().ContainSingle(b => b.Content as string == "Book…");
+        var buttons = gapRow.Parent.Should().BeOfType<StackPanel>().Which.Children.OfType<Button>().ToList();
+        buttons.Should().ContainSingle(b => b.Content as string == "Book…");
+        buttons.Should().ContainSingle(b => b.Content as string == "Distribute")
+            .Which.IsEnabled.Should().BeTrue("the session 09:00–10:00 borders the gap");
+    }
+
+    [AvaloniaTest]
+    public void WeekTrackingTree_WhenNoSessionBordersAGap_ShouldDisableItsDistributeButton()
+    {
+        var (repo, _) = RepositoryFake.Create();
+        using var tracker = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        var midnight = DateTimeOffset.Now.Date;
+        var offset = DateTimeOffset.Now.Offset;
+        tracker.Week.DayActiveSpans = day => day == DateOnly.FromDateTime(midnight)
+            ? [new TimeRange(new DateTimeOffset(midnight.AddHours(9), offset), new DateTimeOffset(midnight.AddHours(12), offset))]
+            : [];
+        tracker.Week.UpdateSessions([]);
+        tracker.Week.Days.Single(d => d.IsToday).IsExpanded = true;
+        var view = new WeekTabView(tracker.Week, []);
+
+        Realize(view);
+
+        var distribute = view.GetVisualDescendants().OfType<Button>()
+            .Single(b => b.Content as string == "Distribute");
+        distribute.IsEnabled.Should().BeFalse("nothing starts or ends at the gap, so nothing can absorb it");
     }
 
     private static void Realize(Control root)

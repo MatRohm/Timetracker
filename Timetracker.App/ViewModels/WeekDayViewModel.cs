@@ -124,10 +124,13 @@ public sealed class WeekDayViewModel : ObservableObject
     /// </summary>
     public IReadOnlyList<WeekGapViewModel> Gaps { get; private set; } = [];
 
-    /// <summary>Replaces the day's gap rows.</summary>
-    public void SetGaps(IEnumerable<TimeRange> gaps)
+    /// <summary>
+    /// Replaces the day's gap rows; each plans its distribution over the
+    /// <paramref name="sessions"/> that border it.
+    /// </summary>
+    public void SetGaps(IEnumerable<TimeRange> gaps, IReadOnlyList<TrackerEntry> sessions)
     {
-        Gaps = [.. gaps.Select(g => new WeekGapViewModel(g))];
+        Gaps = [.. gaps.Select(g => new WeekGapViewModel(g, GapDistribution.Plan(g, sessions)))];
         OnPropertyChanged(nameof(Gaps));
     }
 

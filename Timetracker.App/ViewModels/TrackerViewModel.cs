@@ -64,8 +64,10 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         _startCommand = new RelayCommand(Start, () => !IsRunning);
         _stopCommand = new AsyncRelayCommand(Stop, () => IsRunning);
 
-        // The week view books untracked gaps through this view model, which owns the log.
+        // The week view books and distributes untracked gaps through this view model,
+        // which owns the log.
         Week.BookGap = BookGapAsync;
+        Week.ApplyChanges = ApplySessionChangesAsync;
 
         StatusText = "Entries are appended to " + _dependencies.FilePath();
 
@@ -397,6 +399,29 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
             .Select(e => e.BookingElement)
             .LastOrDefault(b => !string.IsNullOrWhiteSpace(b)) ?? "";
         return result;
+    }
+
+    /// <summary>
+    /// Applies planned session changes from the week view (e.g. a distributed gap)
+    /// and refreshes the history and the week. A failure is reported in the week
+    /// view's status line and leaves the file untouched; the caller reports success.
+    /// </summary>
+    public async Task<bool> ApplySessionChangesAsync(IReadOnlyList<SessionChange> changes)
+    {
+        var result = await _editor.ApplyChangesAsync(changes, _sessions);
+        if (result.Status == EntryEditStatus.Failed)
+        {
+            Week.ShowStatus("✗ Saving the changes failed: " + result.Error?.Message, WeekStatus.Error);
+            return false;
+        }
+
+        if (result.Status != EntryEditStatus.Saved)
+        {
+            return false;
+        }
+
+        await RefreshEntriesAsync();
+        return true;
     }
 
     /// <summary>

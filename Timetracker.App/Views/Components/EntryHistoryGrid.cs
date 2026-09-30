@@ -275,7 +275,7 @@ public sealed class EntryHistoryGrid : UserControl
         }
 
         var summary = TrackerViewModel.BuildDeleteSummary(rows);
-        var confirmed = await DeleteConfirmation.ConfirmAsync(this, summary);
+        var confirmed = await Confirmations.ConfirmDeleteAsync(this, summary);
         if (confirmed)
         {
             await _viewModel.DeleteEntriesAsync(rows, _ => true);

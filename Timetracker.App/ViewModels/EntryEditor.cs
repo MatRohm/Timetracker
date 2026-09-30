@@ -131,6 +131,53 @@ public sealed class EntryEditor
     }
 
     /// <summary>
+    /// Applies planned session changes (e.g. from distributing a gap) and persists
+    /// the whole log: each change's original session is replaced by its update or
+    /// removed, every other session is kept. Originals are matched by reference, as
+    /// the plans are made from <paramref name="currentSessions"/> itself. Returns
+    /// <see cref="EntryEditStatus.Declined"/> for no changes and
+    /// <see cref="EntryEditStatus.Failed"/> (file untouched) when an original is no
+    /// longer in the log or the save fails.
+    /// </summary>
+    public async Task<EntryEditResult> ApplyChangesAsync(
+        IReadOnlyList<SessionChange> changes,
+        IReadOnlyList<TrackerEntry> currentSessions)
+    {
+        if (changes.Count == 0)
+        {
+            return new EntryEditResult(EntryEditStatus.Declined, "");
+        }
+
+        var summary = $"{changes.Count} sessions";
+        var byOriginal = changes.ToDictionary<SessionChange, TrackerEntry>(
+            c => c.Original, ReferenceEqualityComparer.Instance);
+        var matched = currentSessions.Count(s => byOriginal.ContainsKey(s));
+        if (matched != byOriginal.Count)
+        {
+            var stale = new InvalidOperationException(
+                "A changed session is no longer in the log; refresh and try again.");
+            _logError("ApplyChanges", stale);
+            return new EntryEditResult(EntryEditStatus.Failed, summary, stale);
+        }
+
+        var updated = currentSessions
+            .Select(s => byOriginal.TryGetValue(s, out var change) ? change.Updated?.Clone() : s.Clone())
+            .OfType<TrackerEntry>()
+            .ToList();
+
+        try
+        {
+            await _saveEntries(updated);
+            return new EntryEditResult(EntryEditStatus.Saved, summary);
+        }
+        catch (Exception ex)
+        {
+            _logError("ApplyChanges", ex);
+            return new EntryEditResult(EntryEditStatus.Failed, summary, ex);
+        }
+    }
+
+    /// <summary>
     /// Commits an inline text edit (task name / booking element) and persists the
     /// whole log. Returns <see cref="EntryEditStatus.InvalidTaskName"/> for an empty
     /// task name and <see cref="EntryEditStatus.Unchanged"/> when nothing changed

@@ -564,6 +564,40 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
+    public async Task ApplySessionChangesAsync_WhenAChangeIsApplied_ShouldPersistItAndReload()
+    {
+        var (repo, _) = RepositoryFake.Create(Entry("Report", 9));
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        await vm.InitialLoad;
+        var original = vm.Week.Sessions.Single();
+        var stretched = original.Clone();
+        stretched.Reschedule(original.Start, original.End.AddMinutes(30));
+
+        var saved = await vm.ApplySessionChangesAsync([new SessionChange(original, stretched)]);
+
+        saved.Should().BeTrue();
+        RepositoryFake.Persisted(repo).Single().DurationSeconds.Should().Be(3600);
+        vm.Week.Sessions.Single().End.Should().Be(stretched.End, "the week view is rebuilt from the saved log");
+    }
+
+    [Test]
+    public async Task ApplySessionChangesAsync_WhenTheChangedSessionIsNotInTheLoadedLog_ShouldSaveNothingAndReportIt()
+    {
+        var (repo, _) = RepositoryFake.Create(Entry("Report", 9));
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        await vm.InitialLoad;
+        // An equal-looking copy stands for a session from an earlier load: a reload
+        // from the file creates new objects, so a plan made before it no longer matches.
+        var stale = vm.Week.Sessions.Single().Clone();
+
+        var saved = await vm.ApplySessionChangesAsync([new SessionChange(stale, null)]);
+
+        saved.Should().BeFalse();
+        RepositoryFake.Persisted(repo).Should().ContainSingle();
+        vm.Week.Status.Should().Be(WeekStatus.Error);
+    }
+
+    [Test]
     public void Start_WhenTheTimerStarts_ShouldTellTheWeekViewSoItsTimeIsNotAGap()
     {
         var (repo, _) = RepositoryFake.Create();

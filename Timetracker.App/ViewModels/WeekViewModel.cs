@@ -146,6 +146,34 @@ public sealed class WeekViewModel : ObservableObject
         return result;
     }
 
+    /// <summary>
+    /// Persists planned session changes (e.g. a distributed gap) and returns whether
+    /// they were saved. Wired by <see cref="TrackerViewModel"/>, which owns the log.
+    /// </summary>
+    public Func<IReadOnlyList<SessionChange>, Task<bool>>? ApplyChanges { get; set; }
+
+    /// <summary>
+    /// Distributes <paramref name="gap"/> over its bordering sessions after the user
+    /// confirmed the listed changes; false when there is nothing to distribute, the
+    /// user declined or the save failed.
+    /// </summary>
+    /// <param name="confirm">Shows the change lines and returns the user's answer.</param>
+    public async Task<bool> DistributeAsync(WeekGapViewModel gap, Func<IReadOnlyList<string>, Task<bool>> confirm)
+    {
+        if (!gap.CanDistribute || ApplyChanges is null || !await confirm(gap.DistributionLines))
+        {
+            return false;
+        }
+
+        var saved = await ApplyChanges(gap.Distribution);
+        if (saved)
+        {
+            ShowStatus($"✓ Distributed {gap.DurationText} over the neighboring sessions.", WeekStatus.Success);
+        }
+
+        return saved;
+    }
+
     public ICommand PreviousWeekCommand => _previousWeekCommand;
 
     public ICommand NextWeekCommand => _nextWeekCommand;
@@ -196,8 +224,10 @@ public sealed class WeekViewModel : ObservableObject
 
             // Every session counts, not only the day's: one started the evening before
             // can cover the early hours of this day.
-            _days[i].SetGaps(UntrackedGaps.Find(
-                DayActiveSpans?.Invoke(date) ?? [], _sessions, running, WeekDayViewModel.MinimumGapDuration));
+            _days[i].SetGaps(
+                UntrackedGaps.Find(
+                    DayActiveSpans?.Invoke(date) ?? [], _sessions, running, WeekDayViewModel.MinimumGapDuration),
+                _sessions);
         }
 
         WeekTotalText = $"Σ {WeekTimeFormat.HoursMinutes(weekSessions.Sum(s => s.DurationSeconds))}";

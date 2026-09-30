@@ -163,6 +163,53 @@ public sealed class EntryEditorTests
         result.Error.Should().BeOfType<IOException>();
     }
 
+    [Test]
+    public async Task ApplyChangesAsync_WhenChangesArePlanned_ShouldReplaceAndRemoveOnlyThoseSessions()
+    {
+        IReadOnlyList<TrackerEntry>? saved = null;
+        var editor = new EntryEditor(entries => { saved = entries; return Task.CompletedTask; }, (_, _) => { });
+        var report = Entry("Report", 9);
+        var meeting = Entry("Meeting", 11);
+        var review = Entry("Review", 13);
+        var stretched = report.Clone();
+        stretched.Reschedule(report.Start, report.End.AddMinutes(20));
+
+        var result = await editor.ApplyChangesAsync(
+            [new SessionChange(report, stretched), new SessionChange(review, null)],
+            [report, meeting, review]);
+
+        result.Status.Should().Be(EntryEditStatus.Saved);
+        saved!.Select(s => s.Task).Should().Equal("Report", "Meeting");
+        saved![0].End.Should().Be(report.End.AddMinutes(20));
+        report.End.Should().Be(new DateTimeOffset(2026, 9, 19, 9, 30, 0, TimeSpan.FromHours(2)),
+            "the stored session objects are not modified; the saved list holds copies");
+    }
+
+    [Test]
+    public async Task ApplyChangesAsync_WhenAChangedSessionIsNoLongerInTheLog_ShouldFailWithoutSaving()
+    {
+        var saves = 0;
+        var editor = new EntryEditor(_ => { saves++; return Task.CompletedTask; }, (_, _) => { });
+        var gone = Entry("Report", 9);
+
+        var result = await editor.ApplyChangesAsync([new SessionChange(gone, null)], [Entry("Report", 9)]);
+
+        result.Status.Should().Be(EntryEditStatus.Failed, "an equal-looking copy is not the planned session");
+        saves.Should().Be(0);
+    }
+
+    [Test]
+    public async Task ApplyChangesAsync_WhenTheSaveFails_ShouldReportFailure()
+    {
+        var editor = new EntryEditor(_ => Task.FromException(new IOException("disk full")), (_, _) => { });
+        var report = Entry("Report", 9);
+
+        var result = await editor.ApplyChangesAsync([new SessionChange(report, null)], [report]);
+
+        result.Status.Should().Be(EntryEditStatus.Failed);
+        result.Error.Should().BeOfType<IOException>();
+    }
+
     private static EntryRow Row(params TrackerEntry[] sessions) => new(sessions);
 
     private static TrackerEntry Entry(string task, int hour, string bookingElement = "") => new()

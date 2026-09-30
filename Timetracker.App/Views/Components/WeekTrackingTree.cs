@@ -113,8 +113,9 @@ public sealed class WeekTrackingTree : UserControl
     }
 
     /// <summary>
-    /// Untracked gap node: "⚠ 10:15–11:05 untracked (0:50)" and a Book… button that
-    /// opens the booking dialog. Sits at the element level, below the day's groups.
+    /// Untracked gap node: "⚠ 10:15–11:05 untracked (0:50)", a Book… button that
+    /// opens the booking dialog and a Distribute button that stretches the bordering
+    /// sessions over the gap. Sits at the element level, below the day's groups.
     /// </summary>
     private Control BuildGapNode(WeekGapViewModel gap)
     {
@@ -142,6 +143,23 @@ public sealed class WeekTrackingTree : UserControl
         ToolTip.SetTip(book, "Book this untracked time as a session");
         book.Click += async (_, _) => await BookAsync(gap);
         row.Children.Add(book);
+
+        var distribute = new Button
+        {
+            Content = "Distribute",
+            FontSize = 11,
+            Padding = new Thickness(6, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            IsEnabled = gap.CanDistribute,
+        };
+        ToolTip.SetTip(distribute, gap.DistributionHint);
+        // A disabled button shows no tooltip unless told to; the hint explains why.
+        ToolTip.SetShowOnDisabled(distribute, true);
+        distribute.Click += async (_, _) => await _week.DistributeAsync(
+            gap,
+            changes => Confirmations.ConfirmChangesAsync(
+                this, $"Distribute {gap.DurationText} over the neighboring sessions?", changes));
+        row.Children.Add(distribute);
 
         return row;
     }
