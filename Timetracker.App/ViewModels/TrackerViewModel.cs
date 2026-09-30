@@ -281,10 +281,11 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Deletes the given rows (all their sessions) from the log after asking the
-    /// user to confirm. Returns false when the user declined or the save failed.
+    /// Deletes the given rows (all their sessions) from the log. The caller asks
+    /// the user to confirm first (via <see cref="Confirmations"/>), so this only
+    /// runs once the user has agreed. Returns false when the save failed.
     /// </summary>
-    public async Task<bool> DeleteEntriesAsync(IReadOnlyList<EntryRow> rows, Func<string, bool> confirm)
+    public async Task<bool> DeleteEntriesAsync(IReadOnlyList<EntryRow> rows)
     {
         if (rows is null || rows.Count == 0)
         {
@@ -292,10 +293,6 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         }
 
         var summary = BuildDeleteSummary(rows);
-        if (!confirm(summary))
-        {
-            return false;
-        }
 
         // Snapshot so a failed save can restore exactly the previous state.
         var backup = _sessions.Select(e => e.Clone()).ToList();

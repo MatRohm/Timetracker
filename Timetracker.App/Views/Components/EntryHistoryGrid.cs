@@ -279,7 +279,7 @@ public sealed class EntryHistoryGrid : UserControl
         var confirmed = await Confirmations.ConfirmDeleteAsync(this, summary);
         if (confirmed)
         {
-            await _viewModel.DeleteEntriesAsync(rows, _ => true);
+            await _viewModel.DeleteEntriesAsync(rows);
         }
     }
 
