@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows.Input;
 using Timetracker.App.Models;
+using Timetracker.App.Services;
 
 namespace Timetracker.App.ViewModels;
 
@@ -135,12 +136,36 @@ public sealed class WeekDayViewModel : ObservableObject
         ? "Round each task's time on this day to the nearest half hour"
         : "Every task on this day is already on a half hour";
 
+    /// <summary>
+    /// One confirmation line per rounded task, e.g.
+    /// "Report 0:50 → 1:00: 10:00–10:50 → 10:00–11:00" (a removed session reads
+    /// "11:00–11:10 removed").
+    /// </summary>
+    public IReadOnlyList<string> RoundingLines =>
+        [.. Rounding.Tasks.Select(t =>
+            $"{t.Name} {WeekTimeFormat.HoursMinutes(t.Total)} → {WeekTimeFormat.HoursMinutes(t.Target)}: "
+            + string.Join("; ", t.Changes.Select(DescribeChange)))];
+
+    /// <summary>One line per task that could not be rounded, with the reason.</summary>
+    public IReadOnlyList<string> RoundingSkippedLines =>
+        [.. Rounding.Skipped.Select(t =>
+            $"{t.Name} {WeekTimeFormat.HoursMinutes(t.Total)} (no free time next to its last session)")];
+
     /// <summary>Replaces the day's rounding plan.</summary>
     public void SetRounding(RoundingPlan rounding)
     {
         Rounding = rounding;
         OnPropertyChanged(nameof(Rounding));
         OnPropertyChanged(nameof(CanRound));
+    }
+
+    private static string DescribeChange(SessionChange change)
+    {
+        var original = WeekTimeFormat.ClockRange(change.Original.Start, change.Original.End);
+        var result = change.Updated is { } updated
+            ? $"{original} → {WeekTimeFormat.ClockRange(updated.Start, updated.End)}"
+            : $"{original} removed";
+        return result;
     }
 
     /// <summary>

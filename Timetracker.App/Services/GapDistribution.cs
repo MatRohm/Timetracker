@@ -1,6 +1,6 @@
 using Timetracker.App.Models;
 
-namespace Timetracker.App.ViewModels;
+namespace Timetracker.App.Services;
 
 /// <summary>
 /// Plans how an untracked gap is handed to the sessions bordering it: the session

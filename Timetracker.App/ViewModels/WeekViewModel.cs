@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Windows.Input;
 using Timetracker.App.Models;
+using Timetracker.App.Services;
 
 namespace Timetracker.App.ViewModels;
 
@@ -183,7 +184,7 @@ public sealed class WeekViewModel : ObservableObject
     public async Task<bool> RoundDayAsync(WeekDayViewModel day, Func<IReadOnlyList<string>, Task<bool>> confirm)
     {
         var plan = day.Rounding;
-        var skipped = plan.Skipped.Select(s => "Skipped: " + s).ToList();
+        var skipped = day.RoundingSkippedLines.Select(s => "Skipped: " + s).ToList();
         if (plan.Changes.Count == 0)
         {
             if (skipped.Count > 0)
@@ -193,7 +194,7 @@ public sealed class WeekViewModel : ObservableObject
             return false;
         }
 
-        if (ApplyChanges is null || !await confirm([.. plan.Lines, .. skipped]))
+        if (ApplyChanges is null || !await confirm([.. day.RoundingLines, .. skipped]))
         {
             return false;
         }
@@ -202,7 +203,7 @@ public sealed class WeekViewModel : ObservableObject
         if (saved)
         {
             var note = skipped.Count > 0 ? " " + string.Join(" · ", skipped) : "";
-            ShowStatus($"✓ Rounded {plan.Lines.Count} task(s) on {day.Header} to half hours.{note}", WeekStatus.Success);
+            ShowStatus($"✓ Rounded {plan.Tasks.Count} task(s) on {day.Header} to half hours.{note}", WeekStatus.Success);
         }
 
         return saved;

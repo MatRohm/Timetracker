@@ -1,9 +1,9 @@
 using AwesomeAssertions;
 using NUnit.Framework;
 using Timetracker.App.Models;
-using Timetracker.App.ViewModels;
+using Timetracker.App.Services;
 
-namespace Timetracker.App.Tests.Unit.ViewModels;
+namespace Timetracker.App.Tests.Unit.Services;
 
 [TestFixture]
 public sealed class GapDistributionTests

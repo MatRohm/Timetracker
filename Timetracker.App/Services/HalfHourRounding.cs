@@ -1,20 +1,23 @@
 using Timetracker.App.Models;
 
-namespace Timetracker.App.ViewModels;
+namespace Timetracker.App.Services;
 
-/// <summary>
-/// What rounding a day would do: the session changes, one confirmation line per
-/// rounded task, and the tasks that had to be skipped (with the reason).
-/// </summary>
-public sealed record RoundingPlan(
-    IReadOnlyList<SessionChange> Changes,
-    IReadOnlyList<string> Lines,
-    IReadOnlyList<string> Skipped)
+/// <summary>A task whose day total is rounded: its old total, the target and the session changes.</summary>
+public sealed record RoundedTask(string Name, TimeSpan Total, TimeSpan Target, IReadOnlyList<SessionChange> Changes);
+
+/// <summary>A task that could not be rounded because no free time borders its last session.</summary>
+public sealed record SkippedTask(string Name, TimeSpan Total);
+
+/// <summary>What rounding a day would do: the rounded tasks and the tasks that had to be skipped.</summary>
+public sealed record RoundingPlan(IReadOnlyList<RoundedTask> Tasks, IReadOnlyList<SkippedTask> Skipped)
 {
-    public static readonly RoundingPlan Empty = new([], [], []);
+    public static readonly RoundingPlan Empty = new([], []);
+
+    /// <summary>Every session change of the rounded tasks, in task order.</summary>
+    public IReadOnlyList<SessionChange> Changes { get; } = [.. Tasks.SelectMany(t => t.Changes)];
 
     /// <summary>True when some task of the day is not on a half hour.</summary>
-    public bool HasWork => Changes.Count > 0 || Skipped.Count > 0;
+    public bool HasWork => Tasks.Count > 0 || Skipped.Count > 0;
 }
 
 /// <summary>
@@ -46,9 +49,8 @@ internal static class HalfHourRounding
             occupied.TryAdd(session, new TimeRange(session.Start, session.End));
         }
 
-        var changes = new List<SessionChange>();
-        var lines = new List<string>();
-        var skipped = new List<string>();
+        var rounded = new List<RoundedTask>();
+        var skipped = new List<SkippedTask>();
 
         var tasks = daySessions
             .GroupBy(s => s.Task.Trim(), StringComparer.CurrentCultureIgnoreCase)
@@ -68,7 +70,7 @@ internal static class HalfHourRounding
                 : Shorten(sessions, total - target);
             if (taskChanges.Count == 0)
             {
-                skipped.Add($"{task.Key} {Format(total)} (no free time next to its last session)");
+                skipped.Add(new SkippedTask(task.Key, total));
                 continue;
             }
 
@@ -84,12 +86,10 @@ internal static class HalfHourRounding
                 }
             }
 
-            changes.AddRange(taskChanges);
-            lines.Add($"{task.Key} {Format(total)} → {Format(target)}: "
-                + string.Join("; ", taskChanges.Select(Describe)));
+            rounded.Add(new RoundedTask(task.Key, total, target, taskChanges));
         }
 
-        var result = new RoundingPlan(changes, lines, skipped);
+        var result = new RoundingPlan(rounded, skipped);
         return result;
     }
 
@@ -181,14 +181,4 @@ internal static class HalfHourRounding
         result.Reschedule(start, end);
         return result;
     }
-
-    /// <summary>One change as "10:00–11:00 → 10:00–10:50", or "10:00–10:05 removed".</summary>
-    private static string Describe(SessionChange change) =>
-        change.Updated is { } updated
-            ? $"{Clock(change.Original)} → {Clock(updated)}"
-            : $"{Clock(change.Original)} removed";
-
-    private static string Clock(TrackerEntry session) => $"{session.Start:HH\\:mm}–{session.End:HH\\:mm}";
-
-    private static string Format(TimeSpan duration) => WeekTimeFormat.HoursMinutes(duration.TotalSeconds);
 }

@@ -1,9 +1,9 @@
 using AwesomeAssertions;
 using NUnit.Framework;
 using Timetracker.App.Models;
-using Timetracker.App.ViewModels;
+using Timetracker.App.Services;
 
-namespace Timetracker.App.Tests.Unit.ViewModels;
+namespace Timetracker.App.Tests.Unit.Services;
 
 [TestFixture]
 public sealed class HalfHourRoundingTests
@@ -19,7 +19,8 @@ public sealed class HalfHourRoundingTests
 
         plan.Changes.Should().ContainSingle();
         plan.Changes[0].Updated!.End.Should().Be(At(11, 0));
-        plan.Lines.Should().Equal("Report 0:50 → 1:00: 10:00–10:50 → 10:00–11:00");
+        plan.Tasks.Should().ContainSingle().Which.Should().BeEquivalentTo(
+            new { Name = "Report", Total = TimeSpan.FromMinutes(50), Target = TimeSpan.FromHours(1) });
     }
 
     [Test]
@@ -87,7 +88,7 @@ public sealed class HalfHourRoundingTests
         var plan = HalfHourRounding.Plan([before, report, after], [before, report, after], running: null);
 
         plan.Changes.Should().BeEmpty();
-        plan.Skipped.Should().ContainSingle().Which.Should().StartWith("Report 0:50");
+        plan.Skipped.Should().Equal(new SkippedTask("Report", TimeSpan.FromMinutes(50)));
         plan.HasWork.Should().BeTrue("the task is off the half hour, so the user should learn why nothing happened");
     }
 
@@ -114,7 +115,6 @@ public sealed class HalfHourRoundingTests
         var change = plan.Changes.Single();
         change.Original.Should().BeSameAs(tail);
         change.Updated.Should().BeNull();
-        plan.Lines.Single().Should().EndWith("11:00–11:10 removed");
     }
 
     [Test]
@@ -126,7 +126,7 @@ public sealed class HalfHourRoundingTests
         var plan = HalfHourRounding.Plan([first, second], [first, second], running: null);
 
         // 0:40 rounds down to 0:30 by shortening the later session.
-        plan.Lines.Should().ContainSingle();
+        plan.Tasks.Should().ContainSingle().Which.Total.Should().Be(TimeSpan.FromMinutes(40));
         plan.Changes.Single().Updated!.End.Should().Be(At(11, 10));
     }
 
@@ -143,7 +143,7 @@ public sealed class HalfHourRoundingTests
         // First takes 10:50–11:00; Second can neither extend into Third nor into First's new time.
         plan.Changes.Single().Original.Should().BeSameAs(first);
         plan.Changes.Single().Updated!.End.Should().Be(At(11, 0));
-        plan.Skipped.Should().ContainSingle().Which.Should().StartWith("Second");
+        plan.Skipped.Should().ContainSingle().Which.Name.Should().Be("Second");
     }
 
     private static DateTimeOffset At(int hour, int minute) => new(2026, 9, 21, hour, minute, 0, Offset);

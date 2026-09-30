@@ -1,4 +1,5 @@
 using Timetracker.App.Models;
+using Timetracker.App.Services;
 
 namespace Timetracker.App.ViewModels;
 
@@ -50,5 +51,5 @@ public sealed class WeekGapViewModel
     /// <summary>Row caption, e.g. "⚠ 10:15–11:05 untracked (0:50)".</summary>
     public string Text => $"⚠ {TimeText} untracked ({DurationText})";
 
-    private static string Clock(DateTimeOffset start, DateTimeOffset end) => $"{start:HH\\:mm}–{end:HH\\:mm}";
+    private static string Clock(DateTimeOffset start, DateTimeOffset end) => WeekTimeFormat.ClockRange(start, end);
 }

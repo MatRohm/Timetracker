@@ -1,6 +1,6 @@
 using Timetracker.App.Models;
 
-namespace Timetracker.App.ViewModels;
+namespace Timetracker.App.Services;
 
 /// <summary>
 /// Finds the untracked gaps of a day: the stretches in which the computer was
