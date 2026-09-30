@@ -43,9 +43,6 @@ public static class HookRegistry
                 sp.GetServices<ITrackerFileMigration>(),
                 sp.GetRequiredService<ILogger<Services.TrackerFileMigrator>>()));
         services.AddSingleton<IUiTimer, Services.AvaloniaUiTimer>();
-        // Idle detection comes from the monitor project's platform-specific provider.
-        services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IIdleTimeProvider>(
-            _ => Plugins.ActivityMonitor.IdleTimeProvider.CreateForCurrentPlatform());
         services.AddSingleton<ViewModels.TrackerViewModel>();
         services.AddSingleton<ViewModels.WeekViewModel>();
 
@@ -78,6 +75,7 @@ public static class HookRegistry
         // Add-in UI hosts: forwarded to the view models by the app's own services.
         services.AddSingleton<ITrackerUiHost, Services.TrackerUiHost>();
         services.AddSingleton<IWeekStatusHost, Services.WeekStatusHost>();
+        services.AddSingleton<ITrackerSessionHost, Services.TrackerSessionHost>();
 
         // Azure DevOps import: the connection is edited in the options tab.
         services.AddSingleton<Plugins.AzureDevOps.AzureDevOpsSettings>();
@@ -92,6 +90,13 @@ public static class HookRegistry
         services.AddSingleton<Plugins.ActivityMonitor.ActivityLog>();
         services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IActivityMonitorInstaller>(
             _ => Plugins.ActivityMonitor.ActivityMonitorInstallerFactory.CreateForCurrentPlatform());
+        // Idle detection comes from the monitor project's platform-specific provider.
+        services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IIdleTimeProvider>(
+            _ => Plugins.ActivityMonitor.IdleTimeProvider.CreateForCurrentPlatform());
+        // The idle auto-stop rule: stops the tracker's session after a long idle stretch.
+        services.AddSingleton<Plugins.ActivityMonitor.IdleAutoStop>();
+        services.AddSingleton<IAppHook>(sp =>
+            sp.GetRequiredService<Plugins.ActivityMonitor.IdleAutoStop>());
         // One contributor instance serves the per-day line and the day's active time.
         services.AddSingleton<Plugins.ActivityMonitor.ActivityWeekDayContributor>();
         services.AddSingleton<IWeekDayContributor>(

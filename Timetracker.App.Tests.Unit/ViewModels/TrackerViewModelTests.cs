@@ -401,64 +401,90 @@ public sealed class TrackerViewModelTests
     }
 
     /// <summary>
-    /// Idle auto-stop: when there has been no keyboard/mouse input for the threshold,
-    /// the running session is stopped and recorded up to the moment the idle stretch
-    /// began, so idle time is not billed to the task.
+    /// The session host's start path: an add-in starts a session by name; a running
+    /// session and an empty task name are both refused.
     /// </summary>
     [Test]
-    public async Task OnTimerTick_WhenIdleThresholdIsReached_ShouldStopRunningSession()
+    public async Task StartSessionAsync_WhenTaskNameIsGiven_ShouldStartTheSession()
     {
         var (repo, _) = RepositoryFake.Create();
-        var timer = new FakeTimer();
-        var idle = new FakeIdleTimeProvider();
-        using var vm = TrackerViewModelFactory.Create(repo, timer, idle);
+        using var vm = TrackerViewModelFactory.Create(repo);
+
+        var started = await vm.StartSessionAsync("Report", "AZE-123");
+
+        started.Should().BeTrue();
+        vm.IsRunning.Should().BeTrue();
+        vm.TaskName.Should().Be("Report");
+    }
+
+    [Test]
+    public async Task StartSessionAsync_WhenSessionIsAlreadyRunning_ShouldReturnFalse()
+    {
+        var (repo, _) = RepositoryFake.Create();
+        using var vm = TrackerViewModelFactory.Create(repo);
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
-        vm.IsRunning.Should().BeTrue();
 
-        idle.CurrentIdleTime = TrackerViewModel.IdleStopThreshold;
-        timer.RaiseTick();
+        var started = await vm.StartSessionAsync("Other");
 
-        vm.IsRunning.Should().BeFalse("30 minutes without input stops the timer");
+        started.Should().BeFalse("a session is already running");
+    }
+
+    [Test]
+    public async Task StartSessionAsync_WhenTaskNameIsEmpty_ShouldReturnFalse()
+    {
+        var (repo, _) = RepositoryFake.Create();
+        using var vm = TrackerViewModelFactory.Create(repo);
+
+        var started = await vm.StartSessionAsync("   ");
+
+        started.Should().BeFalse();
+        vm.IsRunning.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task StopSessionAsync_WhenRunning_ShouldSaveTheSessionAndReturnTrue()
+    {
+        var (repo, _) = RepositoryFake.Create();
+        using var vm = TrackerViewModelFactory.Create(repo);
+        vm.TaskName = "Report";
+        vm.StartCommand.Execute(null);
+
+        var stopped = await vm.StopSessionAsync();
+
+        stopped.Should().BeTrue();
+        vm.IsRunning.Should().BeFalse();
         (await repo.GetAllAsync()).Should().ContainSingle("the session was saved");
     }
 
     [Test]
-    public async Task OnTimerTick_WhenIdleIsBelowThreshold_ShouldKeepSessionRunning()
+    public async Task StopSessionAsync_WhenNotRunning_ShouldReturnFalse()
     {
         var (repo, _) = RepositoryFake.Create();
-        var timer = new FakeTimer();
-        var idle = new FakeIdleTimeProvider();
-        using var vm = TrackerViewModelFactory.Create(repo, timer, idle);
-        vm.TaskName = "Report";
-        vm.StartCommand.Execute(null);
+        using var vm = TrackerViewModelFactory.Create(repo);
 
-        idle.CurrentIdleTime = TrackerViewModel.IdleStopThreshold - TimeSpan.FromSeconds(1);
-        timer.RaiseTick();
+        var stopped = await vm.StopSessionAsync();
 
-        vm.IsRunning.Should().BeTrue("the threshold is 30 minutes, not less");
+        stopped.Should().BeFalse();
         (await repo.GetAllAsync()).Should().BeEmpty();
     }
 
     [Test]
-    public async Task StopForIdleAsync_WhenAnIdleSpanOccurs_ShouldNotCountItAsWorkTime()
+    public async Task StopSessionAsync_WhenEndedAtIsBackDated_ShouldNotCountTheIdleStretch()
     {
-        // A 15-minute session, then 45 minutes away: only the 15 worked minutes
-        // are billed, and the entry ends when the user walked away.
+        // A 15-minute session stopped after 45 minutes away: only the 15 worked
+        // minutes are billed, and the entry ends when the user walked away.
         var (repo, _) = RepositoryFake.Create();
-        var timer = new FakeTimer();
-        var idle = new FakeIdleTimeProvider();
         var now = new DateTimeOffset(2026, 9, 22, 9, 0, 0, TimeSpan.FromHours(2));
-        using var vm = TrackerViewModelFactory.Create(repo, timer, idle, now: () => now);
+        using var vm = TrackerViewModelFactory.Create(repo, now: () => now);
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
 
-        // 15 minutes of work, then the machine sits idle for 45 minutes.
         var worked = TimeSpan.FromMinutes(15);
         var idleFor = TimeSpan.FromMinutes(45);
         now += worked + idleFor;
-        idle.CurrentIdleTime = idleFor;
-        timer.RaiseTick();
+
+        await vm.StopSessionAsync(now - idleFor);
 
         var entry = (await repo.GetAllAsync()).Single();
         entry.DurationSeconds.Should().Be(worked.TotalSeconds, "only worked time is billed");
@@ -467,74 +493,17 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void StopForIdleAsync_WhenItStops_ShouldExplainItInTheStatusLine()
+    public async Task StopSessionAsync_WhenReasonIsGiven_ShouldShowItInTheStatusLine()
     {
         var (repo, _) = RepositoryFake.Create();
-        var timer = new FakeTimer();
-        var idle = new FakeIdleTimeProvider();
-        using var vm = TrackerViewModelFactory.Create(repo, timer, idle);
+        using var vm = TrackerViewModelFactory.Create(repo);
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
 
-        idle.CurrentIdleTime = TimeSpan.FromMinutes(40);
-        timer.RaiseTick();
+        await vm.StopSessionAsync(reason: "⏸ Stopped after 40 min idle.");
 
-        vm.StatusText.Should().Contain("40 min", "the idle duration is reported");
+        vm.StatusText.Should().Contain("40 min", "the reason is shown in the status line");
         vm.Status.Should().Be(TrackerStatus.Info);
-    }
-
-    [Test]
-    public async Task OnTimerTick_WhenTheSessionIsAlreadyStopped_ShouldNotStopItAgain()
-    {
-        var (repo, _) = RepositoryFake.Create();
-        var timer = new FakeTimer();
-        var idle = new FakeIdleTimeProvider();
-        using var vm = TrackerViewModelFactory.Create(repo, timer, idle);
-        vm.TaskName = "Report";
-        vm.StartCommand.Execute(null);
-
-        idle.CurrentIdleTime = TimeSpan.FromMinutes(45);
-        timer.RaiseTick();
-        timer.RaiseTick();
-        timer.RaiseTick();
-
-        (await repo.GetAllAsync()).Should().ContainSingle("only one entry is saved");
-    }
-
-    [Test]
-    public async Task OnTimerTick_WhenTheSessionIsNotRunning_ShouldNotStopItForIdle()
-    {
-        var (repo, _) = RepositoryFake.Create();
-        var timer = new FakeTimer();
-        var idle = new FakeIdleTimeProvider();
-        using var vm = TrackerViewModelFactory.Create(repo, timer, idle);
-
-        idle.CurrentIdleTime = TimeSpan.FromHours(2);
-        timer.RaiseTick();
-
-        vm.IsRunning.Should().BeFalse();
-        (await repo.GetAllAsync()).Should().BeEmpty("nothing was running, so nothing is saved");
-    }
-
-    [Test]
-    public async Task Start_WhenStartingAgainAfterAnIdleStop_ShouldWorkNormally()
-    {
-        var (repo, _) = RepositoryFake.Create();
-        var timer = new FakeTimer();
-        var idle = new FakeIdleTimeProvider();
-        using var vm = TrackerViewModelFactory.Create(repo, timer, idle);
-        vm.TaskName = "Report";
-        vm.StartCommand.Execute(null);
-        idle.CurrentIdleTime = TimeSpan.FromMinutes(45);
-        timer.RaiseTick();
-
-        // Back at the machine: idle resets and a new session can start.
-        idle.CurrentIdleTime = TimeSpan.Zero;
-        vm.StartCommand.Execute(null);
-        vm.IsRunning.Should().BeTrue();
-        vm.StopCommand.Execute(null);
-
-        (await repo.GetAllAsync()).Should().HaveCount(2, "the idle-stopped session and the new one");
     }
 
     /// <summary>

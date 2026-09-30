@@ -1,4 +1,3 @@
-using Timetracker.Plugins.ActivityMonitor.Interfaces;
 using Timetracker.App.Interfaces;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -32,15 +31,6 @@ public sealed class FakeTimer : IUiTimer
     public void Dispose() { }
 }
 
-/// <summary>
-/// Idle provider for tests: the idle duration is set directly, so no real
-/// platform API is touched.
-/// </summary>
-public sealed class FakeIdleTimeProvider : IIdleTimeProvider
-{
-    public TimeSpan CurrentIdleTime { get; set; }
-}
-
 /// <summary>FakeItEasy fake wrapping an in-memory list as repository.</summary>
 public static class RepositoryFake
 {
@@ -71,21 +61,18 @@ public static class RepositoryFake
 
 /// <summary>
 /// Creates the tracker view model wired to the fakes. Tests that need to drive the
-/// timer or idle provider keep references to those fakes and pass them in; the
-/// others accept fresh instances.
+/// timer keep a reference to it and pass it in; the others accept fresh instances.
 /// </summary>
 public static class TrackerViewModelFactory
 {
     public static TrackerViewModel Create(
         ITrackerRepository repository,
         FakeTimer? timer = null,
-        FakeIdleTimeProvider? idle = null,
         Func<DateTimeOffset>? now = null)
     {
         var result = new TrackerViewModel(
             repository,
             timer ?? new FakeTimer(),
-            idle ?? new FakeIdleTimeProvider(),
             NullLogger<TrackerViewModel>.Instance,
             now);
         return result;

@@ -6,22 +6,13 @@ using Timetracker.App.Interfaces;
 using Timetracker.App.Models;
 using Timetracker.App.Services;
 using Timetracker.App.ViewModels.Mvvm;
-using Timetracker.Plugins.ActivityMonitor.Interfaces;
 
 namespace Timetracker.App.ViewModels;
 
 public sealed class TrackerViewModel : ObservableObject, IDisposable
 {
-    /// <summary>
-    /// A running session is stopped automatically once there has been no keyboard
-    /// or mouse input for this long. The recorded end is back-dated to when the
-    /// idle stretch began, so idle time is not billed to the task.
-    /// </summary>
-    public static readonly TimeSpan IdleStopThreshold = TimeSpan.FromMinutes(30);
-
     private readonly ITrackerRepository _repository;
     private readonly IUiTimer _timer;
-    private readonly IIdleTimeProvider _idleTime;
     private readonly ILogger<TrackerViewModel> _logger;
     private readonly Stopwatch _watch = new();
 
@@ -54,19 +45,16 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
     /// <param name="repository">Reads and writes the session log.</param>
     /// <param name="timer">Ticks on the UI thread while a session runs.</param>
-    /// <param name="idleTime">Reports how long there has been no keyboard or mouse input.</param>
     /// <param name="logger">Receives failures to save or book entries.</param>
-    /// <param name="now">Current time; replaceable so idle behavior can be tested deterministically.</param>
+    /// <param name="now">Current time; replaceable so time-dependent behavior can be tested deterministically.</param>
     public TrackerViewModel(
         ITrackerRepository repository,
         IUiTimer timer,
-        IIdleTimeProvider idleTime,
         ILogger<TrackerViewModel> logger,
         Func<DateTimeOffset>? now = null)
     {
         _repository = repository;
         _timer = timer;
-        _idleTime = idleTime;
         _logger = logger;
         _now = now ?? (() => DateTimeOffset.Now);
         _timer.Tick += OnTimerTick;
@@ -235,6 +223,59 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
     /// <summary>Puts a suggestion's task name into the input field.</summary>
     public void AcceptSuggestion(SuggestionItem suggestion) => TaskName = suggestion.Name;
+
+    /// <summary>
+    /// Starts a session for the given task on an add-in's behalf (via the session
+    /// host). Returns false when a session is already running or the task name is
+    /// empty; the add-in decides how to react.
+    /// </summary>
+    public Task<bool> StartSessionAsync(string taskName, string bookingElement = "")
+    {
+        if (IsRunning)
+        {
+            return Task.FromResult(false);
+        }
+
+        var task = taskName.Trim();
+        if (task.Length == 0)
+        {
+            return Task.FromResult(false);
+        }
+
+        TaskName = task;
+        PreviewBookingElement = bookingElement;
+        Start();
+        return Task.FromResult(true);
+    }
+
+    /// <summary>
+    /// Stops and saves the running session on an add-in's behalf (via the session
+    /// host). The end is back-dated when <paramref name="endedAt"/> is given (e.g.
+    /// an idle stop); <paramref name="reason"/>, if given, replaces the generic save
+    /// status. Returns false when no session is running.
+    /// </summary>
+    public async Task<bool> StopSessionAsync(DateTimeOffset? endedAt = null, string? reason = null)
+    {
+        if (!IsRunning)
+        {
+            return false;
+        }
+
+        var end = endedAt ?? _now();
+        var elapsed = endedAt is null
+            ? _watch.Elapsed
+            : (end > _startedAt ? end - _startedAt : TimeSpan.Zero);
+
+        await HaltAndSaveAsync(end, elapsed);
+
+        if (reason is not null)
+        {
+            Status = TrackerStatus.Info;
+            StatusText = reason;
+        }
+
+        return true;
+    }
 
     /// <summary>
     /// Deletes the given rows (all their sessions) from the log after asking the
@@ -558,49 +599,14 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
     private void RefreshSuggestions() => _suggestions.Refresh(TaskName, _sessions);
 
-    private async void OnTimerTick()
+    private void OnTimerTick()
     {
         if (!_watch.IsRunning)
         {
             return;
         }
 
-        // No input for the threshold: stop and bill only up to the last input.
-        if (_idleTime.CurrentIdleTime >= IdleStopThreshold)
-        {
-            await StopForIdleAsync();
-            return;
-        }
-
         ElapsedTimeText = _watch.Elapsed.ToString(@"hh\:mm\:ss");
-    }
-
-    /// <summary>
-    /// Stops the running session because the machine has been idle for too long.
-    /// The entry is back-dated to the last input, so the idle stretch is not
-    /// counted as work; the status line explains what happened.
-    /// </summary>
-    private async Task StopForIdleAsync()
-    {
-        var idle = _idleTime.CurrentIdleTime;
-
-        // The last input happened when the idle stretch began; the session ends
-        // there, so the idle time is not billed to the task.
-        var endedAt = _now() - idle;
-        var worked = endedAt > _startedAt ? endedAt - _startedAt : TimeSpan.Zero;
-
-        await HaltAndSaveAsync(endedAt, worked);
-
-        // Replace the generic save status with an explanation of the idle stop.
-        Status = TrackerStatus.Info;
-        StatusText = $"⏸ Stopped after {FormatIdle(idle)} idle – saved {worked:hh\\:mm\\:ss}.";
-    }
-
-    private static string FormatIdle(TimeSpan idle)
-    {
-        var minutes = (int)Math.Round(idle.TotalMinutes);
-        var result = minutes == 1 ? "1 min" : $"{minutes} min";
-        return result;
     }
 
     private void RefreshCommands()
