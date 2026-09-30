@@ -21,6 +21,8 @@ A small cross-platform desktop time tracker (Windows, Linux, macOS) built with
 - **PC activity monitor:** an optional background process that records active and
   idle time; the week view shows it per day, together with the **untracked time**
   (PC active time no session covers, highlighted from 15 minutes).
+- **Options:** a tab with the file and log locations (each with **Show in explorer**)
+  and the settings of the plugins, such as the Azure DevOps connection.
 
 ## Getting started
 
@@ -52,28 +54,27 @@ unless noted otherwise.
 | File | Purpose |
 |---|---|
 | `timetracker.json` | Tracked sessions, grouped per task (versioned format; older files are migrated at startup and backed up as `timetracker.json.v1-backup`). Written atomically. |
-| `timetracker-azdo.json` | Azure DevOps connection (optional, see below). |
+| `timetracker-options.json` | Options edited in the **Options** tab, such as the Azure DevOps connection. Written atomically. |
 | `timetracker-activity.json` | Active/idle spans from the activity monitor. Idle spans are recorded only when they last at least one hour. |
+
+The **Options** tab shows where these files and the logs are; **Show in explorer**
+opens each location in the file manager. Plugins add their own sections there and
+read and write their options through `IOptionsStore`.
 
 **Logs** are written to `%LOCALAPPDATA%\Timetracker\logs\` on Windows and to
 `$XDG_STATE_HOME/timetracker/logs/` (default `~/.local/state/timetracker/logs/`) on
 Linux: `app-<date>.log` for the app and `monitor-<date>.log` for the activity monitor.
 A new file starts each day (or past 10 MB); the newest 14 files per process are kept.
 
-**Azure DevOps:** create `timetracker-azdo.json` (template:
-`Timetracker.Plugins.AzureDevOps/timetracker-azdo.example.json`):
-
-```json
-{
-  "url": "https://dev.azure.com/your-organization",
-  "project": "YourProject",
-  "pat": "your-personal-access-token"
-}
-```
+**Azure DevOps:** enter the organization URL (e.g.
+`https://dev.azure.com/your-organization`), the project and a personal access token
+in the **Azure DevOps** section of the **Options** tab and click **Save**; changes
+apply to the next import without a restart. The token is stored unencrypted in
+`timetracker-options.json` and only masked on screen.
 
 The personal access token only needs the **Work Items (Read)** scope. The task
 name becomes `<id> <title>`, and the booking element comes from the work item's
-**AZE-Element** field. Without the file the tracker works normally.
+**AZE-Element** field. Without a connection the tracker works normally.
 
 **Activity monitor:** the week view's **⏻ Install PC activity monitor** button
 registers a per-user autostart (HKCU Run key on Windows,

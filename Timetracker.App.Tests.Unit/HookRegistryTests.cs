@@ -4,12 +4,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NUnit.Framework;
 using Timetracker.App.Services;
+using Timetracker.Plugins.Contracts.Interfaces;
 
 namespace Timetracker.App.Tests.Unit;
 
 /// <summary>
 /// The composition root must register the migration step and its runner against the
-/// repository's file, with the runner able to reach every step.
+/// repository's file, with the runner able to reach every step, and the options
+/// store with every component's options section.
 /// </summary>
 [TestFixture]
 public sealed class HookRegistryTests
@@ -26,5 +28,17 @@ public sealed class HookRegistryTests
         repository.Should().BeOfType<JsonTrackerRepository>();
         runner.Should().BeOfType<TrackerFileMigrator>();
         steps.Should().ContainSingle().Which.Should().BeOfType<VersionOneToTwoMigration>();
+    }
+
+    [Test]
+    public void BuildServiceProvider_WhenCalled_ShouldRegisterTheOptionsSectionsWithGeneralFirst()
+    {
+        var services = Timetracker.App.HookRegistry.BuildServiceProvider(NullLoggerFactory.Instance);
+
+        var store = services.GetRequiredService<IOptionsStore>();
+        var sections = services.GetServices<IOptionsContributor>().Select(c => c.Section);
+
+        store.Should().BeOfType<JsonOptionsStore>();
+        sections.Should().Equal("General", "Azure DevOps", "Activity monitor");
     }
 }

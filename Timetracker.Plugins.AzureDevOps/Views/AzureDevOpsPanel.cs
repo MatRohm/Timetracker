@@ -35,10 +35,9 @@ public sealed class AzureDevOpsPanel : UserControl
 
         _importButton.Content = "Azure DevOps import";
         _importButton.Click += async (_, _) => await ShowImportPopupAsync();
-        ToolTip.SetTip(_importButton, _service.IsConfigured
-            ? "Fetches issue number, title and AZE-Element into the fields."
-            : "Not configured - create " + _service.ConfigFilePath
-                + " (url, project, pat) and restart.");
+        ToolTip.SetTip(_importButton,
+            "Fetches issue number, title and AZE-Element into the fields. "
+            + "The connection is set in the Options tab.");
 
         var icon = LoadBitmap("Timetracker.Plugins.AzureDevOps.azure-favicon.png", 16);
         if (icon is not null)
@@ -88,9 +87,7 @@ public sealed class AzureDevOpsPanel : UserControl
         // Without a usable config the popup cannot succeed; explain instead.
         if (!_service.IsConfigured)
         {
-            _host.ShowStatus("Azure DevOps is not configured - create "
-                + _service.ConfigFilePath + " (url, project, pat).",
-                TrackerStatusKind.Error);
+            _host.ShowStatus(AzureDevOpsService.NotConfiguredMessage, TrackerStatusKind.Error);
             return;
         }
 

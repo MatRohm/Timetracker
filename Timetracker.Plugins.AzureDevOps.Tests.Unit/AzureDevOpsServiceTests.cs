@@ -153,7 +153,7 @@ public sealed class AzureDevOpsServiceTests
     }
 
     [Test]
-    public async Task ApplyIssueAsync_WhenTheConfigIsMissing_ShouldReportWhereToPutIt()
+    public async Task ApplyIssueAsync_WhenTheConfigIsMissing_ShouldPointToTheOptionsTab()
     {
         var service = new AzureDevOpsService(new AzureDevOpsConfig());
         var host = new FakeHost();
@@ -161,21 +161,29 @@ public sealed class AzureDevOpsServiceTests
         var result = await service.ApplyIssueAsync("42", host);
 
         result.Success.Should().BeFalse();
-        result.Error.Should().Contain("timetracker-azdo.json");
+        result.Error.Should().Be(AzureDevOpsService.NotConfiguredMessage);
+        result.Error.Should().Contain("Options tab");
     }
 
     [Test]
-    public void ConfigurationHint_WhenRead_ShouldNameThePathAndShowAnExample()
+    public async Task ApplyIssueAsync_WhenTheConnectionWasEditedAfterStart_ShouldUseTheCurrentValues()
     {
-        var service = new AzureDevOpsService(new AzureDevOpsConfig());
+        var current = new AzureDevOpsConfig();
+        AzureDevOpsConfig? used = null;
+        var service = new AzureDevOpsService(() => current, config =>
+        {
+            used = config;
+            return new AzureDevOpsClient(config, FakeHttp.WorkItem(42, "Fix login bug", "10831"));
+        });
+        var host = new FakeHost();
 
-        var hint = service.ConfigurationHint;
+        var before = await service.ApplyIssueAsync("42", host);
+        current = AzureDevOpsTestHelpers.Config();
+        var after = await service.ApplyIssueAsync("42", host);
 
-        hint.Should().Contain(AzureDevOpsConfig.DefaultFilePath);
-        hint.Should().Contain("\"url\"");
-        hint.Should().Contain("\"project\"");
-        hint.Should().Contain("\"pat\"");
-        hint.Should().Contain("https://dev.azure.com/your-organization");
+        before.Success.Should().BeFalse("nothing was configured yet");
+        after.Success.Should().BeTrue();
+        used.Should().BeSameAs(current);
     }
 
     [Test]

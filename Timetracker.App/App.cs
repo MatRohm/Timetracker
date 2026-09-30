@@ -101,7 +101,11 @@ public sealed class App : Application
                     .SelectMany(source => source.GetActiveSpans(day))
                     .Select(span => new Models.TimeRange(span.Start, span.End))];
 
-            var window = new TrackerWindow(viewModel, trackerContributors, weekContributors);
+            var window = new TrackerWindow(
+                viewModel,
+                trackerContributors,
+                weekContributors,
+                _services.GetRequiredService<ViewModels.OptionsViewModel>());
             desktop.MainWindow = window;
 
             // Let the components run their startup hooks.

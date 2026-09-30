@@ -18,7 +18,7 @@ public sealed class AzureDevOpsPanelRenderTests
     [AvaloniaTest]
     public void AzureDevOpsPanel_WhenLoaded_ShouldLoadEmbeddedIconAndButton()
     {
-        var service = new AzureDevOpsService(configFilePath: "/nonexistent");
+        var service = new AzureDevOpsService(new AzureDevOpsConfig());
         var panel = new AzureDevOpsPanel(service, new FakeTrackerHost());
 
         panel.ImportButton.Should().NotBeNull();

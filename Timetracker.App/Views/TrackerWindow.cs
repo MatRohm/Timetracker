@@ -5,7 +5,7 @@ using Timetracker.App.ViewModels;
 namespace Timetracker.App.Views;
 
 /// <summary>
-/// Application shell: hosts the tracker and week tabs, binds the window title and
+/// Application shell: hosts the tracker, week and options tabs, binds the window title and
 /// app-level events. All tab content lives in the dedicated tab views; add-in UI
 /// controls are resolved by the composition root and passed in pre-built.
 /// </summary>
@@ -17,7 +17,8 @@ public sealed class TrackerWindow : Window
     public TrackerWindow(
         TrackerViewModel viewModel,
         IReadOnlyList<Control> trackerContributors,
-        IReadOnlyList<Control> weekContributors)
+        IReadOnlyList<Control> weekContributors,
+        OptionsViewModel options)
     {
         _vm = viewModel;
 
@@ -35,6 +36,7 @@ public sealed class TrackerWindow : Window
         var tabs = new TabControl();
         tabs.Items.Add(new TabItem { Header = "Tracker", Content = _trackerView });
         tabs.Items.Add(new TabItem { Header = "Week view", Content = weekView });
+        tabs.Items.Add(new TabItem { Header = "Options", Content = new OptionsTabView(options) });
 
         Content = tabs;
 

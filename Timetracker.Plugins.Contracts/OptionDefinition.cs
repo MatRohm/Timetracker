@@ -1,0 +1,30 @@
+namespace Timetracker.Plugins.Contracts;
+
+/// <summary>How an option is edited and shown.</summary>
+public enum OptionKind
+{
+    /// <summary>Free text.</summary>
+    Text,
+
+    /// <summary>A file or folder path; the options view can show it in the file explorer.</summary>
+    Path,
+
+    /// <summary>Text that is masked on screen, such as a token.</summary>
+    Secret,
+}
+
+/// <summary>One option a component shows in the options view.</summary>
+/// <param name="Key">Store key, prefixed with the component's name ("AzureDevOps.Url").</param>
+/// <param name="Label">Text shown next to the value.</param>
+/// <param name="Kind">How the value is edited and shown.</param>
+/// <param name="DefaultValue">
+/// Shown while the store holds no value for <paramref name="Key"/>. For a read-only
+/// option it is the value itself, which is never stored.
+/// </param>
+/// <param name="IsReadOnly">True for information such as a file location the user cannot change.</param>
+public sealed record OptionDefinition(
+    string Key,
+    string Label,
+    OptionKind Kind,
+    string DefaultValue = "",
+    bool IsReadOnly = false);

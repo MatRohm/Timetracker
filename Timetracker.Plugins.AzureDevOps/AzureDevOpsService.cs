@@ -7,52 +7,47 @@ namespace Timetracker.Plugins.AzureDevOps;
 
 /// <summary>
 /// Fetches a work item by number and pushes its title and AZE-Element into the
-/// tracker inputs: task name becomes "&lt;issue number&gt; &lt;title&gt;". Owns the
-/// config load and error reporting so the host stays thin.
+/// tracker inputs: task name becomes "&lt;issue number&gt; &lt;title&gt;". Reads the
+/// connection anew for every lookup, so edits in the options tab apply at once,
+/// and owns the error reporting so the host stays thin.
 /// </summary>
 public sealed class AzureDevOpsService
 {
-    private readonly AzureDevOpsConfig _config;
-    private readonly Func<AzureDevOpsClient> _clientFactory;
+    /// <summary>Shown when the import is used without a usable connection.</summary>
+    public const string NotConfiguredMessage =
+        "Azure DevOps is not configured. Enter the organization URL, project and "
+        + "personal access token in the Azure DevOps section of the Options tab.";
+
+    private readonly Func<AzureDevOpsConfig> _config;
+    private readonly Func<AzureDevOpsConfig, AzureDevOpsClient> _clientFactory;
     private readonly ILogger<AzureDevOpsService> _logger;
 
-    /// <param name="configFilePath">Overrides the config path (used by tests).</param>
-    public AzureDevOpsService(string? configFilePath = null)
-        : this(AzureDevOpsConfig.Load(configFilePath))
-    {
-    }
-
-    /// <param name="config">The connection to use.</param>
+    /// <param name="config">A fixed connection (used by tests).</param>
     /// <param name="clientFactory">Creates the HTTP client (replaced by tests).</param>
     /// <param name="logger">Receives failed lookups.</param>
     public AzureDevOpsService(
         AzureDevOpsConfig config,
         Func<AzureDevOpsClient>? clientFactory = null,
         ILogger<AzureDevOpsService>? logger = null)
+        : this(() => config, clientFactory is null ? null : _ => clientFactory(), logger)
     {
-        _config = config;
-        _clientFactory = clientFactory ?? (() => new AzureDevOpsClient(config));
+    }
+
+    /// <param name="currentConfig">Returns the connection to use now; read for every lookup.</param>
+    /// <param name="clientFactory">Creates the HTTP client for a connection (replaced by tests).</param>
+    /// <param name="logger">Receives failed lookups.</param>
+    public AzureDevOpsService(
+        Func<AzureDevOpsConfig> currentConfig,
+        Func<AzureDevOpsConfig, AzureDevOpsClient>? clientFactory = null,
+        ILogger<AzureDevOpsService>? logger = null)
+    {
+        _config = currentConfig;
+        _clientFactory = clientFactory ?? (config => new AzureDevOpsClient(config));
         _logger = logger ?? NullLogger<AzureDevOpsService>.Instance;
     }
 
-    /// <summary>True when a config file with all three values was found.</summary>
-    public bool IsConfigured => _config.IsUsable;
-
-    /// <summary>Path of the config file the user is asked to create.</summary>
-    public string ConfigFilePath => AzureDevOpsConfig.DefaultFilePath;
-
-    /// <summary>
-    /// Message shown when the import is used without a usable config: the expected
-    /// file path plus a sample configuration to copy.
-    /// </summary>
-    public string ConfigurationHint => "Azure DevOps is not configured.\n\n" +
-        "Create a configuration file at\n" + AzureDevOpsConfig.DefaultFilePath + "\n\n" +
-        "Example content:\n" +
-        "{\n" +
-        "  \"url\": \"https://dev.azure.com/your-organization\",\n" +
-        "  \"project\": \"YourProject\",\n" +
-        "  \"pat\": \"your-personal-access-token\"\n" +
-        "}";
+    /// <summary>True when the current connection has all three values.</summary>
+    public bool IsConfigured => _config().IsUsable;
 
     /// <summary>
     /// Looks up the work item and fills the host inputs. Returns false when the
@@ -69,14 +64,13 @@ public sealed class AzureDevOpsService
             return ApplyResult.Failure("Please enter a numeric issue number first.");
         }
 
-        if (!_config.IsUsable)
+        var config = _config();
+        if (!config.IsUsable)
         {
-            return ApplyResult.Failure(
-                "Azure DevOps is not configured. Create " + AzureDevOpsConfig.DefaultFilePath
-                + " with \"url\", \"project\" and \"pat\".");
+            return ApplyResult.Failure(NotConfiguredMessage);
         }
 
-        using var client = _clientFactory();
+        using var client = _clientFactory(config);
         WorkItemInfo? workItem;
         try
         {

@@ -1,0 +1,19 @@
+using Timetracker.Plugins.Contracts;
+using Timetracker.Plugins.Contracts.Interfaces;
+
+namespace Timetracker.Plugins.ActivityMonitor;
+
+/// <summary>
+/// The "Activity monitor" section of the options tab: where the monitor keeps the
+/// recorded spans and its state across restarts. Both entries are read-only.
+/// </summary>
+public sealed class ActivityOptionsContributor(ActivityLog log) : IOptionsContributor
+{
+    public string Section => "Activity monitor";
+
+    public IReadOnlyList<OptionDefinition> Options { get; } =
+    [
+        new("ActivityMonitor.ActivityFile", "Activity file", OptionKind.Path, log.FilePath, IsReadOnly: true),
+        new("ActivityMonitor.StateFile", "State file", OptionKind.Path, ActivityTracker.StateFilePath, IsReadOnly: true),
+    ];
+}

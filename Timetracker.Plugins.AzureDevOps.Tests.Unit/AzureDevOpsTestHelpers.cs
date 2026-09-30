@@ -13,13 +13,6 @@ internal static class AzureDevOpsTestHelpers
         Project = "MyProject",
         Pat = "secret-token",
     };
-
-    internal static string TempPath(string fileName)
-    {
-        var directory = Path.Combine(Path.GetTempPath(), "opencode", "tt-azdo-tests");
-        Directory.CreateDirectory(directory);
-        return Path.Combine(directory, fileName);
-    }
 }
 
 internal static class FakeHttp
@@ -50,6 +43,27 @@ internal static class FakeHttp
             var response = responder(request);
             return Task.FromResult(response);
         }
+    }
+}
+
+/// <summary>Options kept in memory; tests set <see cref="Values"/> directly.</summary>
+internal sealed class InMemoryOptionsStore : IOptionsStore
+{
+    public Dictionary<string, string> Values { get; } = [];
+
+    public string? GetValue(string key) => Values.GetValueOrDefault(key);
+
+    public Task SetValueAsync(string key, string? value, CancellationToken cancellationToken = default)
+    {
+        if (value is null)
+        {
+            Values.Remove(key);
+        }
+        else
+        {
+            Values[key] = value;
+        }
+        return Task.CompletedTask;
     }
 }
 

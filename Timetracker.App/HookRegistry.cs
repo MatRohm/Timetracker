@@ -49,6 +49,17 @@ public static class HookRegistry
         services.AddSingleton<ViewModels.TrackerViewModel>();
         services.AddSingleton<ViewModels.WeekViewModel>();
 
+        // Options: one store for every component, and the options tab with the app's
+        // own section first (sections appear in registration order).
+        services.AddSingleton<Services.JsonOptionsStore>(sp =>
+            new Services.JsonOptionsStore(logger: sp.GetRequiredService<ILogger<Services.JsonOptionsStore>>()));
+        services.AddSingleton<IOptionsStore>(sp => sp.GetRequiredService<Services.JsonOptionsStore>());
+        services.AddSingleton<IOptionsContributor>(sp => new Services.GeneralOptionsContributor(
+            sp.GetRequiredService<Services.JsonTrackerRepository>(),
+            sp.GetRequiredService<Services.JsonOptionsStore>()));
+        services.AddSingleton<IFileExplorer, Services.FileExplorer>();
+        services.AddSingleton<ViewModels.OptionsViewModel>();
+
         // Add-in registrations: one block per component.
         AddComponents(services);
 
@@ -68,14 +79,13 @@ public static class HookRegistry
         services.AddSingleton<ITrackerUiHost, Services.TrackerUiHost>();
         services.AddSingleton<IWeekStatusHost, Services.WeekStatusHost>();
 
-        // Azure DevOps import.
-        services.AddSingleton<Plugins.AzureDevOps.AzureDevOpsConfig>(sp =>
-            Plugins.AzureDevOps.AzureDevOpsConfig.Load(
-                logger: sp.GetRequiredService<ILogger<Plugins.AzureDevOps.AzureDevOpsConfig>>()));
+        // Azure DevOps import: the connection is edited in the options tab.
+        services.AddSingleton<Plugins.AzureDevOps.AzureDevOpsSettings>();
         services.AddSingleton<Plugins.AzureDevOps.AzureDevOpsService>(sp =>
             new Plugins.AzureDevOps.AzureDevOpsService(
-                sp.GetRequiredService<Plugins.AzureDevOps.AzureDevOpsConfig>(),
+                sp.GetRequiredService<Plugins.AzureDevOps.AzureDevOpsSettings>().Current,
                 logger: sp.GetRequiredService<ILogger<Plugins.AzureDevOps.AzureDevOpsService>>()));
+        services.AddSingleton<IOptionsContributor, Plugins.AzureDevOps.AzureDevOpsOptionsContributor>();
         services.AddSingleton<IUiContributor, Plugins.AzureDevOps.Views.AzureDevOpsUiContributor>();
 
         // PC activity monitor: activity log, per-day lines, installer UI.
@@ -89,5 +99,6 @@ public static class HookRegistry
         services.AddSingleton<IDayActivitySource>(
             sp => sp.GetRequiredService<Plugins.ActivityMonitor.ActivityWeekDayContributor>());
         services.AddSingleton<IUiContributor, Plugins.ActivityMonitor.Views.MonitorSetupUiContributor>();
+        services.AddSingleton<IOptionsContributor, Plugins.ActivityMonitor.ActivityOptionsContributor>();
     }
 }
