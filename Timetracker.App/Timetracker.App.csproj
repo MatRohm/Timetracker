@@ -30,6 +30,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Timetracker.Plugins.AzureDevOps\Timetracker.Plugins.AzureDevOps.csproj" />
     <ProjectReference Include="..\Timetracker.Plugins.ActivityMonitor\Timetracker.Plugins.ActivityMonitor.csproj" />
+    <ProjectReference Include="..\Timetracker.Plugins.WeekView\Timetracker.Plugins.WeekView.csproj" />
     <ProjectReference Include="..\Timetracker.Plugins.Contracts\Timetracker.Plugins.Contracts.csproj" />
   </ItemGroup>
 

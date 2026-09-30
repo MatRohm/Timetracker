@@ -17,7 +17,7 @@ public sealed class TrackerWindow : Window
     public TrackerWindow(
         TrackerViewModel viewModel,
         IReadOnlyList<Control> trackerContributors,
-        IReadOnlyList<Control> weekContributors,
+        IReadOnlyList<TabItem> pluginTabs,
         OptionsViewModel options)
     {
         _vm = viewModel;
@@ -31,11 +31,13 @@ public sealed class TrackerWindow : Window
         Icon = LoadAppIcon();
 
         _trackerView = new TrackerTabView(_vm, trackerContributors);
-        var weekView = new WeekTabView(_vm.Week, weekContributors);
 
         var tabs = new TabControl();
         tabs.Items.Add(new TabItem { Header = "Tracker", Content = _trackerView });
-        tabs.Items.Add(new TabItem { Header = "Week view", Content = weekView });
+        foreach (var tab in pluginTabs)
+        {
+            tabs.Items.Add(tab);
+        }
         tabs.Items.Add(new TabItem { Header = "Options", Content = new OptionsTabView(options) });
 
         Content = tabs;

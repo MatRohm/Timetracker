@@ -145,7 +145,7 @@ public sealed class EntryEditor
     /// longer in the log or the save fails.
     /// </summary>
     public async Task<EntryEditResult> ApplyChangesAsync(
-        IReadOnlyList<SessionChange> changes,
+        IReadOnlyList<(TrackerEntry Original, TrackerEntry? Updated)> changes,
         IReadOnlyList<TrackerEntry> currentSessions)
     {
         if (changes.Count == 0)
@@ -154,7 +154,7 @@ public sealed class EntryEditor
         }
 
         var summary = $"{changes.Count} sessions";
-        var byOriginal = changes.ToDictionary<SessionChange, TrackerEntry>(
+        var byOriginal = changes.ToDictionary<(TrackerEntry Original, TrackerEntry? Updated), TrackerEntry>(
             c => c.Original, ReferenceEqualityComparer.Instance);
         var matched = currentSessions.Count(s => byOriginal.ContainsKey(s));
         if (matched != byOriginal.Count)

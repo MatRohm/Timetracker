@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
-using Timetracker.App.ViewModels.Mvvm;
+using Timetracker.App.Models;
+using Timetracker.Plugins.Contracts.ViewModels;
+using Timetracker.Plugins.Contracts.ViewModels.Mvvm;
 
 namespace Timetracker.App.ViewModels;
 
@@ -12,16 +14,20 @@ namespace Timetracker.App.ViewModels;
 public sealed class EditEntriesViewModel : ObservableObject
 {
     private readonly ObservableCollection<SessionEditRow> _sessions = [];
+    private readonly Dictionary<SessionEditRow, TrackerEntry> _entries = new(ReferenceEqualityComparer.Instance);
     private bool _sessionsModified;
 
     public EditEntriesViewModel(EntryRow item)
     {
         TaskName = string.IsNullOrWhiteSpace(item.Task) ? "(without task)" : item.Task;
 
-        // Chronological, so the list reads like a timeline.
+        // Chronological, so the list reads like a timeline. The row stages the
+        // times; the underlying entry is written back on save.
         foreach (var session in item.Sessions.OrderBy(s => s.Start))
         {
-            _sessions.Add(new SessionEditRow(session));
+            var row = new SessionEditRow(session.Task, session.Start, session.End);
+            _entries[row] = session;
+            _sessions.Add(row);
         }
     }
 
@@ -84,14 +90,14 @@ public sealed class EditEntriesViewModel : ObservableObject
 
         foreach (var session in Sessions)
         {
-            session.Commit();
+            _entries[session].Reschedule(session.Start, session.End);
         }
         return true;
     }
 
     /// <summary>The sessions to keep, in chronological order.</summary>
-    public IReadOnlyList<SessionEditRow> RemainingSessions() =>
-        [.. Sessions.OrderBy(s => s.Start)];
+    public IReadOnlyList<TrackerEntry> RemainingSessions() =>
+        [.. Sessions.OrderBy(s => s.Start).Select(session => _entries[session])];
 
     private void RaiseTotalsChanged() => OnPropertyChanged(nameof(SummaryText));
 }

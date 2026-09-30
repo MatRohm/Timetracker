@@ -5,6 +5,7 @@ using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Threading;
+using Timetracker.Plugins.Contracts.Ui;
 using Timetracker.App.ViewModels;
 
 namespace Timetracker.App.Views.Components;
@@ -226,12 +227,12 @@ public sealed class EntryHistoryGrid : UserControl
         var dialog = new EditEntriesWindow(row);
         await dialog.ShowDialog(owner);
 
-        if (dialog.Result is not { } sessions)
+        if (!dialog.Saved)
         {
             return;
         }
 
-        await _viewModel.ReplaceSessionsAsync(row.Task, sessions);
+        await _viewModel.ReplaceSessionsAsync(row.Task, dialog.ViewModel);
     }
 
     private void OnGridSorting(object? sender, DataGridColumnEventArgs e)

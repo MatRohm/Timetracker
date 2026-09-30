@@ -43,8 +43,11 @@ public static class HookRegistry
                 sp.GetServices<ITrackerFileMigration>(),
                 sp.GetRequiredService<ILogger<Services.TrackerFileMigrator>>()));
         services.AddSingleton<IUiTimer, Services.AvaloniaUiTimer>();
+        services.AddSingleton<Services.EntryEditor>(sp =>
+            new Services.EntryEditor(
+                sp.GetRequiredService<ITrackerRepository>().SaveAsync,
+                sp.GetRequiredService<ILogger<Services.EntryEditor>>()));
         services.AddSingleton<ViewModels.TrackerViewModel>();
-        services.AddSingleton<ViewModels.WeekViewModel>();
 
         // Options: one store for every component, and the options tab with the app's
         // own section first (sections appear in registration order).
@@ -74,8 +77,13 @@ public static class HookRegistry
     {
         // Add-in UI hosts: forwarded to the view models by the app's own services.
         services.AddSingleton<ITrackerUiHost, Services.TrackerUiHost>();
-        services.AddSingleton<IWeekStatusHost, Services.WeekStatusHost>();
         services.AddSingleton<ITrackerSessionHost, Services.TrackerSessionHost>();
+        services.AddSingleton<ITrackedSessions, Services.TrackedSessionsHost>();
+
+        // Week view plugin: its tab, its status line, and its view model.
+        services.AddSingleton<Plugins.WeekView.ViewModels.WeekViewModel>();
+        services.AddSingleton<IWeekStatusHost, Plugins.WeekView.Services.WeekStatusHost>();
+        services.AddSingleton<ITabContributor, Plugins.WeekView.WeekTabContributor>();
 
         // Azure DevOps import: the connection is edited in the options tab.
         services.AddSingleton<Plugins.AzureDevOps.AzureDevOpsSettings>();

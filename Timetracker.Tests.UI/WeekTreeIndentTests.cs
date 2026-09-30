@@ -1,14 +1,11 @@
-using Timetracker.App.Interfaces;
 using AwesomeAssertions;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.NUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Timetracker.App.Models;
-using Timetracker.App.Tests.Unit;
-using Timetracker.App.ViewModels;
-using Timetracker.App.Views;
+using Timetracker.Plugins.WeekView.ViewModels;
+using Timetracker.Plugins.WeekView.Views;
 
 namespace Timetracker.Tests.UI;
 
@@ -52,25 +49,9 @@ public sealed class WeekTreeIndentTests
         }
     }
 
-    private static (WeekTabView View, WeekViewModel Week) Build()
-    {
-        var repo = new FakeRepo();
-        using var tracker = TrackerViewModelFactory.Create(repo);
-        tracker.Week.UpdateSessions(
-        [
-            new TrackerEntry
-            {
-                Task = "Report",
-                BookingElement = "Project X",
-                Start = DateTimeOffset.Now.Date.AddHours(9),
-                End = DateTimeOffset.Now.Date.AddHours(10),
-                Duration = "01:00:00",
-                DurationSeconds = 3600,
-            },
-        ]);
-
-        return (new WeekTabView(tracker.Week, []), tracker.Week);
-    }
+    private static (WeekTabView View, WeekViewModel Week) Build() =>
+        WeekViewTestSupport.Build(
+            [WeekViewTestSupport.Session(DateTimeOffset.Now.Date.AddHours(9), "Report", "Project X")]);
 
     private static void Realize(Control root)
     {
@@ -79,13 +60,5 @@ public sealed class WeekTreeIndentTests
         Dispatcher.UIThread.RunJobs();
         host.UpdateLayout();
         Dispatcher.UIThread.RunJobs();
-    }
-
-    private sealed class FakeRepo : ITrackerRepository
-    {
-        public string FilePath => "memory.json";
-        public Task<IReadOnlyList<TrackerEntry>> GetAllAsync() => Task.FromResult<IReadOnlyList<TrackerEntry>>([]);
-        public Task AddAsync(TrackerEntry entry) => Task.CompletedTask;
-        public Task SaveAsync(IReadOnlyList<TrackerEntry> e) => Task.CompletedTask;
     }
 }

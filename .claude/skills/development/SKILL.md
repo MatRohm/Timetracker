@@ -58,18 +58,17 @@ merged, pushed change. Four phases: **plan** (A), **implement** (B), **review**
 
 1. **Run the quality gates** — `dotnet build`, then `dotnet test`, then
    `dotnet format --verify-no-changes`.
-2. **Run the architecture tests explicitly** —
-   `dotnet test Timetracker.Tests.Architecture`.
-3. **Invoke the `architecture-review` agent** (read-only) — it returns a
-   findings table against SOLID and the CLAUDE.md rules the tests cannot see.
-4. **Check the SOLID checklist** — SRP/OCP/LSP/ISP/DIP + code smells, using
+2. **Invoke the `architecture-review` agent** (read-only) — it runs the
+   architecture tests and returns a findings table against SOLID and the
+   CLAUDE.md rules the tests cannot see.
+3. **Check the SOLID checklist** — SRP/OCP/LSP/ISP/DIP + code smells, using
    `.claude/skills/solid/references/`.
-5. **Fix only your own failures** — read each error, determine whether you
+4. **Fix only your own failures** — read each error, determine whether you
    caused it, fix, re-run; never weaken, delete, or skip tests to make them pass.
-6. **Straighten the history** — review the branch's commits and **squash or
+5. **Straighten the history** — review the branch's commits and **squash or
    `fixup`** redundant, "wip", or better-told-as-one commits, so the final
    history reads as clean, logical commits.
-7. **Record the review results** — unless otherwise specified, write the review
+6. **Record the review results** — unless otherwise specified, write the review
    findings into the issue's **notes** field (`bd update <id>
    --append-notes="…"`) so the outcome survives the session.
 

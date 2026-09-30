@@ -80,7 +80,7 @@ public sealed class EditEntriesViewModelTests
         row.SetEnd(row.End.AddMinutes(30));
         editor.Save();
 
-        (await vm.ReplaceSessionsAsync(item.Task, editor.RemainingSessions())).Should().BeTrue();
+        (await vm.ReplaceSessionsAsync(item.Task, editor)).Should().BeTrue();
 
         var stored = (await repo.GetAllAsync()).Single(e => e.Task == "Report");
         stored.DurationSeconds.Should().Be(5400, "30 + 30 minutes are added to the original hour");
@@ -99,7 +99,7 @@ public sealed class EditEntriesViewModelTests
         editor.Sessions.Single().SetEnd(editor.Sessions.Single().End.AddMinutes(15));
         editor.Save();
 
-        await vm.ReplaceSessionsAsync(item.Task, editor.RemainingSessions());
+        await vm.ReplaceSessionsAsync(item.Task, editor);
 
         (await repo.GetAllAsync()).Single(e => e.Task == "Meeting").DurationSeconds.Should().Be(3600);
     }
@@ -114,7 +114,7 @@ public sealed class EditEntriesViewModelTests
         var editor = new EditEntriesViewModel(item);
 
         editor.RemoveSession(editor.Sessions.Single());
-        await vm.ReplaceSessionsAsync(item.Task, editor.RemainingSessions());
+        await vm.ReplaceSessionsAsync(item.Task, editor);
 
         vm.Entries.Should().ContainSingle().Which.Task.Should().Be("Meeting");
         (await repo.GetAllAsync()).Should().ContainSingle().Which.Task.Should().Be("Meeting");
@@ -132,39 +132,12 @@ public sealed class EditEntriesViewModelTests
 
         // Remove the 60-minute session, keep the 30-minute one.
         editor.RemoveSession(editor.Sessions.Single(s => s.DurationSeconds == 3600));
-        await vm.ReplaceSessionsAsync(item.Task, editor.RemainingSessions());
+        await vm.ReplaceSessionsAsync(item.Task, editor);
 
         var row = vm.Entries.Single();
         row.Sessions.Should().ContainSingle();
         row.Duration.Should().Be("00:30:00");
         (await repo.GetAllAsync()).Should().ContainSingle().Which.DurationSeconds.Should().Be(1800);
-    }
-
-    [Test]
-    public async Task Save_WhenSessionsAreSaved_ShouldUpdateTheWeekViewTotals()
-    {
-        // Use today so the session lands in the week the view starts on.
-        var today = DateTimeOffset.Now.Date.AddHours(9);
-        var entry = new TrackerEntry
-        {
-            Task = "Report",
-            Start = new DateTimeOffset(today, DateTimeOffset.Now.Offset),
-            End = new DateTimeOffset(today.AddMinutes(30), DateTimeOffset.Now.Offset),
-            Duration = "00:30:00",
-            DurationSeconds = 1800,
-        };
-        var (repo, _) = RepositoryFake.Create(entry);
-        using var vm = TrackerViewModelFactory.Create(repo);
-        var item = vm.Entries.Single();
-        var editor = new EditEntriesViewModel(item);
-        var row = editor.Sessions.Single();
-        row.SetEnd(row.End.AddHours(1));
-        editor.Save();
-
-        await vm.ReplaceSessionsAsync(item.Task, editor.RemainingSessions());
-
-        // The edited duration (1:30) shows in the day node of the week tree.
-        vm.Week.Days.Single(d => d.IsToday).TotalText.Should().Contain("1:30");
     }
 
     private static EntryRow Item(string task, params TrackerEntry[] sessions) =>

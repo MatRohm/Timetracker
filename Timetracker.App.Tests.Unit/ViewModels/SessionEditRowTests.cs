@@ -112,7 +112,7 @@ public sealed class SessionEditRowTests
     }
 
     [Test]
-    public void Commit_WhenTheTimeTextIsStale_ShouldIgnoreIt()
+    public void SetStart_WhenTheTimeTextIsStale_ShouldIgnoreIt()
     {
         // The text boxes are refreshed on commit; a programmatic SetStart/SetEnd must
         // win over whatever text happens to be staged.
@@ -132,7 +132,7 @@ public sealed class SessionEditRowTests
     }
 
     [Test]
-    public void Commit_WhenTheSessionIsInvalid_ShouldNotTouchTheUnderlyingEntry()
+    public void SetStart_WhenTheSessionIsInvalid_ShouldNotTouchTheUnderlyingEntry()
     {
         var session = Session("Report", day: 18, hour: 9, minutes: 30);
         var editor = new EditEntriesViewModel(Item("Report", session));
@@ -148,7 +148,7 @@ public sealed class SessionEditRowTests
     }
 
     [Test]
-    public void Commit_WhenSaved_ShouldApplyEditedTimesToTheUnderlyingSession()
+    public void SetStart_WhenSaved_ShouldApplyEditedTimesToTheUnderlyingSession()
     {
         var session = Session("Report", day: 18, hour: 9, minutes: 30);
         var editor = new EditEntriesViewModel(Item("Report", session));

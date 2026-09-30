@@ -1,13 +1,10 @@
-using Timetracker.App.Interfaces;
 using AwesomeAssertions;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.NUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Timetracker.App.Tests.Unit;
-using Timetracker.App.Views;
-using Timetracker.App.Views.Components;
+using Timetracker.Plugins.WeekView.Views;
 
 namespace Timetracker.Tests.UI;
 
@@ -21,10 +18,9 @@ public sealed class WeekContributorPlacementTests
     [AvaloniaTest]
     public void WeekTabView_WhenRendered_ShouldPlaceContributorControlsAboveTheStatusLine()
     {
-        var repo = new FakeRepo();
-        using var tracker = TrackerViewModelFactory.Create(repo);
-
-        var view = new WeekTabView(tracker.Week, [new Button { Content = "Test contributor" }]);
+        var view = WeekViewTestSupport.Build(
+            [],
+            contributors: [new Button { Content = "Test contributor" }]).View;
 
         Realize(view);
 
@@ -51,13 +47,5 @@ public sealed class WeekContributorPlacementTests
         Dispatcher.UIThread.RunJobs();
         host.UpdateLayout();
         Dispatcher.UIThread.RunJobs();
-    }
-
-    private sealed class FakeRepo : ITrackerRepository
-    {
-        public string FilePath => "memory.json";
-        public Task<IReadOnlyList<Timetracker.App.Models.TrackerEntry>> GetAllAsync() => Task.FromResult<IReadOnlyList<Timetracker.App.Models.TrackerEntry>>([]);
-        public Task AddAsync(Timetracker.App.Models.TrackerEntry entry) => Task.CompletedTask;
-        public Task SaveAsync(IReadOnlyList<Timetracker.App.Models.TrackerEntry> e) => Task.CompletedTask;
     }
 }

@@ -1,6 +1,6 @@
 using System.ComponentModel;
 using Timetracker.App.Interfaces;
-using Timetracker.App.ViewModels.Mvvm;
+using Timetracker.Plugins.Contracts.ViewModels.Mvvm;
 using Timetracker.Plugins.Contracts.Interfaces;
 
 namespace Timetracker.App.ViewModels;

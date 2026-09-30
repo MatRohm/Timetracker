@@ -1,7 +1,6 @@
 using AwesomeAssertions;
 using NUnit.Framework;
-using Timetracker.App.Models;
-using Timetracker.App.ViewModels;
+using Timetracker.Plugins.Contracts.ViewModels;
 
 namespace Timetracker.App.Tests.Unit.ViewModels;
 
@@ -81,11 +80,6 @@ public sealed class SuggestionListViewModelTests
         vm.ShowSuggestions.Should().BeFalse();
     }
 
-    private static TrackerEntry Entry(string task, double durationSeconds) => new()
-    {
-        Task = task,
-        Start = new DateTimeOffset(2026, 9, 18, 9, 0, 0, TimeSpan.FromHours(2)),
-        End = new DateTimeOffset(2026, 9, 18, 10, 0, 0, TimeSpan.FromHours(2)),
-        DurationSeconds = durationSeconds,
-    };
+    private static (string Task, double DurationSeconds) Entry(string task, double durationSeconds) =>
+        (task, durationSeconds);
 }

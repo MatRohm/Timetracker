@@ -50,7 +50,7 @@ internal static class TrackerFileFormat
         BookingElement = FirstBookingElement(group),
         Sessions = [.. group
             .OrderBy(e => e.Start)
-            .Select(e => new TrackedSession
+            .Select(e => new SessionSpan
             {
                 Start = e.Start,
                 End = e.End,
