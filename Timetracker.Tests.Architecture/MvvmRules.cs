@@ -2,6 +2,7 @@ using ArchUnitNET.Fluent;
 using ArchUnitNET.NUnit;
 using AwesomeAssertions;
 using NUnit.Framework;
+using System.Text.RegularExpressions;
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
 namespace Timetracker.Tests.Architecture;
@@ -9,7 +10,7 @@ namespace Timetracker.Tests.Architecture;
 /// <summary>
 /// MVVM layering rules for the Timetracker application: views may only depend on
 /// view models, view models may only depend on models, services and their
-/// interfaces, and view models never touch Avalonia. Neither may depend on the
+/// interfaces, and view models (in any project) never touch Avalonia. Neither may depend on the
 /// composition root in the <c>Timetracker.App</c> namespace itself (<c>App</c>,
 /// <c>HookRegistry</c>, <c>Program</c>). "Depend on" is restricted to <c>Timetracker.App</c>
 /// and its sub-namespaces; the .NET base class library and third-party frameworks
@@ -17,15 +18,29 @@ namespace Timetracker.Tests.Architecture;
 /// </summary>
 public sealed class MvvmRules
 {
+    /// <summary>A <c>ViewModels</c> namespace (or below) of any Timetracker project.</summary>
+    private static readonly Regex ViewModelNamespace = new(@"^Timetracker(\.[^.]+)*\.ViewModels(\..*)?$");
+
     [Test]
     public void View_models_do_not_depend_on_avalonia()
     {
-        IArchRule rule = Types().That().ResideInNamespaceMatching(@"^Timetracker\.App\.ViewModels(\..*)?$")
-            .Should().NotDependOnAny(
-                Types().That().ResideInNamespaceMatching(@"^Avalonia(\..*)?$"))
-            .Because("view models must stay UI-agnostic and testable without Avalonia");
+        // Applies to every project's view models, the plug-ins' included. Checked on the
+        // dependency targets directly: Avalonia is only loaded as stubs, which a fluent
+        // Types().That() selector does not match, so such a rule would never fail.
+        var offenders = SolutionArchitecture.Instance.Types
+            .Where(type => !type.Assembly.Name.Contains(".Tests."))
+            .Where(type => ViewModelNamespace.IsMatch(type.Namespace.FullName))
+            .Where(type => type.Dependencies.Any(dependency =>
+                dependency.Target.Namespace.FullName == "Avalonia"
+                || dependency.Target.Namespace.FullName.StartsWith("Avalonia.", StringComparison.Ordinal)))
+            .Select(type => $"  {type.FullName}")
+            .Distinct()
+            .OrderBy(text => text)
+            .ToList();
 
-        rule.Check(SolutionArchitecture.Instance);
+        offenders.Should().BeEmpty(
+            "view models must stay UI-agnostic and testable without Avalonia, but found:"
+            + Environment.NewLine + string.Join(Environment.NewLine, offenders));
     }
 
     [Test]
