@@ -17,6 +17,20 @@ public static class Confirmations
     /// </summary>
     public static async Task<bool> ConfirmDeleteAsync(Control ownerControl, string summary)
     {
+        var message = $"Delete {summary}?\n\nThis removes the sessions from the JSON file and cannot be undone.";
+        return await ConfirmAsync(ownerControl, message, acceptLabel: "Yes", cancelLabel: "No");
+    }
+
+    /// <summary>
+    /// Shows a modal yes/no dialog with a single message and custom labels. Returns
+    /// false when the component is not hosted in a window (nothing can be shown).
+    /// </summary>
+    public static async Task<bool> ConfirmAsync(
+        Control ownerControl,
+        string message,
+        string acceptLabel,
+        string cancelLabel = "Cancel")
+    {
         if (TopLevel.GetTopLevel(ownerControl) is not Window owner)
         {
             return false;
@@ -25,21 +39,21 @@ public static class Confirmations
         var dialog = new Window
         {
             Title = "Timetracker",
-            Width = 380,
+            Width = 400,
             Height = 180,
             CanResize = false,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
         };
 
-        var message = new TextBlock
+        var text = new TextBlock
         {
-            Text = $"Delete {summary}?\n\nThis removes the sessions from the JSON file and cannot be undone.",
+            Text = message,
             TextWrapping = TextWrapping.Wrap,
         };
 
-        var yes = new Button { Content = "Yes" };
+        var yes = new Button { Content = acceptLabel };
         yes.Click += (_, _) => dialog.Close(true);
-        var no = new Button { Content = "No", IsCancel = true };
+        var no = new Button { Content = cancelLabel, IsCancel = true };
         no.Click += (_, _) => dialog.Close(false);
 
         dialog.Content = new StackPanel
@@ -48,7 +62,7 @@ public static class Confirmations
             Spacing = 12,
             Children =
             {
-                message,
+                text,
                 new StackPanel
                 {
                     Orientation = Orientation.Horizontal,

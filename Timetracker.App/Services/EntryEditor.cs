@@ -30,11 +30,11 @@ public sealed record EntryEditResult(EntryEditStatus Status, string Summary, Exc
 /// </summary>
 public sealed class EntryEditor
 {
-    private readonly Func<IReadOnlyList<TrackerEntry>, Task> _saveEntries;
+    private readonly Func<IReadOnlyList<TrackerEntry>, CancellationToken, Task> _saveEntries;
     private readonly ILogger _logger;
 
     public EntryEditor(
-        Func<IReadOnlyList<TrackerEntry>, Task> saveEntries,
+        Func<IReadOnlyList<TrackerEntry>, CancellationToken, Task> saveEntries,
         ILogger logger)
     {
         _saveEntries = saveEntries;
@@ -49,7 +49,8 @@ public sealed class EntryEditor
     /// </summary>
     public async Task<EntryEditResult> DeleteAsync(
         IReadOnlyList<TrackerEntry> toRemove,
-        IReadOnlyList<TrackerEntry> sessions)
+        IReadOnlyList<TrackerEntry> sessions,
+        CancellationToken cancellationToken = default)
     {
         if (toRemove.Count == 0)
         {
@@ -64,7 +65,7 @@ public sealed class EntryEditor
 
         try
         {
-            await _saveEntries(remaining);
+            await _saveEntries(remaining, cancellationToken);
             return new EntryEditResult(EntryEditStatus.Saved, summary);
         }
         catch (Exception ex)
@@ -83,7 +84,8 @@ public sealed class EntryEditor
     public async Task<EntryEditResult> ReplaceSessionsAsync(
         string task,
         IReadOnlyList<TrackerEntry> replacements,
-        IReadOnlyList<TrackerEntry> currentSessions)
+        IReadOnlyList<TrackerEntry> currentSessions,
+        CancellationToken cancellationToken = default)
     {
         var key = task.Trim();
         var unaffected = currentSessions
@@ -94,7 +96,7 @@ public sealed class EntryEditor
 
         try
         {
-            await _saveEntries(updated);
+            await _saveEntries(updated, cancellationToken);
             return new EntryEditResult(EntryEditStatus.Saved, key);
         }
         catch (Exception ex)
@@ -114,7 +116,8 @@ public sealed class EntryEditor
         IReadOnlyList<TrackerEntry> taskSessions,
         string task,
         string bookingElement,
-        IReadOnlyList<TrackerEntry> sessions)
+        IReadOnlyList<TrackerEntry> sessions,
+        CancellationToken cancellationToken = default)
     {
         foreach (var session in taskSessions)
         {
@@ -125,7 +128,7 @@ public sealed class EntryEditor
         try
         {
             // Rewrite the file with the edited values; existing entries are preserved.
-            await _saveEntries(sessions);
+            await _saveEntries(sessions, cancellationToken);
             return new EntryEditResult(EntryEditStatus.Saved, task);
         }
         catch (Exception ex)
@@ -146,7 +149,8 @@ public sealed class EntryEditor
     /// </summary>
     public async Task<EntryEditResult> ApplyChangesAsync(
         IReadOnlyList<(TrackerEntry Original, TrackerEntry? Updated)> changes,
-        IReadOnlyList<TrackerEntry> currentSessions)
+        IReadOnlyList<TrackerEntry> currentSessions,
+        CancellationToken cancellationToken = default)
     {
         if (changes.Count == 0)
         {
@@ -172,7 +176,7 @@ public sealed class EntryEditor
 
         try
         {
-            await _saveEntries(updated);
+            await _saveEntries(updated, cancellationToken);
             return new EntryEditResult(EntryEditStatus.Saved, summary);
         }
         catch (Exception ex)

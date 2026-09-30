@@ -23,7 +23,10 @@ internal static class AtomicFile
     private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
     /// <summary>Replaces <paramref name="path"/> with <paramref name="contents"/> atomically.</summary>
-    public static async Task WriteAllTextAsync(string path, string contents)
+    public static async Task WriteAllTextAsync(
+        string path,
+        string contents,
+        CancellationToken cancellationToken = default)
     {
         var fullPath = Path.GetFullPath(path);
         var tempPath = TempPathFor(fullPath);
@@ -32,7 +35,7 @@ internal static class AtomicFile
             await using (var stream = new FileStream(tempPath, FileMode.CreateNew, FileAccess.Write,
                 FileShare.None, bufferSize: 4096, FileOptions.Asynchronous))
             {
-                await stream.WriteAsync(Utf8NoBom.GetBytes(contents));
+                await stream.WriteAsync(Utf8NoBom.GetBytes(contents), cancellationToken);
                 // Data must be on disk before the rename, or a power loss can leave
                 // the renamed file empty.
                 stream.Flush(flushToDisk: true);
@@ -40,7 +43,7 @@ internal static class AtomicFile
 
             for (var attempt = 1; !TryMove(tempPath, fullPath, attempt); attempt++)
             {
-                await Task.Delay(RetryDelay(attempt));
+                await Task.Delay(RetryDelay(attempt), cancellationToken);
             }
         }
         catch

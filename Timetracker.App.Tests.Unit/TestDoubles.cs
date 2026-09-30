@@ -44,11 +44,11 @@ public static class RepositoryFake
         var list = seed.ToList();
         var repo = A.Fake<ITrackerRepository>();
         A.CallTo(() => repo.FilePath).Returns(path);
-        A.CallTo(() => repo.GetAllAsync()).ReturnsLazily(() => Task.FromResult((IReadOnlyList<TrackerEntry>)list.ToList()));
-        A.CallTo(() => repo.AddAsync(A<TrackerEntry>._))
-            .Invokes((TrackerEntry e) => list.Add(e));
-        A.CallTo(() => repo.SaveAsync(A<IReadOnlyList<TrackerEntry>>._))
-            .Invokes((IReadOnlyList<TrackerEntry> entries) =>
+        A.CallTo(() => repo.GetAllAsync(A<CancellationToken>._)).ReturnsLazily(() => Task.FromResult((IReadOnlyList<TrackerEntry>)list.ToList()));
+        A.CallTo(() => repo.AddAsync(A<TrackerEntry>._, A<CancellationToken>._))
+            .Invokes((TrackerEntry e, CancellationToken _) => list.Add(e));
+        A.CallTo(() => repo.SaveAsync(A<IReadOnlyList<TrackerEntry>>._, A<CancellationToken>._))
+            .Invokes((IReadOnlyList<TrackerEntry> entries, CancellationToken _) =>
             {
                 list.Clear();
                 list.AddRange(entries);

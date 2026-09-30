@@ -38,7 +38,7 @@ public sealed class IdleAutoStop : IAppCommand, IDisposable
         _now = now ?? (() => DateTimeOffset.Now);
     }
 
-    public void OnAppStarted(IServiceProvider services)
+    public void OnAppStarted()
     {
         _timer = new DispatcherTimer { Interval = PollInterval };
         _timer.Tick += async (_, _) => await PollAsync();

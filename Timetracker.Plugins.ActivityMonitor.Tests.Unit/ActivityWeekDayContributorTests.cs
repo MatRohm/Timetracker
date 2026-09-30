@@ -81,6 +81,21 @@ public sealed class ActivityWeekDayContributorTests
         contributor.GetActiveSpans(Monday.AddDays(1)).Should().Equal(new ActiveSpan(midnight, end));
     }
 
+    [Test]
+    public void GetActiveTime_WhenTheLogChangesAfterARead_ShouldPickUpTheNewSpan()
+    {
+        // The contributor caches the read spans; a write from the monitor process
+        // must be seen on the next query rather than served from the stale cache.
+        var contributor = Contributor(out var log);
+        log.Add("active", At(9, 0), At(10, 0));
+        contributor.GetActiveTime(Monday).Should().Be(TimeSpan.FromHours(1));
+
+        var updated = new ActivityLog(log.FilePath);
+        updated.Add("active", At(10, 0), At(11, 30));
+
+        contributor.GetActiveTime(Monday).Should().Be(TimeSpan.FromMinutes(150));
+    }
+
     private static ActivityWeekDayContributor Contributor(out ActivityLog log)
     {
         var path = TempPath($"contributor-{Guid.NewGuid():N}.json");

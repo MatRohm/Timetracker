@@ -21,7 +21,7 @@ public sealed class EntryEditorTests
     public async Task DeleteAsync_WhenSessionsAreRemoved_ShouldPersistOnlyTheRemainingOnes()
     {
         IReadOnlyList<TrackerEntry>? saved = null;
-        var editor = new EntryEditor(entries => { saved = entries; return Task.CompletedTask; }, NullLogger.Instance);
+        var editor = new EntryEditor((entries, _) => { saved = entries; return Task.CompletedTask; }, NullLogger.Instance);
         var sessions = new[] { Entry("Report", 9), Entry("Meeting", 11), Entry("Review", 13) };
 
         var result = await editor.DeleteAsync([Entry("Meeting", 11)], sessions);
@@ -34,7 +34,7 @@ public sealed class EntryEditorTests
     public async Task DeleteAsync_WhenNothingIsToBeRemoved_ShouldDeclineWithoutPersisting()
     {
         var saved = false;
-        var editor = new EntryEditor(_ => { saved = true; return Task.CompletedTask; }, NullLogger.Instance);
+        var editor = new EntryEditor((_, _) => { saved = true; return Task.CompletedTask; }, NullLogger.Instance);
 
         var result = await editor.DeleteAsync([], [Entry("Report", 9)]);
 
@@ -47,7 +47,7 @@ public sealed class EntryEditorTests
     {
         var logger = new FakeLogger();
         var editor = new EntryEditor(
-            _ => Task.FromException(new IOException("disk full")),
+            (_, _) => Task.FromException(new IOException("disk full")),
             logger);
 
         var result = await editor.DeleteAsync([Entry("Report", 9)], [Entry("Report", 9)]);
@@ -62,7 +62,7 @@ public sealed class EntryEditorTests
     public async Task ReplaceSessionsAsync_WhenCalled_ShouldReplaceOnlyThatTasksSessions()
     {
         IReadOnlyList<TrackerEntry>? saved = null;
-        var editor = new EntryEditor(entries => { saved = entries; return Task.CompletedTask; }, NullLogger.Instance);
+        var editor = new EntryEditor((entries, _) => { saved = entries; return Task.CompletedTask; }, NullLogger.Instance);
         var sessions = new[] { Entry("Report", 9), Entry("Meeting", 11) };
 
         var result = await editor.ReplaceSessionsAsync("Report", [Entry("Report", 15)], sessions);
@@ -76,7 +76,7 @@ public sealed class EntryEditorTests
     public async Task UpdateTextAsync_WhenCalled_ShouldRenameTheTasksSessionsAndPersistTheLog()
     {
         IReadOnlyList<TrackerEntry>? saved = null;
-        var editor = new EntryEditor(entries => { saved = entries; return Task.CompletedTask; }, NullLogger.Instance);
+        var editor = new EntryEditor((entries, _) => { saved = entries; return Task.CompletedTask; }, NullLogger.Instance);
         var report = Entry("Report", 9, "quarterly");
         var meeting = Entry("Meeting", 11);
 
@@ -91,7 +91,7 @@ public sealed class EntryEditorTests
     public async Task UpdateTextAsync_WhenTheSaveFails_ShouldReportFailure()
     {
         var editor = new EntryEditor(
-            _ => Task.FromException(new IOException("disk full")),
+            (_, _) => Task.FromException(new IOException("disk full")),
             NullLogger.Instance);
         var sessions = new[] { Entry("Report", 9) };
 
@@ -105,7 +105,7 @@ public sealed class EntryEditorTests
     public async Task ApplyChangesAsync_WhenChangesArePlanned_ShouldReplaceAndRemoveOnlyThoseSessions()
     {
         IReadOnlyList<TrackerEntry>? saved = null;
-        var editor = new EntryEditor(entries => { saved = entries; return Task.CompletedTask; }, NullLogger.Instance);
+        var editor = new EntryEditor((entries, _) => { saved = entries; return Task.CompletedTask; }, NullLogger.Instance);
         var report = Entry("Report", 9);
         var meeting = Entry("Meeting", 11);
         var review = Entry("Review", 13);
@@ -127,7 +127,7 @@ public sealed class EntryEditorTests
     public async Task ApplyChangesAsync_WhenAChangedSessionIsNoLongerInTheLog_ShouldFailWithoutSaving()
     {
         var saves = 0;
-        var editor = new EntryEditor(_ => { saves++; return Task.CompletedTask; }, NullLogger.Instance);
+        var editor = new EntryEditor((_, _) => { saves++; return Task.CompletedTask; }, NullLogger.Instance);
         var gone = Entry("Report", 9);
 
         var result = await editor.ApplyChangesAsync([(gone, null)], [Entry("Report", 9)]);
@@ -139,7 +139,7 @@ public sealed class EntryEditorTests
     [Test]
     public async Task ApplyChangesAsync_WhenTheSaveFails_ShouldReportFailure()
     {
-        var editor = new EntryEditor(_ => Task.FromException(new IOException("disk full")), NullLogger.Instance);
+        var editor = new EntryEditor((_, _) => Task.FromException(new IOException("disk full")), NullLogger.Instance);
         var report = Entry("Report", 9);
 
         var result = await editor.ApplyChangesAsync([(report, null)], [report]);

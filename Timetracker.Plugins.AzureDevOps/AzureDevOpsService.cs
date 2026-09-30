@@ -11,7 +11,7 @@ namespace Timetracker.Plugins.AzureDevOps;
 /// connection anew for every lookup, so edits in the options tab apply at once,
 /// and owns the error reporting so the host stays thin.
 /// </summary>
-public sealed class AzureDevOpsService
+public sealed class AzureDevOpsService : IDisposable
 {
     /// <summary>Shown when the import is used without a usable connection.</summary>
     public const string NotConfiguredMessage =
@@ -21,6 +21,9 @@ public sealed class AzureDevOpsService
     private readonly Func<AzureDevOpsConfig> _config;
     private readonly Func<AzureDevOpsConfig, AzureDevOpsClient> _clientFactory;
     private readonly ILogger<AzureDevOpsService> _logger;
+
+    /// <summary>One transport shared by every lookup, so no socket is created per request.</summary>
+    private readonly HttpClient _http = new() { Timeout = AzureDevOpsClient.RequestTimeout };
 
     /// <param name="config">A fixed connection (used by tests).</param>
     /// <param name="clientFactory">Creates the HTTP client (replaced by tests).</param>
@@ -42,7 +45,7 @@ public sealed class AzureDevOpsService
         ILogger<AzureDevOpsService>? logger = null)
     {
         _config = currentConfig;
-        _clientFactory = clientFactory ?? (config => new AzureDevOpsClient(config));
+        _clientFactory = clientFactory ?? (config => new AzureDevOpsClient(config, _http));
         _logger = logger ?? NullLogger<AzureDevOpsService>.Instance;
     }
 
@@ -107,4 +110,6 @@ public sealed class AzureDevOpsService
 
         public static ApplyResult Failure(string message) => new(false, "", "", message);
     }
+
+    public void Dispose() => _http.Dispose();
 }

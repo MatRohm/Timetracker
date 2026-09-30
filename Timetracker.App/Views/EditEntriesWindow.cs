@@ -4,6 +4,7 @@ using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Timetracker.Plugins.Contracts.Ui;
 using Timetracker.Plugins.Contracts.ViewModels;
 using Timetracker.App.ViewModels;
 
@@ -248,52 +249,11 @@ public sealed class EditEntriesWindow : Window
 
     private async Task DeleteAsync(SessionEditRow row)
     {
-        var confirmed = await ConfirmDeleteAsync(row);
+        var message = $"Delete the session {row.StartText} – {row.EndText} ({row.DurationText})?";
+        var confirmed = await Confirmations.ConfirmAsync(this, message, acceptLabel: "Delete");
         if (confirmed)
         {
             _viewModel.RemoveSession(row);
         }
-    }
-
-    private async Task<bool> ConfirmDeleteAsync(SessionEditRow row)
-    {
-        var dialog = new Window
-        {
-            Title = "Delete session",
-            Width = 400,
-            Height = 170,
-            CanResize = false,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-        };
-
-        var message = new TextBlock
-        {
-            Text = $"Delete the session {row.StartText} – {row.EndText} ({row.DurationText})?",
-            TextWrapping = TextWrapping.Wrap,
-        };
-
-        var yes = new Button { Content = "Delete" };
-        yes.Click += (_, _) => dialog.Close(true);
-        var no = new Button { Content = "Cancel", IsCancel = true };
-        no.Click += (_, _) => dialog.Close(false);
-
-        dialog.Content = new StackPanel
-        {
-            Margin = new Thickness(16),
-            Spacing = 12,
-            Children =
-            {
-                message,
-                new StackPanel
-                {
-                    Orientation = Orientation.Horizontal,
-                    HorizontalAlignment = HorizontalAlignment.Right,
-                    Spacing = 8,
-                    Children = { no, yes },
-                },
-            },
-        };
-
-        return await dialog.ShowDialog<bool>(this);
     }
 }

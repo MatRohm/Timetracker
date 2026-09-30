@@ -291,7 +291,7 @@ public sealed class TrackerViewModelTests
         using var vm = TrackerViewModelFactory.Create(repo);
         var row = vm.Entries.Single(r => r.Task == "Meeting");
 
-        var deleted = await vm.DeleteEntriesAsync([row], _ => true);
+        var deleted = await vm.DeleteEntriesAsync([row]);
 
         deleted.Should().BeTrue();
         vm.Entries.Select(e => e.Task).Should().BeEquivalentTo(["Report", "Review"]);
@@ -307,7 +307,7 @@ public sealed class TrackerViewModelTests
         using var vm = TrackerViewModelFactory.Create(repo);
         var row = vm.Entries.Single(r => r.Task == "Report");
 
-        await vm.DeleteEntriesAsync([row], _ => true);
+        await vm.DeleteEntriesAsync([row]);
 
         (await repo.GetAllAsync()).Should().ContainSingle().Which.Task.Should().Be("Meeting");
         vm.Entries.Should().ContainSingle().Which.Task.Should().Be("Meeting");
@@ -321,26 +321,11 @@ public sealed class TrackerViewModelTests
         using var vm = TrackerViewModelFactory.Create(repo);
 
         var rows = vm.Entries.Where(r => r.Task != "Meeting").ToList();
-        var deleted = await vm.DeleteEntriesAsync(rows, _ => true);
+        var deleted = await vm.DeleteEntriesAsync(rows);
 
         deleted.Should().BeTrue();
         vm.Entries.Should().ContainSingle().Which.Task.Should().Be("Meeting");
         (await repo.GetAllAsync()).Should().ContainSingle().Which.Task.Should().Be("Meeting");
-    }
-
-    [Test]
-    public async Task DeleteEntriesAsync_WhenUserDeclines_ShouldDoNothing()
-    {
-        var (repo, _) = RepositoryFake.Create(Entry("Report", 9), Entry("Meeting", 11));
-        using var vm = TrackerViewModelFactory.Create(repo);
-        var row = vm.Entries.Single(r => r.Task == "Report");
-
-        var declined = await vm.DeleteEntriesAsync([row], _ => false);
-
-        declined.Should().BeFalse();
-        vm.Entries.Should().HaveCount(2);
-        (await repo.GetAllAsync()).Should().HaveCount(2);
-        vm.StatusText.Should().NotContain("Deleted");
     }
 
     [Test]
@@ -349,8 +334,8 @@ public sealed class TrackerViewModelTests
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9));
         using var vm = TrackerViewModelFactory.Create(repo);
 
-        (await vm.DeleteEntriesAsync([], _ => true)).Should().BeFalse();
-        (await vm.DeleteEntriesAsync(null!, _ => true)).Should().BeFalse();
+        (await vm.DeleteEntriesAsync([])).Should().BeFalse();
+        (await vm.DeleteEntriesAsync(null!)).Should().BeFalse();
 
         vm.Entries.Should().ContainSingle();
         vm.StatusText.Should().NotContain("Deleted");
@@ -369,7 +354,7 @@ public sealed class TrackerViewModelTests
         vm.ErrorOccurred += m => reported = m;
         var row = vm.Entries.Single(r => r.Task == "Report");
 
-        var deleted = await vm.DeleteEntriesAsync([row], _ => true);
+        var deleted = await vm.DeleteEntriesAsync([row]);
 
         deleted.Should().BeFalse();
         vm.Entries.Should().HaveCount(2, "the in-memory state is restored after a failed save");
@@ -394,7 +379,7 @@ public sealed class TrackerViewModelTests
         await vm.InitialLoad;
         var row = vm.Entries.Single(r => r.Task == "Report");
 
-        await vm.DeleteEntriesAsync([row], _ => true);
+        await vm.DeleteEntriesAsync([row]);
 
         var onDisk = await new JsonTrackerRepository(path).GetAllAsync();
         onDisk.Should().ContainSingle().Which.Task.Should().Be("Meeting");

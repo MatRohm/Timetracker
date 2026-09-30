@@ -13,11 +13,11 @@ public interface ITrackerRepository
     string FilePath { get; }
 
     /// <summary>Reads all entries.</summary>
-    Task<IReadOnlyList<TrackerEntry>> GetAllAsync();
+    Task<IReadOnlyList<TrackerEntry>> GetAllAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Appends one entry, preserving every existing one.</summary>
-    Task AddAsync(TrackerEntry entry);
+    Task AddAsync(TrackerEntry entry, CancellationToken cancellationToken = default);
 
     /// <summary>Writes the given entries, replacing the stored list (used by edits and deletes).</summary>
-    Task SaveAsync(IReadOnlyList<TrackerEntry> entries);
+    Task SaveAsync(IReadOnlyList<TrackerEntry> entries, CancellationToken cancellationToken = default);
 }

@@ -27,19 +27,24 @@ public sealed class AzureDevOpsClient : IDisposable
     /// <summary>Fallback reference name of the AZE-Element field.</summary>
     public const string AzeElementFallbackField = "Custom.AZEElement";
 
+    /// <summary>Per-request timeout applied to the client's own HttpClient.</summary>
+    public static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(15);
+
     private const string ApiVersion = "api-version=7.1";
 
     private readonly HttpClient _http;
+    private readonly bool _ownsHttp;
     private readonly Uri _baseUrl;
     private readonly string _basicToken;
 
     /// <param name="http">Optional HttpClient override (used by tests); null creates one.</param>
     public AzureDevOpsClient(AzureDevOpsConfig config, HttpClient? http = null)
     {
+        _ownsHttp = http is null;
         _http = http ?? new HttpClient();
-        if (http is null)
+        if (_ownsHttp)
         {
-            _http.Timeout = TimeSpan.FromSeconds(15);
+            _http.Timeout = RequestTimeout;
         }
 
         // PAT as Basic password with an empty user name.
@@ -119,5 +124,13 @@ public sealed class AzureDevOpsClient : IDisposable
         public Dictionary<string, JsonElement>? Fields { get; set; }
     }
 
-    public void Dispose() => _http.Dispose();
+    public void Dispose()
+    {
+        // Only the client that created its own transport disposes it; a shared
+        // HttpClient (injected by the service) outlives any single client.
+        if (_ownsHttp)
+        {
+            _http.Dispose();
+        }
+    }
 }
