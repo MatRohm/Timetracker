@@ -23,6 +23,9 @@ public sealed class ActivityWeekDayContributor : IWeekDayQuery, IDayActivityQuer
     /// <summary>Last-write time the cache was read from; a changed file invalidates it.</summary>
     private DateTime _cachedWriteTimeUtc;
 
+    /// <summary>File length the cache was read from; catches same-tick rewrites the mtime misses.</summary>
+    private long _cachedLength;
+
     public ActivityWeekDayContributor(ActivityLog log)
     {
         _log = log;
@@ -116,14 +119,21 @@ public sealed class ActivityWeekDayContributor : IWeekDayQuery, IDayActivityQuer
     /// </summary>
     private IReadOnlyList<ActivitySpan> Spans()
     {
-        var writeTime = File.GetLastWriteTimeUtc(_log.FilePath);
-        if (_cachedSpans is not null && writeTime == _cachedWriteTimeUtc)
+        // The append-only log only grows, so length + mtime together detect every
+        // real change even when the filesystem's mtime granularity would fold two
+        // writes into one tick.
+        var exists = File.Exists(_log.FilePath);
+        var writeTime = exists ? File.GetLastWriteTimeUtc(_log.FilePath) : DateTime.MinValue;
+        var length = exists ? new FileInfo(_log.FilePath).Length : 0L;
+
+        if (_cachedSpans is not null && writeTime == _cachedWriteTimeUtc && length == _cachedLength)
         {
             return _cachedSpans;
         }
 
         _cachedSpans = _log.GetAll();
         _cachedWriteTimeUtc = writeTime;
+        _cachedLength = length;
         return _cachedSpans;
     }
 }
