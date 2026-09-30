@@ -2,6 +2,9 @@ namespace Timetracker.App.Models;
 
 public sealed class TrackerEntry
 {
+    /// <summary>Stable identity of the session, preserved across load and save.</summary>
+    public Guid Id { get; set; } = Guid.NewGuid();
+
     public string Task { get; set; } = "";
 
     /// <summary>Booking element this session belongs to; may be empty.</summary>
@@ -34,6 +37,7 @@ public sealed class TrackerEntry
 
     public TrackerEntry Clone() => new()
     {
+        Id = Id,
         Task = Task,
         BookingElement = BookingElement,
         Start = Start,
@@ -41,4 +45,11 @@ public sealed class TrackerEntry
         Duration = Duration,
         DurationSeconds = DurationSeconds,
     };
+
+    /// <summary>The task's most recent non-empty booking element; empty when it has none.</summary>
+    public static string LatestBookingElement(IEnumerable<TrackerEntry> entries, string task) =>
+        entries
+            .Where(e => e.Task.Trim().Equals(task.Trim(), StringComparison.OrdinalIgnoreCase))
+            .Select(e => e.BookingElement)
+            .LastOrDefault(b => !string.IsNullOrWhiteSpace(b)) ?? "";
 }

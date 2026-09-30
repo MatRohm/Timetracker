@@ -9,8 +9,8 @@ namespace Timetracker.Plugins.Contracts.Interfaces;
 public interface ITrackedSessionsCommand
 {
     /// <summary>Books <paramref name="range"/> as a new session; false when it was not saved.</summary>
-    Task<bool> BookAsync(TimeRange range, string task, string bookingElement, CancellationToken cancellationToken = default);
+    Task<bool> BookAsync(TimeRange range, string task, string bookingElement);
 
     /// <summary>Applies the planned session changes and persists them; false when none were saved.</summary>
-    Task<bool> ApplyChangesAsync(IReadOnlyList<SessionChange> changes, CancellationToken cancellationToken = default);
+    Task<bool> ApplyChangesAsync(IReadOnlyList<SessionChange> changes);
 }

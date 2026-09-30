@@ -29,10 +29,10 @@ public sealed class FakeTrackedSessions : ITrackedSessionsQuery, ITrackedSession
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
-    public Task<bool> BookAsync(TimeRange range, string task, string bookingElement, CancellationToken cancellationToken = default) =>
+    public Task<bool> BookAsync(TimeRange range, string task, string bookingElement) =>
         Book is null ? Task.FromResult(false) : Book(range, task, bookingElement);
 
-    public Task<bool> ApplyChangesAsync(IReadOnlyList<SessionChange> changes, CancellationToken cancellationToken = default) =>
+    public Task<bool> ApplyChangesAsync(IReadOnlyList<SessionChange> changes) =>
         ApplyChanges is null ? Task.FromResult(false) : ApplyChanges(changes);
 }
 

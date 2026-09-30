@@ -52,6 +52,7 @@ internal static class TrackerFileFormat
             .OrderBy(e => e.Start)
             .Select(e => new SessionSpan
             {
+                Id = e.Id,
                 Start = e.Start,
                 End = e.End,
                 Duration = e.Duration,
@@ -62,6 +63,7 @@ internal static class TrackerFileFormat
     private static IEnumerable<TrackerEntry> BuildEntries(TrackedTask task) =>
         task.Sessions.Select(session => new TrackerEntry
         {
+            Id = session.Id,
             Task = task.Name,
             BookingElement = task.BookingElement,
             Start = session.Start,

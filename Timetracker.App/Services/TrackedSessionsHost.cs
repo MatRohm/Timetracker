@@ -43,8 +43,7 @@ public sealed class TrackedSessionsHost : ITrackedSessionsQuery, ITrackedSession
     public async Task<bool> BookAsync(
         TimeRange range,
         string task,
-        string bookingElement,
-        CancellationToken cancellationToken = default)
+        string bookingElement)
     {
         var name = task.Trim();
         if (name.Length == 0 || range.End <= range.Start)
@@ -56,7 +55,7 @@ public sealed class TrackedSessionsHost : ITrackedSessionsQuery, ITrackedSession
         var entry = new TrackerEntry
         {
             Task = name,
-            BookingElement = element.Length > 0 ? element : LatestBookingElement(name),
+            BookingElement = element.Length > 0 ? element : TrackerEntry.LatestBookingElement(_tracker.SessionLog, name),
         };
         entry.Reschedule(range.Start, range.End);
 
@@ -75,17 +74,15 @@ public sealed class TrackedSessionsHost : ITrackedSessionsQuery, ITrackedSession
     }
 
     public async Task<bool> ApplyChangesAsync(
-        IReadOnlyList<SessionChange> changes,
-        CancellationToken cancellationToken = default)
+        IReadOnlyList<SessionChange> changes)
     {
         var current = _tracker.SessionLog;
         var mapped = new List<(TrackerEntry Original, TrackerEntry? Updated)>();
         foreach (var change in changes)
         {
-            // Match the planned session back to the log by its identity; a change
-            // whose original is gone is stale and nothing is applied.
-            var original = current.FirstOrDefault(
-                e => e.Task == change.Original.Task && e.Start == change.Original.Start);
+            // Match the planned session back to the log by its stable identity; a
+            // change whose original is no longer present is stale, so nothing is applied.
+            var original = current.FirstOrDefault(e => e.Id == change.Original.Id);
             if (original is null)
             {
                 return false;
@@ -106,15 +103,9 @@ public sealed class TrackedSessionsHost : ITrackedSessionsQuery, ITrackedSession
 
     private void OnSessionsChanged(object? sender, EventArgs e) => Changed?.Invoke(this, EventArgs.Empty);
 
-    /// <summary>The task's most recent non-empty booking element; empty when it has none.</summary>
-    private string LatestBookingElement(string task) =>
-        _tracker.SessionLog
-            .Where(e => e.Task.Trim().Equals(task.Trim(), StringComparison.OrdinalIgnoreCase))
-            .Select(e => e.BookingElement)
-            .LastOrDefault(b => !string.IsNullOrWhiteSpace(b)) ?? "";
-
     private static TrackedSession ToTracked(TrackerEntry entry) => new()
     {
+        Id = entry.Id,
         Task = entry.Task,
         BookingElement = entry.BookingElement,
         Start = entry.Start,
@@ -125,6 +116,7 @@ public sealed class TrackedSessionsHost : ITrackedSessionsQuery, ITrackedSession
 
     private static TrackerEntry FromTracked(TrackedSession session) => new()
     {
+        Id = session.Id,
         Task = session.Task,
         BookingElement = session.BookingElement,
         Start = session.Start,
