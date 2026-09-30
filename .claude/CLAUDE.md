@@ -25,10 +25,14 @@ This repository contains a .NET/C# application.
 - Always start a task with a plan, and present it fast: explore only as much
   as the plan needs, then state briefly what will change, which files are
   affected, and how the change will be verified.
-- In the plan, suggest a beads issue that documents it (the plan as the
-  issue description), so the decision survives the session.
+- In the plan, suggest a beads issue that documents it (the plan in the
+  issue's design field), so the decision survives the session.
 - Do not create the beads issue preemptively. Create it only once the user
   has agreed to the plan or explicitly asked for the issue.
+- When creating the issue, put the plan into the design field
+  (`--design` / `--design-file`) and keep the description to what the issue
+  is about and why (`--description`); do not put the plan into the
+  description.
 
 ## C# guidelines
 
