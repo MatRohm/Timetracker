@@ -33,6 +33,7 @@ public sealed class WeekDayViewModel : ObservableObject
     private string _contributorText = "";
     private double _bookedSeconds;
     private TimeSpan _activeTime;
+    private TimeSpan _untrackedTime;
     private string _untrackedText = "";
     private bool _isUntrackedWarning;
 
@@ -104,6 +105,12 @@ public sealed class WeekDayViewModel : ObservableObject
         private set => SetProperty(ref _untrackedText, value);
     }
 
+    /// <summary>
+    /// Active time not covered by booked sessions (zero when the bookings cover
+    /// it); the missing time the day's Distribute action hands out.
+    /// </summary>
+    public TimeSpan UntrackedTime => _untrackedTime;
+
     /// <summary>True when the untracked time reaches <see cref="UntrackedWarningThreshold"/>.</summary>
     public bool IsUntrackedWarning
     {
@@ -160,6 +167,39 @@ public sealed class WeekDayViewModel : ObservableObject
         OnPropertyChanged(nameof(CanRound));
     }
 
+    /// <summary>What distributing the day's untracked time over its tasks would change.</summary>
+    public DistributionPlan Distribution { get; private set; } = DistributionPlan.Empty;
+
+    /// <summary>True when some task of the day can absorb a share of the missing time.</summary>
+    public bool CanDistribute => Distribution.HasWork;
+
+    /// <summary>Tooltip for the distribute action.</summary>
+    public string DistributionHint => CanDistribute
+        ? "Distribute the day's untracked time over its tasks in proportion to their durations"
+        : "Nothing to distribute: the day has no untracked time, or no task can absorb it";
+
+    /// <summary>
+    /// One confirmation line per task that gets a share, e.g.
+    /// "Report 1:00 → 1:30: 09:00–10:00 → 09:00–10:30".
+    /// </summary>
+    public IReadOnlyList<string> DistributionLines =>
+        [.. Distribution.Tasks.Select(t =>
+            $"{t.Name} {WeekTimeFormat.HoursMinutes(t.Total)} → {WeekTimeFormat.HoursMinutes(t.Total + t.Share)}: "
+            + string.Join("; ", t.Changes.Select(DescribeChange)))];
+
+    /// <summary>One line per task that could not take a share, with the reason.</summary>
+    public IReadOnlyList<string> DistributionSkippedLines =>
+        [.. Distribution.Skipped.Select(t =>
+            $"{t.Name} {WeekTimeFormat.HoursMinutes(t.Total)} (no free time next to its last session)")];
+
+    /// <summary>Replaces the day's distribution plan.</summary>
+    public void SetDistribution(DistributionPlan distribution)
+    {
+        Distribution = distribution;
+        OnPropertyChanged(nameof(Distribution));
+        OnPropertyChanged(nameof(CanDistribute));
+    }
+
     private static string DescribeChange(SessionChange change)
     {
         var original = WeekTimeFormat.ClockRange(change.Original.Start, change.Original.End);
@@ -170,12 +210,12 @@ public sealed class WeekDayViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Replaces the day's gap rows; each plans its distribution over the
-    /// <paramref name="sessions"/> that border it.
+    /// Replaces the day's gap rows, ordered by start; shown below the groups when
+    /// the day is expanded.
     /// </summary>
-    public void SetGaps(IEnumerable<TimeRange> gaps, IReadOnlyList<TrackedSession> sessions)
+    public void SetGaps(IEnumerable<TimeRange> gaps)
     {
-        Gaps = [.. gaps.Select(g => new WeekGapViewModel(g, GapDistribution.Plan(g, sessions)))];
+        Gaps = [.. gaps.Select(g => new WeekGapViewModel(g))];
         OnPropertyChanged(nameof(Gaps));
     }
 
@@ -200,6 +240,7 @@ public sealed class WeekDayViewModel : ObservableObject
     private void RefreshUntracked()
     {
         var untracked = _activeTime - TimeSpan.FromSeconds(_bookedSeconds);
+        _untrackedTime = untracked > TimeSpan.Zero ? untracked : TimeSpan.Zero;
         if (untracked < MinimumUntrackedTime)
         {
             IsUntrackedWarning = false;

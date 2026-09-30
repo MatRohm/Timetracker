@@ -5,7 +5,7 @@ namespace Timetracker.Plugins.WeekView.Services;
 /// <summary>A task whose day total is rounded: its old total, the target and the session changes.</summary>
 public sealed record RoundedTask(string Name, TimeSpan Total, TimeSpan Target, IReadOnlyList<SessionChange> Changes);
 
-/// <summary>A task that could not be rounded because no free time borders its last session.</summary>
+/// <summary>A task that could not be adjusted because no free time borders its last session.</summary>
 public sealed record SkippedTask(string Name, TimeSpan Total);
 
 /// <summary>What rounding a day would do: the rounded tasks and the tasks that had to be skipped.</summary>

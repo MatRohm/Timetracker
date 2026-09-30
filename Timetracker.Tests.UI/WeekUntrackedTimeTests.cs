@@ -47,27 +47,37 @@ public sealed class WeekUntrackedTimeTests
             .Single(t => t.Text == "⚠ 10:00–12:00 untracked (2:00)");
         var buttons = gapRow.Parent.Should().BeOfType<StackPanel>().Which.Children.OfType<Button>().ToList();
         buttons.Should().ContainSingle(b => b.Content as string == "Book…");
-        buttons.Should().ContainSingle(b => b.Content as string == "Distribute")
-            .Which.IsEnabled.Should().BeTrue("the session 09:00–10:00 borders the gap");
+        buttons.Should().NotContain(b => b.Content as string == "Distribute",
+            "distribute moved to the day row");
     }
 
     [AvaloniaTest]
-    public void WeekTrackingTree_WhenNoSessionBordersAGap_ShouldDisableItsDistributeButton()
+    public void WeekTrackingTree_WhenADayHasUntrackedTime_ShouldShowAnEnabledDistributeButtonInTheDayRow()
     {
-        var midnight = DateTimeOffset.Now.Date;
-        var offset = DateTimeOffset.Now.Offset;
-        var (view, week) = WeekViewTestSupport.Build(
-            [],
-            activeSpans: day => day == DateOnly.FromDateTime(midnight)
-                ? [new ActiveSpan(new DateTimeOffset(midnight.AddHours(9), offset), new DateTimeOffset(midnight.AddHours(12), offset))]
-                : []);
-        week.Days.Single(d => d.IsToday).IsExpanded = true;
+        var today = DateOnly.FromDateTime(DateTimeOffset.Now.Date);
+        var view = WeekViewTestSupport.Build(
+            [WeekViewTestSupport.Session(DateTimeOffset.Now.Date.AddHours(9), "Report")],
+            activeTime: day => day == today ? TimeSpan.FromMinutes(150) : TimeSpan.Zero).View;
 
         Realize(view);
 
         var distribute = view.GetVisualDescendants().OfType<Button>()
             .Single(b => b.Content as string == "Distribute");
-        distribute.IsEnabled.Should().BeFalse("nothing starts or ends at the gap, so nothing can absorb it");
+        distribute.IsEnabled.Should().BeTrue("the day has untracked time a task can absorb");
+    }
+
+    [AvaloniaTest]
+    public void WeekTrackingTree_WhenADayIsFullyBooked_ShouldDisableTheDistributeButton()
+    {
+        var view = WeekViewTestSupport.Build(
+            [WeekViewTestSupport.Session(DateTimeOffset.Now.Date.AddHours(9), "Report")],
+            activeTime: _ => TimeSpan.Zero).View;
+
+        Realize(view);
+
+        var distribute = view.GetVisualDescendants().OfType<Button>()
+            .Single(b => b.Content as string == "Distribute");
+        distribute.IsEnabled.Should().BeFalse("there is no untracked time to distribute");
     }
 
     [AvaloniaTest]
