@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Layout;
@@ -100,9 +101,12 @@ public sealed class OptionsTabView : UserControl
             {
                 var explorerButton = new Button
                 {
-                    Content = "Show in explorer",
+                    Content = BuildExplorerIcon(),
                     Command = row.ShowInExplorerCommand,
+                    Name = "ShowInExplorerButton",
                 };
+                ToolTip.SetTip(explorerButton, "Show in explorer");
+                AutomationProperties.SetName(explorerButton, "Show in explorer");
                 Grid.SetRow(explorerButton, i);
                 Grid.SetColumn(explorerButton, 2);
                 grid.Children.Add(explorerButton);
@@ -120,4 +124,14 @@ public sealed class OptionsTabView : UserControl
         };
         return result;
     }
+
+    /// <summary>A small flat amber folder, the file-explorer symbol; drawn so it needs no icon font.</summary>
+    private static Control BuildExplorerIcon() => new Avalonia.Controls.Shapes.Path
+    {
+        Data = Geometry.Parse("M2,4 L6,4 L8,6 L14,6 L14,13 L2,13 Z"),
+        Fill = new SolidColorBrush(Color.FromRgb(0xFF, 0xC1, 0x07)),
+        Width = 16,
+        Height = 16,
+        VerticalAlignment = VerticalAlignment.Center,
+    };
 }
