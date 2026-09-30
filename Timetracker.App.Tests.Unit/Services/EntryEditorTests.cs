@@ -113,7 +113,7 @@ public sealed class EntryEditorTests
         stretched.Reschedule(report.Start, report.End.AddMinutes(20));
 
         var result = await editor.ApplyChangesAsync(
-            [new SessionChange(report, stretched), new SessionChange(review, null)],
+            [(report, stretched), (review, null)],
             [report, meeting, review]);
 
         result.Status.Should().Be(EntryEditStatus.Saved);
@@ -130,7 +130,7 @@ public sealed class EntryEditorTests
         var editor = new EntryEditor(_ => { saves++; return Task.CompletedTask; }, NullLogger.Instance);
         var gone = Entry("Report", 9);
 
-        var result = await editor.ApplyChangesAsync([new SessionChange(gone, null)], [Entry("Report", 9)]);
+        var result = await editor.ApplyChangesAsync([(gone, null)], [Entry("Report", 9)]);
 
         result.Status.Should().Be(EntryEditStatus.Failed, "an equal-looking copy is not the planned session");
         saves.Should().Be(0);
@@ -142,7 +142,7 @@ public sealed class EntryEditorTests
         var editor = new EntryEditor(_ => Task.FromException(new IOException("disk full")), NullLogger.Instance);
         var report = Entry("Report", 9);
 
-        var result = await editor.ApplyChangesAsync([new SessionChange(report, null)], [report]);
+        var result = await editor.ApplyChangesAsync([(report, null)], [report]);
 
         result.Status.Should().Be(EntryEditStatus.Failed);
         result.Error.Should().BeOfType<IOException>();

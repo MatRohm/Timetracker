@@ -30,11 +30,11 @@ public sealed class TrackedTask
 
     public string BookingElement { get; set; } = "";
 
-    public List<TrackedSession> Sessions { get; set; } = [];
+    public List<SessionSpan> Sessions { get; set; } = [];
 }
 
 /// <summary>One allocated time span of a task; the duration is kept alongside the times.</summary>
-public sealed class TrackedSession
+public sealed class SessionSpan
 {
     public DateTimeOffset Start { get; set; }
 

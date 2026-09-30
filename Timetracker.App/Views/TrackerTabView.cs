@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Timetracker.Plugins.Contracts.Ui;
 using Timetracker.App.ViewModels;
 using Timetracker.App.Views.Components;
 

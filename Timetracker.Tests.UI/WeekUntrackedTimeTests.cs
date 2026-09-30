@@ -3,9 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Headless.NUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Timetracker.App.Models;
-using Timetracker.App.Tests.Unit;
-using Timetracker.App.Views;
+using Timetracker.Plugins.Contracts;
 
 namespace Timetracker.Tests.UI;
 
@@ -18,22 +16,10 @@ public sealed class WeekUntrackedTimeTests
     [AvaloniaTest]
     public void WeekTrackingTree_WhenActiveTimeExceedsTheBookedTime_ShouldShowTheUntrackedTimeInTheDayRow()
     {
-        var (repo, _) = RepositoryFake.Create();
-        using var tracker = TrackerViewModelFactory.Create(repo);
         var today = DateOnly.FromDateTime(DateTimeOffset.Now.Date);
-        tracker.Week.DayActiveTime = day => day == today ? TimeSpan.FromMinutes(150) : TimeSpan.Zero;
-        tracker.Week.UpdateSessions(
-        [
-            new TrackerEntry
-            {
-                Task = "Report",
-                Start = DateTimeOffset.Now.Date.AddHours(9),
-                End = DateTimeOffset.Now.Date.AddHours(10),
-                Duration = "01:00:00",
-                DurationSeconds = 3600,
-            },
-        ]);
-        var view = new WeekTabView(tracker.Week, []);
+        var view = WeekViewTestSupport.Build(
+            [WeekViewTestSupport.Session(DateTimeOffset.Now.Date.AddHours(9), "Report")],
+            activeTime: day => day == today ? TimeSpan.FromMinutes(150) : TimeSpan.Zero).View;
 
         Realize(view);
 
@@ -46,26 +32,14 @@ public sealed class WeekUntrackedTimeTests
     [AvaloniaTest]
     public void WeekTrackingTree_WhenADayWithAGapIsExpanded_ShouldShowTheGapRowWithABookButton()
     {
-        var (repo, _) = RepositoryFake.Create();
-        using var tracker = TrackerViewModelFactory.Create(repo);
         var midnight = DateTimeOffset.Now.Date;
         var offset = DateTimeOffset.Now.Offset;
-        tracker.Week.DayActiveSpans = day => day == DateOnly.FromDateTime(midnight)
-            ? [new TimeRange(new DateTimeOffset(midnight.AddHours(9), offset), new DateTimeOffset(midnight.AddHours(12), offset))]
-            : [];
-        tracker.Week.UpdateSessions(
-        [
-            new TrackerEntry
-            {
-                Task = "Report",
-                Start = new DateTimeOffset(midnight.AddHours(9), offset),
-                End = new DateTimeOffset(midnight.AddHours(10), offset),
-                Duration = "01:00:00",
-                DurationSeconds = 3600,
-            },
-        ]);
-        tracker.Week.Days.Single(d => d.IsToday).IsExpanded = true;
-        var view = new WeekTabView(tracker.Week, []);
+        var (view, week) = WeekViewTestSupport.Build(
+            [WeekViewTestSupport.Session(new DateTimeOffset(midnight.AddHours(9), offset), "Report")],
+            activeSpans: day => day == DateOnly.FromDateTime(midnight)
+                ? [new ActiveSpan(new DateTimeOffset(midnight.AddHours(9), offset), new DateTimeOffset(midnight.AddHours(12), offset))]
+                : []);
+        week.Days.Single(d => d.IsToday).IsExpanded = true;
 
         Realize(view);
 
@@ -80,16 +54,14 @@ public sealed class WeekUntrackedTimeTests
     [AvaloniaTest]
     public void WeekTrackingTree_WhenNoSessionBordersAGap_ShouldDisableItsDistributeButton()
     {
-        var (repo, _) = RepositoryFake.Create();
-        using var tracker = TrackerViewModelFactory.Create(repo);
         var midnight = DateTimeOffset.Now.Date;
         var offset = DateTimeOffset.Now.Offset;
-        tracker.Week.DayActiveSpans = day => day == DateOnly.FromDateTime(midnight)
-            ? [new TimeRange(new DateTimeOffset(midnight.AddHours(9), offset), new DateTimeOffset(midnight.AddHours(12), offset))]
-            : [];
-        tracker.Week.UpdateSessions([]);
-        tracker.Week.Days.Single(d => d.IsToday).IsExpanded = true;
-        var view = new WeekTabView(tracker.Week, []);
+        var (view, week) = WeekViewTestSupport.Build(
+            [],
+            activeSpans: day => day == DateOnly.FromDateTime(midnight)
+                ? [new ActiveSpan(new DateTimeOffset(midnight.AddHours(9), offset), new DateTimeOffset(midnight.AddHours(12), offset))]
+                : []);
+        week.Days.Single(d => d.IsToday).IsExpanded = true;
 
         Realize(view);
 
@@ -101,17 +73,14 @@ public sealed class WeekUntrackedTimeTests
     [AvaloniaTest]
     public void WeekTrackingTree_WhenADayHasBookings_ShouldOfferRoundingOnlyWhenATaskIsOffTheHalfHour()
     {
-        var (repo, _) = RepositoryFake.Create();
-        using var tracker = TrackerViewModelFactory.Create(repo);
         var today = DateTimeOffset.Now.Date;
         var offset = DateTimeOffset.Now.Offset;
         var yesterdayOrTomorrow = today.DayOfWeek == DayOfWeek.Monday ? today.AddDays(1) : today.AddDays(-1);
-        tracker.Week.UpdateSessions(
+        var view = WeekViewTestSupport.Build(
         [
-            Session("Report", new DateTimeOffset(today.AddHours(9), offset), 50),
-            Session("Review", new DateTimeOffset(yesterdayOrTomorrow.AddHours(9), offset), 90),
-        ]);
-        var view = new WeekTabView(tracker.Week, []);
+            WeekViewTestSupport.Session(new DateTimeOffset(today.AddHours(9), offset), "Report", minutes: 50),
+            WeekViewTestSupport.Session(new DateTimeOffset(yesterdayOrTomorrow.AddHours(9), offset), "Review", minutes: 90),
+        ]).View;
 
         Realize(view);
 
@@ -120,13 +89,6 @@ public sealed class WeekUntrackedTimeTests
             .ToList();
         roundButtons.Should().HaveCount(2, "only the two days with bookings offer rounding");
         roundButtons.Count(b => b.IsEnabled).Should().Be(1, "only the 0:50 day is off the half hour");
-    }
-
-    private static TrackerEntry Session(string task, DateTimeOffset start, int minutes)
-    {
-        var session = new TrackerEntry { Task = task };
-        session.Reschedule(start, start.AddMinutes(minutes));
-        return session;
     }
 
     private static void Realize(Control root)

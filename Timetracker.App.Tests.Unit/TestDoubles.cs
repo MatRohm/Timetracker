@@ -2,6 +2,7 @@ using Timetracker.App.Interfaces;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Timetracker.App.Models;
+using Timetracker.App.Services;
 using Timetracker.App.ViewModels;
 
 namespace Timetracker.App.Tests.Unit;
@@ -73,6 +74,7 @@ public static class TrackerViewModelFactory
         var result = new TrackerViewModel(
             repository,
             timer ?? new FakeTimer(),
+            new EntryEditor(repository.SaveAsync, NullLogger<EntryEditor>.Instance),
             NullLogger<TrackerViewModel>.Instance,
             now);
         return result;

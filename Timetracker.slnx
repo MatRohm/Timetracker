@@ -3,9 +3,11 @@
   <Project Path="Timetracker.Plugins.AzureDevOps/Timetracker.Plugins.AzureDevOps.csproj" />
   <Project Path="Timetracker.Plugins.ActivityMonitor/Timetracker.Plugins.ActivityMonitor.csproj" />
   <Project Path="Timetracker.Plugins.Contracts/Timetracker.Plugins.Contracts.csproj" />
+  <Project Path="Timetracker.Plugins.WeekView/Timetracker.Plugins.WeekView.csproj" />
   <Project Path="Timetracker.App.Tests.Unit/Timetracker.App.Tests.Unit.csproj" />
   <Project Path="Timetracker.Plugins.AzureDevOps.Tests.Unit/Timetracker.Plugins.AzureDevOps.Tests.Unit.csproj" />
   <Project Path="Timetracker.Plugins.ActivityMonitor.Tests.Unit/Timetracker.Plugins.ActivityMonitor.Tests.Unit.csproj" />
+  <Project Path="Timetracker.Plugins.WeekView.Tests.Unit/Timetracker.Plugins.WeekView.Tests.Unit.csproj" />
   <Project Path="Timetracker.Tests.UI/Timetracker.Tests.UI.csproj" />
   <Project Path="Timetracker.Tests.Architecture/Timetracker.Tests.Architecture.csproj" />
 </Solution>

@@ -1,5 +1,5 @@
 using Timetracker.App.Models;
-using Timetracker.App.ViewModels.Mvvm;
+using Timetracker.Plugins.Contracts.ViewModels.Mvvm;
 
 namespace Timetracker.App.ViewModels;
 

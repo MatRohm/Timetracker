@@ -5,7 +5,8 @@ using Microsoft.Extensions.Logging;
 using Timetracker.App.Interfaces;
 using Timetracker.App.Models;
 using Timetracker.App.Services;
-using Timetracker.App.ViewModels.Mvvm;
+using Timetracker.Plugins.Contracts.ViewModels;
+using Timetracker.Plugins.Contracts.ViewModels.Mvvm;
 
 namespace Timetracker.App.ViewModels;
 
@@ -43,18 +44,24 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// <summary>Raised when saving an entry failed; the view shows the message.</summary>
     public event Action<string>? ErrorOccurred;
 
+    /// <summary>Raised after the session log or the running state changed.</summary>
+    public event EventHandler? SessionsChanged;
+
     /// <param name="repository">Reads and writes the session log.</param>
     /// <param name="timer">Ticks on the UI thread while a session runs.</param>
+    /// <param name="editor">Persists the session-log changes the view model drives.</param>
     /// <param name="logger">Receives failures to save or book entries.</param>
     /// <param name="now">Current time; replaceable so time-dependent behavior can be tested deterministically.</param>
     public TrackerViewModel(
         ITrackerRepository repository,
         IUiTimer timer,
+        EntryEditor editor,
         ILogger<TrackerViewModel> logger,
         Func<DateTimeOffset>? now = null)
     {
         _repository = repository;
         _timer = timer;
+        _editor = editor;
         _logger = logger;
         _now = now ?? (() => DateTimeOffset.Now);
         _timer.Tick += OnTimerTick;
@@ -66,15 +73,8 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         // Same for the history list: the grid binds to this view model's forwards.
         _history.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
 
-        _editor = new EntryEditor(_repository.SaveAsync, _logger);
-
         _startCommand = new RelayCommand(Start, () => !IsRunning);
         _stopCommand = new AsyncRelayCommand(Stop, () => IsRunning);
-
-        // The week view books and distributes untracked gaps through this view model,
-        // which owns the log.
-        Week.BookGap = BookGapAsync;
-        Week.ApplyChanges = ApplySessionChangesAsync;
 
         StatusText = "Entries are appended to " + _repository.FilePath;
 
@@ -168,8 +168,11 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// <summary>True while the suggestion list should be shown below the task input.</summary>
     public bool ShowSuggestions => _suggestions.ShowSuggestions;
 
-    /// <summary>Week view: seven weekday columns with week navigation.</summary>
-    public WeekViewModel Week { get; } = new();
+    /// <summary>The current session log; read by the session host for the add-ins.</summary>
+    public IReadOnlyList<TrackerEntry> SessionLog => _sessions;
+
+    /// <summary>Start of the running timer, or null when none runs.</summary>
+    public DateTimeOffset? RunningSince => IsRunning ? _startedAt : null;
 
     /// <summary>Property name the history list is currently sorted by.</summary>
     public string SortColumn => _history.SortColumn;
@@ -326,10 +329,10 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// refreshes every affected view. Used by the per-item editor: it replaces all
     /// stored sessions of that task with the edited/remaining ones.
     /// </summary>
-    public async Task<bool> ReplaceSessionsAsync(string task, IReadOnlyList<SessionEditRow> sessions)
+    public async Task<bool> ReplaceSessionsAsync(string task, EditEntriesViewModel editor)
     {
         var backup = _sessions.Select(e => e.Clone()).ToList();
-        var result = await _editor.ReplaceSessionsAsync(task, [.. sessions.Select(s => s.Entry)], _sessions);
+        var result = await _editor.ReplaceSessionsAsync(task, editor.RemainingSessions(), _sessions);
 
         if (result.Status == EntryEditStatus.Saved)
         {
@@ -427,7 +430,6 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         _watch.Restart();
         _timer.Start();
         IsRunning = true;
-        Week.RunningSince = _startedAt;
 
         ElapsedTimeText = "00:00:00";
         Status = TrackerStatus.Info;
@@ -436,6 +438,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
         // The preview is consumed with the next save (see BuildEntry).
         RefreshCommands();
+        SessionsChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private async Task Stop()
@@ -455,10 +458,10 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         await SaveAsync(BuildEntry(endedAt, elapsed));
 
         // Only now: before the save refresh the stopped session would briefly show as a gap.
-        Week.RunningSince = null;
         PreviewBookingElement = "";
 
         RefreshCommands();
+        SessionsChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private TrackerEntry BuildEntry(DateTimeOffset endedAt, TimeSpan elapsed) => new()
@@ -483,75 +486,6 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
             .Select(e => e.BookingElement)
             .LastOrDefault(b => !string.IsNullOrWhiteSpace(b)) ?? "";
         return result;
-    }
-
-    /// <summary>
-    /// Applies planned session changes from the week view (e.g. a distributed gap)
-    /// and refreshes the history and the week. A failure is reported in the week
-    /// view's status line and leaves the file untouched; the caller reports success.
-    /// </summary>
-    public async Task<bool> ApplySessionChangesAsync(IReadOnlyList<SessionChange> changes)
-    {
-        var result = await _editor.ApplyChangesAsync(changes, _sessions);
-        if (result.Status == EntryEditStatus.Failed)
-        {
-            Week.ShowStatus("✗ Saving the changes failed: " + result.Error?.Message, WeekStatus.Error);
-            return false;
-        }
-
-        if (result.Status != EntryEditStatus.Saved)
-        {
-            return false;
-        }
-
-        await RefreshEntriesAsync();
-        return true;
-    }
-
-    /// <summary>
-    /// Books an untracked gap from the week view as a new session. Without a booking
-    /// element the session inherits the task's latest one, like a tracked session.
-    /// Reports the outcome in the week view's status line; false when nothing was saved.
-    /// </summary>
-    public async Task<bool> BookGapAsync(TimeRange range, string task, string bookingElement)
-    {
-        var name = task.Trim();
-        if (name.Length == 0)
-        {
-            Week.ShowStatus("✗ Enter a task name to book the untracked time.", WeekStatus.Error);
-            return false;
-        }
-
-        if (range.End <= range.Start)
-        {
-            Week.ShowStatus("✗ The end must lie after the start.", WeekStatus.Error);
-            return false;
-        }
-
-        var element = bookingElement.Trim();
-        var entry = new TrackerEntry
-        {
-            Task = name,
-            BookingElement = element.Length > 0 ? element : LatestBookingElement(name),
-        };
-        entry.Reschedule(range.Start, range.End);
-
-        try
-        {
-            await _repository.AddAsync(entry);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Could not book the gap to {Task}", name);
-            Week.ShowStatus("✗ Booking failed: " + ex.Message, WeekStatus.Error);
-            return false;
-        }
-
-        await RefreshEntriesAsync();
-        Week.ShowStatus(
-            $"✓ Booked {WeekTimeFormat.HoursMinutes(range.Duration.TotalSeconds)} to \"{name}\".",
-            WeekStatus.Success);
-        return true;
     }
 
     private async Task SaveAsync(TrackerEntry entry)
@@ -591,13 +525,12 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         // active sort and filter, and pages the result.
         _history.SetSessions(_sessions);
 
-        // Keep the week view in sync with the session log and text edits.
-        Week.UpdateSessions(_sessions);
-
         RefreshSuggestions();
+        SessionsChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private void RefreshSuggestions() => _suggestions.Refresh(TaskName, _sessions);
+    private void RefreshSuggestions() =>
+        _suggestions.Refresh(TaskName, _sessions.Select(e => (e.Task, e.DurationSeconds)));
 
     private void OnTimerTick()
     {

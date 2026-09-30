@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Input;
+using Timetracker.Plugins.Contracts.ViewModels;
 using Timetracker.App.ViewModels;
 
 namespace Timetracker.App.Views.Components;

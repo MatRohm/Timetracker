@@ -1,14 +1,11 @@
-using Timetracker.App.Interfaces;
 using AwesomeAssertions;
 using Avalonia.Controls;
 using Avalonia.Headless.NUnit;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Timetracker.App.Models;
-using Timetracker.App.Tests.Unit;
-using Timetracker.App.ViewModels;
-using Timetracker.App.Views;
+using Timetracker.Plugins.WeekView.ViewModels;
+using Timetracker.Plugins.WeekView.Views;
 
 namespace Timetracker.Tests.UI;
 
@@ -99,25 +96,8 @@ public sealed class WeekCopyButtonTests
     }
 
     private static (WeekTabView View, WeekViewModel Week) Build(
-        params (DateTimeOffset Start, string Task, string Booking)[] sessions)
-    {
-        var repo = new FakeRepo();
-        using var tracker = TrackerViewModelFactory.Create(repo);
-        tracker.Week.UpdateSessions(
-        [
-            .. sessions.Select(s => new TrackerEntry
-            {
-                Task = s.Task,
-                BookingElement = s.Booking,
-                Start = s.Start,
-                End = s.Start.AddHours(1),
-                Duration = "01:00:00",
-                DurationSeconds = 3600,
-            }),
-        ]);
-
-        return (new WeekTabView(tracker.Week, []), tracker.Week);
-    }
+        params (DateTimeOffset Start, string Task, string Booking)[] sessions) =>
+        WeekViewTestSupport.Build(sessions.Select(s => WeekViewTestSupport.Session(s.Start, s.Task, s.Booking)));
 
     private static Window Realize(Control root)
     {
@@ -140,12 +120,4 @@ public sealed class WeekCopyButtonTests
 
     private static IEnumerable<T> FindAll<T>(Control root) where T : Control =>
         root.GetVisualDescendants().OfType<T>();
-
-    private sealed class FakeRepo : ITrackerRepository
-    {
-        public string FilePath => "memory.json";
-        public Task<IReadOnlyList<TrackerEntry>> GetAllAsync() => Task.FromResult<IReadOnlyList<TrackerEntry>>([]);
-        public Task AddAsync(TrackerEntry entry) => Task.CompletedTask;
-        public Task SaveAsync(IReadOnlyList<TrackerEntry> e) => Task.CompletedTask;
-    }
 }

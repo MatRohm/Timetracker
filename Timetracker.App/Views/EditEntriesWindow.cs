@@ -4,6 +4,7 @@ using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Timetracker.Plugins.Contracts.ViewModels;
 using Timetracker.App.ViewModels;
 
 namespace Timetracker.App.Views;
@@ -22,8 +23,11 @@ public sealed class EditEntriesWindow : Window
 
     private readonly EditEntriesViewModel _viewModel;
 
-    /// <summary>Sessions to keep after an accepted edit; null when cancelled.</summary>
-    public IReadOnlyList<SessionEditRow>? Result { get; private set; }
+    /// <summary>True once the user saved; false when the dialog was cancelled.</summary>
+    public bool Saved { get; private set; }
+
+    /// <summary>The editor whose remaining sessions the caller persists.</summary>
+    public EditEntriesViewModel ViewModel => _viewModel;
 
     public EditEntriesWindow(EntryRow item)
     {
@@ -238,7 +242,7 @@ public sealed class EditEntriesWindow : Window
         }
 
         _viewModel.Save();
-        Result = _viewModel.RemainingSessions();
+        Saved = true;
         Close();
     }
 

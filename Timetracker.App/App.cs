@@ -1,4 +1,5 @@
 using Timetracker.App.Interfaces;
+using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Contracts.Interfaces;
 using Avalonia;
 using Avalonia.Controls;
@@ -69,42 +70,29 @@ public sealed class App : Application
             // Resolve the add-in UI contributors and build their controls here, so
             // the tab views stay free of the plugin contract.
             var trackerContributors = _services.GetServices<IUiContributor>()
-                .Where(c => c.TargetTab == "Tracker")
-                .Select(c => c.CreateControl(_services))
-                .ToList();
-            var weekContributors = _services.GetServices<IUiContributor>()
-                .Where(c => c.TargetTab == "Week view")
+                .Where(c => c.TargetTab == TabKeys.Tracker)
                 .Select(c => c.CreateControl(_services))
                 .ToList();
 
-            // Feed the per-day contributor lines (e.g. PC activity) into the week view.
-            var weekDayContributors = _services.GetServices<IWeekDayContributor>().ToArray();
-            viewModel.Week.DayContributorText = day =>
-                string.Join(" · ", weekDayContributors
-                    .Select(c => c.GetDayText(day))
-                    .Where(text => text.Length > 0));
-
-            // The day's active time (e.g. from the PC activity monitor) lets the week
-            // view show what was not tracked. With several sources the longest wins,
-            // since they measure the same computer use.
-            var activitySources = _services.GetServices<IDayActivitySource>().ToArray();
-            viewModel.Week.DayActiveTime = day =>
-                activitySources
-                    .Select(source => source.GetActiveTime(day))
-                    .DefaultIfEmpty(TimeSpan.Zero)
-                    .Max();
-
-            // The same sources' active stretches let each day list its untracked gaps;
-            // overlapping stretches of several sources are merged by the week view.
-            viewModel.Week.DayActiveSpans = day =>
-                [.. activitySources
-                    .SelectMany(source => source.GetActiveSpans(day))
-                    .Select(span => new Models.TimeRange(span.Start, span.End))];
+            // Each plugin tab builds its content and receives the add-in controls
+            // targeted at its tab key, ordered between the tracker and options tabs.
+            var pluginTabs = _services.GetServices<ITabContributor>()
+                .OrderBy(t => t.Order)
+                .Select(t => new TabItem
+                {
+                    Header = t.Header,
+                    Content = t.CreateView(
+                        _services.GetServices<IUiContributor>()
+                            .Where(c => c.TargetTab == t.TabKey)
+                            .Select(c => c.CreateControl(_services))
+                            .ToList()),
+                })
+                .ToList();
 
             var window = new TrackerWindow(
                 viewModel,
                 trackerContributors,
-                weekContributors,
+                pluginTabs,
                 _services.GetRequiredService<ViewModels.OptionsViewModel>());
             desktop.MainWindow = window;
 

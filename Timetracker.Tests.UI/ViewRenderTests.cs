@@ -11,6 +11,8 @@ using Timetracker.App.Tests.Unit;
 using Timetracker.App.ViewModels;
 using Timetracker.App.Views;
 using Timetracker.App.Views.Components;
+using Timetracker.Plugins.Contracts.ViewModels;
+using Timetracker.Plugins.WeekView.Views;
 
 namespace Timetracker.Tests.UI;
 
@@ -110,8 +112,8 @@ public sealed class ViewRenderTests
         saveButton.IsEnabled.Should().BeTrue();
         saveButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
 
-        dialog.Result.Should().NotBeNull("pressing Save accepts the dialog");
-        dialog.Result!.Should().HaveCount(2);
+        dialog.Saved.Should().BeTrue("pressing Save accepts the dialog");
+        dialog.ViewModel.Sessions.Should().HaveCount(2);
     }
 
     [AvaloniaTest]
@@ -177,31 +179,20 @@ public sealed class ViewRenderTests
     [AvaloniaTest]
     public void WeekTabView_WhenRendered_ShouldShowSevenDayNodesWithBookings()
     {
-        var (repo, _) = RepositoryFake.Create();
-        using var tracker = TrackerViewModelFactory.Create(repo);
-        tracker.Week.UpdateSessions([
-            new TrackerEntry
-            {
-                Task = "Meeting",
-                BookingElement = "Project X",
-                Start = DateTimeOffset.Now.Date.AddHours(9),
-                End = DateTimeOffset.Now.Date.AddHours(10),
-                Duration = "01:00:00",
-                DurationSeconds = 3600,
-            },
+        var (view, week) = WeekViewTestSupport.Build(
+        [
+            WeekViewTestSupport.Session(DateTimeOffset.Now.Date.AddHours(9), "Meeting", "Project X"),
         ]);
         // Days start collapsed; expand today to reveal its booking element node.
-        var today = tracker.Week.Days.Single(d => d.IsToday);
+        var today = week.Days.Single(d => d.IsToday);
         today.IsExpanded = true;
-
-        var view = new WeekTabView(tracker.Week, []);
 
         // The tree holds all seven day nodes, and today's element node shows its name.
         var texts = FindAllControls<TextBlock>(view).Select(t => t.Text ?? "").ToList();
         texts.Should().Contain("Project X (1:00)");
         texts.Should().Contain(t => t.StartsWith("Week "), "the week title is shown");
 
-        tracker.Week.Days.Should().HaveCount(7, "Monday through Sunday");
+        week.Days.Should().HaveCount(7, "Monday through Sunday");
         FindAllControls<WeekTrackingTree>(view).Should().ContainSingle("the week tree is hosted");
     }
 
