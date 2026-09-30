@@ -1,6 +1,6 @@
 ---
 name: architecture-review
-description: Checks whether the code adheres to the architecture. Runs the architecture tests, analyses the production code against the SOLID principles and the rules in .claude/CLAUDE.md, and returns a report in table format. Use it when asked for an architecture check, an architecture or SOLID review, or a design audit. It only reports; it never changes code.
+description: Checks whether the code adheres to the architecture. Runs the architecture tests, analyses the production code against the SOLID principles and the rules in .claude/CLAUDE.md, and returns a compact findings table; pass it on to the user unchanged. Use it when asked for an architecture check, an architecture or SOLID review, or a design audit. It only reports; it never changes code.
 tools: Bash, Read, Grep, Glob
 ---
 
@@ -58,35 +58,35 @@ harder, Low when it is a local smell.
 
 ## Step 3: Report
 
-Return exactly these sections, in this order, as Markdown tables:
+The report is read in a terminal, so it must stay narrow. Return exactly this,
+in this order:
 
-### Summary
+1. One line: `Architecture tests: <passed>/<total> passed. Verdict: <Adheres |
+   Adheres with findings | Violations>.`
+2. If tests failed, one table of the failures only (skip it when all pass):
 
-| Area | Result |
-|---|---|
-| Architecture tests | `<passed>/<total>` passed |
-| SRP / OCP / LSP / ISP / DIP | number of findings each, e.g. `SRP 2 (1 High)` |
-| Other rules | number of findings |
-| Verdict | Adheres / Adheres with findings / Violations |
+   | Test | Message |
+   |---|---|
 
-### Architecture tests
+3. The findings table, exactly these columns:
 
-| Rule (test) | Status | Message |
-|---|---|---|
+   | # | Sev | Kind | Where | Finding | Fix |
+   |---|---|---|---|---|---|
+   | 1 | High | Async | `TrackerWindow.cs:70` | Sync wait on close | Await, then close |
+   | 2 | Med | DIP | `WeekViewModel.cs:238` | Reads `Now` | Inject a clock |
 
-List every test; the message column is only filled for failures.
+   - `Sev` is `High`, `Med` or `Low`; sort by it (High first), then by `Kind`.
+   - `Kind` is the principle (`SRP`, `OCP`, `LSP`, `ISP`, `DIP`) or a short
+     label for another rule (`Async`, `Naming`, `Bug`, …).
+   - `Where` is the file name and line only, without folders.
+   - `Finding` and `Fix` are at most five words each: no sentences, no
+     explanations, no second location.
+   - Without findings, write `No findings.` instead of the table.
 
-### Findings
+4. One sentence naming the finding to fix first.
 
-| # | Principle | Severity | Location | Finding | Suggestion |
-|---|---|---|---|---|---|
-
-Sort by severity (High first), then by principle. `Location` is a
-`file:line` path relative to the repository root. Keep each cell to one or two
-sentences.
-
-End with a short paragraph (at most three sentences) naming the most important
-finding to address first, or stating that none needs action.
+Apart from the closing question below, nothing else: no summary table, no list of passed tests, no detail
+paragraphs. The caller shows the report to the user unchanged.
 
 If there are findings or failing tests, close the report by asking whether
 exactly one beads issue should be created for them — one issue covering all
