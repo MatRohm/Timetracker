@@ -9,6 +9,10 @@ The end-to-end process for taking a feature or task from description to a
 merged, pushed change. Four phases: **plan** (A), **implement** (B), **review**
 (C), and **finish** (D).
 
+**Phase gate** — at the end of every phase, stop and wait for an explicit prompt
+from the user before advancing to the next phase (`A` → `B` → `C` → `D`). Never
+begin a phase until the user has said to move on.
+
 ## A) Feature / task description & planning
 
 1. **Load context** — run `bd prime` at the start of the session (opencode does
@@ -30,6 +34,8 @@ merged, pushed change. Four phases: **plan** (A), **implement** (B), **review**
    (`bd dolt push`). If an issue already existed with a described plan, **verify
    the plan still holds** against what exploration found; if it no longer fits,
    **revise the plan and update the issue** rather than leaving it stale.
+
+   **Stop here** — wait for the user to explicitly advance to phase B.
 
 ## B) Implementation
 
@@ -54,6 +60,8 @@ merged, pushed change. Four phases: **plan** (A), **implement** (B), **review**
 8. **Commit as you go** — Conventional Commits type + subject ending in the
    issue id (`feat: … (timetracker-66k)`), enforced by the `commit-msg` hook.
 
+   **Stop here** — wait for the user to explicitly advance to phase C.
+
 ## C) Implementation review
 
 1. **Run the quality gates** — `dotnet build`, then `dotnet test`, then
@@ -71,6 +79,8 @@ merged, pushed change. Four phases: **plan** (A), **implement** (B), **review**
 6. **Record the review results** — unless otherwise specified, write the review
    findings into the issue's **notes** field (`bd update <id>
    --append-notes="…"`) so the outcome survives the session.
+
+   **Stop here** — wait for the user to explicitly advance to phase D.
 
 ## D) Finishing
 
