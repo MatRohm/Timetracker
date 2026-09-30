@@ -1,3 +1,4 @@
+using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Contracts.Interfaces;
 
 namespace Timetracker.Plugins.ActivityMonitor;
@@ -6,10 +7,14 @@ namespace Timetracker.Plugins.ActivityMonitor;
 /// Feeds the week view from the activity log: the PC activity line per day (e.g.
 /// "PC 7:15 active · 1:20 idle") and the day's active time, which the week view
 /// compares with the booked time. Both come from the same per-day sum of the
-/// log's active/idle spans.
+/// log's active/idle spans; the active stretches themselves are exposed too, so
+/// the week view can show when time went untracked.
 /// </summary>
 public sealed class ActivityWeekDayContributor : IWeekDayContributor, IDayActivitySource
 {
+    /// <summary>Span kind the activity log uses for periods with user input.</summary>
+    private const string ActiveKind = "active";
+
     private readonly ActivityLog _log;
 
     public ActivityWeekDayContributor(ActivityLog log)
@@ -42,29 +47,25 @@ public sealed class ActivityWeekDayContributor : IWeekDayContributor, IDayActivi
         return result;
     }
 
-    /// <summary>
-    /// Sums the active and idle spans of the log that fall on <paramref name="day"/>;
-    /// spans crossing midnight count with their per-day part.
-    /// </summary>
+    public IReadOnlyList<ActiveSpan> GetActiveSpans(DateOnly day)
+    {
+        var result = DayParts(day)
+            .Where(part => part.Kind == ActiveKind)
+            .Select(part => new ActiveSpan(part.Start, part.End))
+            .OrderBy(span => span.Start)
+            .ToList();
+        return result;
+    }
+
+    /// <summary>Sums the active and idle parts of the log that fall on <paramref name="day"/>.</summary>
     private (double ActiveSeconds, double IdleSeconds) SumDay(DateOnly day)
     {
         var activeSeconds = 0.0;
         var idleSeconds = 0.0;
-        foreach (var span in _log.GetAll())
+        foreach (var part in DayParts(day))
         {
-            // Clip the span to the day by comparing instants, so a span starting
-            // mid-day counts from its start rather than from midnight.
-            var dayStart = new DateTimeOffset(day.ToDateTime(TimeOnly.MinValue), span.Start.Offset);
-            var dayEnd = dayStart.AddDays(1);
-            var overlapStart = span.Start > dayStart ? span.Start : dayStart;
-            var overlapEnd = span.End < dayEnd ? span.End : dayEnd;
-            if (overlapEnd <= overlapStart)
-            {
-                continue;
-            }
-
-            var seconds = (overlapEnd - overlapStart).TotalSeconds;
-            if (span.Kind == "active")
+            var seconds = (part.End - part.Start).TotalSeconds;
+            if (part.Kind == ActiveKind)
             {
                 activeSeconds += seconds;
             }
@@ -76,6 +77,27 @@ public sealed class ActivityWeekDayContributor : IWeekDayContributor, IDayActivi
 
         var result = (activeSeconds, idleSeconds);
         return result;
+    }
+
+    /// <summary>
+    /// Each logged span's part on <paramref name="day"/>: spans crossing midnight
+    /// contribute only the part inside the day, spans on other days nothing.
+    /// </summary>
+    private IEnumerable<(string Kind, DateTimeOffset Start, DateTimeOffset End)> DayParts(DateOnly day)
+    {
+        foreach (var span in _log.GetAll())
+        {
+            // Clip the span to the day by comparing instants, so a span starting
+            // mid-day counts from its start rather than from midnight.
+            var dayStart = new DateTimeOffset(day.ToDateTime(TimeOnly.MinValue), span.Start.Offset);
+            var dayEnd = dayStart.AddDays(1);
+            var partStart = span.Start > dayStart ? span.Start : dayStart;
+            var partEnd = span.End < dayEnd ? span.End : dayEnd;
+            if (partEnd > partStart)
+            {
+                yield return (span.Kind, partStart, partEnd);
+            }
+        }
     }
 
     private static string HoursMinutes(double seconds) =>

@@ -64,6 +64,9 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         _startCommand = new RelayCommand(Start, () => !IsRunning);
         _stopCommand = new AsyncRelayCommand(Stop, () => IsRunning);
 
+        // The week view books untracked gaps through this view model, which owns the log.
+        Week.BookGap = BookGapAsync;
+
         StatusText = "Entries are appended to " + _dependencies.FilePath();
 
         // Load the history in the background; Avalonia posts the continuation back
@@ -338,6 +341,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         _watch.Restart();
         _dependencies.StartTimer();
         IsRunning = true;
+        Week.RunningSince = _startedAt;
 
         ElapsedTimeText = "00:00:00";
         Status = TrackerStatus.Info;
@@ -363,6 +367,9 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         Title = "Timetracker";
 
         await SaveAsync(BuildEntry(endedAt, elapsed));
+
+        // Only now: before the save refresh the stopped session would briefly show as a gap.
+        Week.RunningSince = null;
         PreviewBookingElement = "";
 
         RefreshCommands();
@@ -375,15 +382,68 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         // session inherits the task's latest booking element so grouping stays consistent.
         BookingElement = PreviewBookingElement.Length > 0
             ? PreviewBookingElement
-            : _sessions
-                .Where(e => e.Task.Trim().Equals(TaskName.Trim(), StringComparison.OrdinalIgnoreCase))
-                .Select(e => e.BookingElement)
-                .LastOrDefault(b => !string.IsNullOrWhiteSpace(b)) ?? "",
+            : LatestBookingElement(TaskName),
         Start = _startedAt,
         End = endedAt,
         Duration = elapsed.ToString(@"hh\:mm\:ss"),
         DurationSeconds = Math.Round(elapsed.TotalSeconds, 1),
     };
+
+    /// <summary>The task's most recent non-empty booking element; empty when it has none.</summary>
+    private string LatestBookingElement(string task)
+    {
+        var result = _sessions
+            .Where(e => e.Task.Trim().Equals(task.Trim(), StringComparison.OrdinalIgnoreCase))
+            .Select(e => e.BookingElement)
+            .LastOrDefault(b => !string.IsNullOrWhiteSpace(b)) ?? "";
+        return result;
+    }
+
+    /// <summary>
+    /// Books an untracked gap from the week view as a new session. Without a booking
+    /// element the session inherits the task's latest one, like a tracked session.
+    /// Reports the outcome in the week view's status line; false when nothing was saved.
+    /// </summary>
+    public async Task<bool> BookGapAsync(TimeRange range, string task, string bookingElement)
+    {
+        var name = task.Trim();
+        if (name.Length == 0)
+        {
+            Week.ShowStatus("✗ Enter a task name to book the untracked time.", WeekStatus.Error);
+            return false;
+        }
+
+        if (range.End <= range.Start)
+        {
+            Week.ShowStatus("✗ The end must lie after the start.", WeekStatus.Error);
+            return false;
+        }
+
+        var element = bookingElement.Trim();
+        var entry = new TrackerEntry
+        {
+            Task = name,
+            BookingElement = element.Length > 0 ? element : LatestBookingElement(name),
+        };
+        entry.Reschedule(range.Start, range.End);
+
+        try
+        {
+            await _dependencies.AddEntry(entry);
+        }
+        catch (Exception ex)
+        {
+            _dependencies.LogError("BookGap", ex);
+            Week.ShowStatus("✗ Booking failed: " + ex.Message, WeekStatus.Error);
+            return false;
+        }
+
+        await RefreshEntriesAsync();
+        Week.ShowStatus(
+            $"✓ Booked {WeekTimeFormat.HoursMinutes(range.Duration.TotalSeconds)} to \"{name}\".",
+            WeekStatus.Success);
+        return true;
+    }
 
     private async Task SaveAsync(TrackerEntry entry)
     {

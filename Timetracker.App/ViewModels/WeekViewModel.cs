@@ -19,6 +19,7 @@ public sealed class WeekViewModel : ObservableObject
     private readonly RelayCommand _currentWeekCommand;
 
     private IReadOnlyList<TrackerEntry> _sessions = [];
+    private DateTimeOffset? _runningSince;
     private DateTimeOffset _weekStart;
     private string _weekTitle = "";
     private string _weekTotalText = "";
@@ -89,6 +90,62 @@ public sealed class WeekViewModel : ObservableObject
     /// </summary>
     public Func<DateOnly, TimeSpan>? DayActiveTime { get; set; }
 
+    /// <summary>
+    /// Supplies a day's active stretches (e.g. from the PC activity monitor), from
+    /// which each day lists its untracked gaps. Wired by the composition root like
+    /// <see cref="DayActiveTime"/>, so the view model stays free of the plugin contract.
+    /// </summary>
+    public Func<DateOnly, IReadOnlyList<TimeRange>>? DayActiveSpans { get; set; }
+
+    /// <summary>
+    /// Start of the running timer, or null when none runs. Its time is never listed
+    /// as a gap, since it will be saved as a session on Stop.
+    /// </summary>
+    public DateTimeOffset? RunningSince
+    {
+        get => _runningSince;
+        set
+        {
+            if (SetProperty(ref _runningSince, value))
+            {
+                Rebuild();
+            }
+        }
+    }
+
+    /// <summary>Every saved session, e.g. for the task-name suggestions when booking a gap.</summary>
+    public IReadOnlyList<TrackerEntry> Sessions => _sessions;
+
+    /// <summary>
+    /// Books a gap as a new session (range, task name, booking element) and returns
+    /// whether it was saved. Wired by <see cref="TrackerViewModel"/>, which owns the
+    /// session log.
+    /// </summary>
+    public Func<TimeRange, string, string, Task<bool>>? BookGap { get; set; }
+
+    /// <summary>
+    /// Dialog state for booking <paramref name="gap"/>, with the gap's times and the
+    /// suggestions from every saved session. Lets the view open the dialog without
+    /// handling model types itself.
+    /// </summary>
+    public BookGapViewModel CreateBooking(WeekGapViewModel gap)
+    {
+        var result = new BookGapViewModel(gap.Range, _sessions);
+        return result;
+    }
+
+    /// <summary>Books the confirmed dialog state as a session; false when nothing was saved.</summary>
+    public async Task<bool> BookAsync(BookGapViewModel booking)
+    {
+        if (BookGap is null)
+        {
+            return false;
+        }
+
+        var result = await BookGap(booking.Range, booking.TaskName, booking.BookingElement);
+        return result;
+    }
+
     public ICommand PreviousWeekCommand => _previousWeekCommand;
 
     public ICommand NextWeekCommand => _nextWeekCommand;
@@ -126,6 +183,9 @@ public sealed class WeekViewModel : ObservableObject
             .Where(s => s.Start.Date >= _weekStart.Date && s.Start.Date < weekEnd.Date)
             .ToList();
 
+        // The running timer extends into the future until it is stopped.
+        TimeRange? running = _runningSince is { } since ? new TimeRange(since, DateTimeOffset.MaxValue) : null;
+
         for (var i = 0; i < 7; i++)
         {
             var day = _weekStart.AddDays(i);
@@ -133,6 +193,11 @@ public sealed class WeekViewModel : ObservableObject
             var date = DateOnly.FromDateTime(day.Date);
             _days[i].ContributorText = DayContributorText?.Invoke(date) ?? "";
             _days[i].ActiveTime = DayActiveTime?.Invoke(date) ?? TimeSpan.Zero;
+
+            // Every session counts, not only the day's: one started the evening before
+            // can cover the early hours of this day.
+            _days[i].SetGaps(UntrackedGaps.Find(
+                DayActiveSpans?.Invoke(date) ?? [], _sessions, running, WeekDayViewModel.MinimumGapDuration));
         }
 
         WeekTotalText = $"Σ {WeekTimeFormat.HoursMinutes(weekSessions.Sum(s => s.DurationSeconds))}";

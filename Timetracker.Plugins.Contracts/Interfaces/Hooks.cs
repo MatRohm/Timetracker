@@ -38,6 +38,12 @@ public interface IDayActivitySource
 {
     /// <summary>Active time on the given day; <see cref="TimeSpan.Zero"/> when nothing was recorded.</summary>
     TimeSpan GetActiveTime(DateOnly day);
+
+    /// <summary>
+    /// The day's active stretches, clipped to the day and ordered by start; empty
+    /// when nothing was recorded. Lets the week view show when time went untracked.
+    /// </summary>
+    IReadOnlyList<ActiveSpan> GetActiveSpans(DateOnly day);
 }
 
 /// <summary>Runs once when the application starts or closes.</summary>

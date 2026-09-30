@@ -13,7 +13,8 @@ namespace Timetracker.App.Views.Components;
 /// expanding to that day's booking element groups and, below them, the tasks
 /// worked on that day. The gray per-day contributor line (e.g. PC activity) comes
 /// from <see cref="WeekDayViewModel.ContributorText"/>, followed by the day's
-/// untracked time (<see cref="WeekDayViewModel.UntrackedText"/>). Each booking element and
+/// untracked time (<see cref="WeekDayViewModel.UntrackedText"/>); an expanded day also lists
+/// its untracked gaps with a Book… button. Each booking element and
 /// task node carries a copy button that copies the node's task names. View-only;
 /// the tree data lives in <see cref="WeekViewModel"/>.
 /// </summary>
@@ -103,6 +104,59 @@ public sealed class WeekTrackingTree : UserControl
                     _tree.Children.Add(BuildEntryNode(entry));
                 }
             }
+
+            foreach (var gap in day.Gaps)
+            {
+                _tree.Children.Add(BuildGapNode(gap));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Untracked gap node: "⚠ 10:15–11:05 untracked (0:50)" and a Book… button that
+    /// opens the booking dialog. Sits at the element level, below the day's groups.
+    /// </summary>
+    private Control BuildGapNode(WeekGapViewModel gap)
+    {
+        var row = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = RowSpacing,
+            Margin = new Thickness(ElementRowIndent + ExpanderWidth + RowSpacing, 1, 0, 1),
+        };
+
+        row.Children.Add(new TextBlock
+        {
+            Text = gap.Text,
+            Foreground = ViewBrushes.Warning,
+            VerticalAlignment = VerticalAlignment.Center,
+        });
+
+        var book = new Button
+        {
+            Content = "Book…",
+            FontSize = 11,
+            Padding = new Thickness(6, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        ToolTip.SetTip(book, "Book this untracked time as a session");
+        book.Click += async (_, _) => await BookAsync(gap);
+        row.Children.Add(book);
+
+        return row;
+    }
+
+    private async Task BookAsync(WeekGapViewModel gap)
+    {
+        if (TopLevel.GetTopLevel(this) is not Window owner)
+        {
+            return;
+        }
+
+        var dialog = new BookGapWindow(_week.CreateBooking(gap));
+        if (await dialog.ShowDialog<bool>(owner))
+        {
+            await _week.BookAsync(dialog.ViewModel);
         }
     }
 

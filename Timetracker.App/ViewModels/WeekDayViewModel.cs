@@ -18,6 +18,9 @@ public sealed class WeekDayViewModel : ObservableObject
     /// <summary>Untracked time from which the day row warns (highlighted, "⚠").</summary>
     public static readonly TimeSpan UntrackedWarningThreshold = TimeSpan.FromMinutes(15);
 
+    /// <summary>Shortest untracked stretch listed as a gap row in the expanded day.</summary>
+    public static readonly TimeSpan MinimumGapDuration = TimeSpan.FromMinutes(15);
+
     /// <summary>Gaps shorter than this are rounding noise and not shown at all.</summary>
     private static readonly TimeSpan MinimumUntrackedTime = TimeSpan.FromMinutes(1);
 
@@ -114,6 +117,19 @@ public sealed class WeekDayViewModel : ObservableObject
     /// the element's summed time and its merged tasks. Empty when the day has none.
     /// </summary>
     public IReadOnlyList<WeekElementGroupViewModel> Groups { get; private set; } = [];
+
+    /// <summary>
+    /// The day's untracked gaps (at least <see cref="MinimumGapDuration"/>), ordered
+    /// by start; shown below the groups when the day is expanded.
+    /// </summary>
+    public IReadOnlyList<WeekGapViewModel> Gaps { get; private set; } = [];
+
+    /// <summary>Replaces the day's gap rows.</summary>
+    public void SetGaps(IEnumerable<TimeRange> gaps)
+    {
+        Gaps = [.. gaps.Select(g => new WeekGapViewModel(g))];
+        OnPropertyChanged(nameof(Gaps));
+    }
 
     public void Update(DateTimeOffset date, IEnumerable<TrackerEntry> sessions)
     {

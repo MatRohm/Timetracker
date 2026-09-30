@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using NUnit.Framework;
+using Timetracker.Plugins.Contracts;
 using static Timetracker.Plugins.ActivityMonitor.Tests.Unit.TestSupport;
 
 namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit;
@@ -51,6 +52,33 @@ public sealed class ActivityWeekDayContributorTests
         log.Add("active", At(9, 0), At(12, 0));
 
         contributor.GetActiveTime(Monday.AddDays(1)).Should().Be(TimeSpan.Zero);
+    }
+
+    [Test]
+    public void GetActiveSpans_WhenActiveAndIdleSpansAreLogged_ShouldReturnOnlyTheActiveOnesInOrder()
+    {
+        var contributor = Contributor(out var log);
+        log.Add("active", At(13, 30), At(15, 45));
+        log.Add("idle", At(12, 0), At(13, 30));
+        log.Add("active", At(9, 0), At(12, 0));
+
+        contributor.GetActiveSpans(Monday).Should().Equal(
+            new ActiveSpan(At(9, 0), At(12, 0)),
+            new ActiveSpan(At(13, 30), At(15, 45)));
+    }
+
+    [Test]
+    public void GetActiveSpans_WhenASpanCrossesMidnight_ShouldClipItToEachDay()
+    {
+        var contributor = Contributor(out var log);
+        var offset = TimeSpan.FromHours(2);
+        var start = new DateTimeOffset(2026, 9, 21, 23, 0, 0, offset);
+        var midnight = new DateTimeOffset(2026, 9, 22, 0, 0, 0, offset);
+        var end = new DateTimeOffset(2026, 9, 22, 1, 30, 0, offset);
+        log.Add("active", start, end);
+
+        contributor.GetActiveSpans(Monday).Should().Equal(new ActiveSpan(start, midnight));
+        contributor.GetActiveSpans(Monday.AddDays(1)).Should().Equal(new ActiveSpan(midnight, end));
     }
 
     private static ActivityWeekDayContributor Contributor(out ActivityLog log)

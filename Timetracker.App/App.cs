@@ -87,6 +87,13 @@ public sealed class App : Application
                     .DefaultIfEmpty(TimeSpan.Zero)
                     .Max();
 
+            // The same sources' active stretches let each day list its untracked gaps;
+            // overlapping stretches of several sources are merged by the week view.
+            viewModel.Week.DayActiveSpans = day =>
+                [.. activitySources
+                    .SelectMany(source => source.GetActiveSpans(day))
+                    .Select(span => new Models.TimeRange(span.Start, span.End))];
+
             var window = new TrackerWindow(viewModel, trackerContributors, weekContributors);
             desktop.MainWindow = window;
 

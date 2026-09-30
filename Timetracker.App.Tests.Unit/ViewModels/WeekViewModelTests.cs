@@ -138,6 +138,38 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
+    public void UpdateSessions_WhenActiveSpansAreWired_ShouldListEachDaysGaps()
+    {
+        var week = new WeekViewModel();
+        var monday = DateTimeOffset.Now.Date.AddDays(-(((int)DateTimeOffset.Now.DayOfWeek + 6) % 7));
+        var mondayDate = DateOnly.FromDateTime(monday);
+        var offset = DateTimeOffset.Now.Offset;
+        week.DayActiveSpans = day => day == mondayDate
+            ? [new TimeRange(new DateTimeOffset(monday.AddHours(9), offset), new DateTimeOffset(monday.AddHours(12), offset))]
+            : [];
+
+        week.UpdateSessions([Session(monday, 9, 60, "A")]);
+
+        week.Days[0].Gaps.Select(g => g.Text).Should().Equal("⚠ 10:00–12:00 untracked (2:00)");
+        week.Days.Skip(1).Should().OnlyContain(d => d.Gaps.Count == 0);
+    }
+
+    [Test]
+    public void RunningSince_WhenATimerRuns_ShouldKeepItsTimeOutOfTheGaps()
+    {
+        var week = new WeekViewModel();
+        var monday = DateTimeOffset.Now.Date.AddDays(-(((int)DateTimeOffset.Now.DayOfWeek + 6) % 7));
+        var offset = DateTimeOffset.Now.Offset;
+        week.DayActiveSpans = _ =>
+            [new TimeRange(new DateTimeOffset(monday.AddHours(9), offset), new DateTimeOffset(monday.AddHours(12), offset))];
+        week.UpdateSessions([]);
+
+        week.RunningSince = new DateTimeOffset(monday.AddHours(11), offset);
+
+        week.Days[0].Gaps.Select(g => g.TimeText).Should().Equal("09:00–11:00");
+    }
+
+    [Test]
     public void UpdateSessions_WhenAnActiveTimeSourceIsWired_ShouldShowEachDaysUntrackedTime()
     {
         var week = new WeekViewModel();

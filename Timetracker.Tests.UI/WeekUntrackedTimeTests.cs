@@ -44,6 +44,38 @@ public sealed class WeekUntrackedTimeTests
             .Should().Be(1, "only today has recorded activity");
     }
 
+    [AvaloniaTest]
+    public void WeekTrackingTree_WhenADayWithAGapIsExpanded_ShouldShowTheGapRowWithABookButton()
+    {
+        var (repo, _) = RepositoryFake.Create();
+        using var tracker = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        var midnight = DateTimeOffset.Now.Date;
+        var offset = DateTimeOffset.Now.Offset;
+        tracker.Week.DayActiveSpans = day => day == DateOnly.FromDateTime(midnight)
+            ? [new TimeRange(new DateTimeOffset(midnight.AddHours(9), offset), new DateTimeOffset(midnight.AddHours(12), offset))]
+            : [];
+        tracker.Week.UpdateSessions(
+        [
+            new TrackerEntry
+            {
+                Task = "Report",
+                Start = new DateTimeOffset(midnight.AddHours(9), offset),
+                End = new DateTimeOffset(midnight.AddHours(10), offset),
+                Duration = "01:00:00",
+                DurationSeconds = 3600,
+            },
+        ]);
+        tracker.Week.Days.Single(d => d.IsToday).IsExpanded = true;
+        var view = new WeekTabView(tracker.Week, []);
+
+        Realize(view);
+
+        var gapRow = view.GetVisualDescendants().OfType<TextBlock>()
+            .Single(t => t.Text == "⚠ 10:00–12:00 untracked (2:00)");
+        gapRow.Parent.Should().BeOfType<StackPanel>().Which.Children.OfType<Button>()
+            .Should().ContainSingle(b => b.Content as string == "Book…");
+    }
+
     private static void Realize(Control root)
     {
         var host = new Window { Content = root, Width = 900, Height = 500 };
