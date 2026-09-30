@@ -21,6 +21,9 @@ public sealed class WeekViewModel : ObservableObject
     private readonly IReadOnlyList<IWeekDayQuery> _dayContributors;
     private readonly IReadOnlyList<IDayActivityQuery> _activitySources;
 
+    /// <summary>Current time; replaceable so the current-week highlight can be tested deterministically.</summary>
+    private readonly Func<DateTimeOffset> _now;
+
     private readonly ObservableCollection<WeekDayViewModel> _days = new();
     private readonly RelayCommand _previousWeekCommand;
     private readonly RelayCommand _nextWeekCommand;
@@ -36,16 +39,18 @@ public sealed class WeekViewModel : ObservableObject
         ITrackedSessionsQuery sessions,
         ITrackedSessionsCommand sessionCommands,
         IEnumerable<IWeekDayQuery> dayContributors,
-        IEnumerable<IDayActivityQuery> activitySources)
+        IEnumerable<IDayActivityQuery> activitySources,
+        Func<DateTimeOffset>? now = null)
     {
         _sessions = sessions;
         _sessionCommands = sessionCommands;
         _dayContributors = dayContributors.ToList();
         _activitySources = activitySources.ToList();
+        _now = now ?? (() => DateTimeOffset.Now);
 
         for (var i = 0; i < 7; i++)
         {
-            _days.Add(new WeekDayViewModel());
+            _days.Add(new WeekDayViewModel(_now));
         }
 
         _previousWeekCommand = new RelayCommand(() => Move(-7));
@@ -198,7 +203,7 @@ public sealed class WeekViewModel : ObservableObject
 
     private void MoveToCurrentWeek()
     {
-        _weekStart = StartOfWeek(DateTimeOffset.Now);
+        _weekStart = StartOfWeek(_now());
         Rebuild();
         CollapseAll();
     }

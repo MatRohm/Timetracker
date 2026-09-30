@@ -26,6 +26,8 @@ public sealed class WeekDayViewModel : ObservableObject
     /// <summary>Gaps shorter than this are rounding noise and not shown at all.</summary>
     private static readonly TimeSpan MinimumUntrackedTime = TimeSpan.FromMinutes(1);
 
+    private readonly Func<DateTimeOffset> _now;
+
     private string _header = "";
     private string _totalText = "";
     private bool _isToday;
@@ -37,8 +39,9 @@ public sealed class WeekDayViewModel : ObservableObject
     private string _untrackedText = "";
     private bool _isUntrackedWarning;
 
-    public WeekDayViewModel()
+    public WeekDayViewModel(Func<DateTimeOffset>? now = null)
     {
+        _now = now ?? (() => DateTimeOffset.Now);
         ToggleCommand = new RelayCommand(() => IsExpanded = !IsExpanded);
     }
 
@@ -229,7 +232,7 @@ public sealed class WeekDayViewModel : ObservableObject
         Groups = BuildGroups(items);
         _bookedSeconds = items.Sum(e => e.DurationSeconds);
         TotalText = items.Count > 0 ? $"Σ {WeekTimeFormat.HoursMinutes(_bookedSeconds)}" : "";
-        IsToday = date.Date == DateTimeOffset.Now.Date;
+        IsToday = date.Date == _now().Date;
         RefreshUntracked();
 
         OnPropertyChanged(nameof(Date));
