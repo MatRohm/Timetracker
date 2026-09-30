@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
 using Timetracker.Plugins.Contracts.Interfaces;
 using Timetracker.Plugins.Contracts;
@@ -22,8 +23,8 @@ internal static class TestSupport
 internal sealed class TrackerForTests : ActivityTracker
 {
     public TrackerForTests(
-        ActivityLog log, Func<DateTimeOffset> now, string statePath, MonitorLog? monitorLog = null)
-        : base(log, now, new NullIdleTimeProvider(), monitorLog)
+        ActivityLog log, Func<DateTimeOffset> now, string statePath, ILogger<ActivityTracker>? logger = null)
+        : base(log, now, new NullIdleTimeProvider(), logger)
     {
         UseStateFile(statePath);
     }

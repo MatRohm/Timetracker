@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace Timetracker.Plugins.AzureDevOps;
 
@@ -38,7 +39,9 @@ public sealed class AzureDevOpsConfig
         "timetracker-azdo.json");
 
     /// <summary>Loads the config; missing or broken files yield an empty config.</summary>
-    public static AzureDevOpsConfig Load(string? filePath = null)
+    /// <param name="filePath">Overrides <see cref="DefaultFilePath"/> (used by tests).</param>
+    /// <param name="logger">Receives the reason a file could not be read.</param>
+    public static AzureDevOpsConfig Load(string? filePath = null, ILogger? logger = null)
     {
         var path = filePath ?? DefaultFilePath;
         try
@@ -58,7 +61,7 @@ public sealed class AzureDevOpsConfig
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
             // An unreadable config must not break the app; treat it as unconfigured.
-            ErrorLogAdapter.Log("AzureDevOps config load", ex);
+            logger?.LogError(ex, "Could not load the Azure DevOps config {Path}", path);
             return new AzureDevOpsConfig();
         }
     }

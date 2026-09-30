@@ -1,6 +1,7 @@
 using Timetracker.App.Interfaces;
 using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using NUnit.Framework;
 using Timetracker.App.Services;
 
@@ -16,7 +17,7 @@ public sealed class HookRegistryTests
     [Test]
     public void BuildServiceProvider_WhenCalled_ShouldRegisterTheMigratorRunnerAndSteps()
     {
-        var services = Timetracker.App.HookRegistry.BuildServiceProvider();
+        var services = Timetracker.App.HookRegistry.BuildServiceProvider(NullLoggerFactory.Instance);
 
         var repository = services.GetRequiredService<ITrackerRepository>();
         var runner = services.GetRequiredService<ITrackerFileMigrationRunner>();

@@ -10,6 +10,13 @@
   <ItemGroup>
     <!-- The contributable UI piece is an Avalonia control (portable across OSes). -->
     <PackageReference Include="Avalonia" Version="$(AvaloniaVersion)" />
+    <!--
+      Logging: components use ILogger (Microsoft.Extensions.Logging); Serilog writes the
+      log files for every process through the shared setup in Logging/FileLogging.cs.
+    -->
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.12" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
   </ItemGroup>
 
 </Project>

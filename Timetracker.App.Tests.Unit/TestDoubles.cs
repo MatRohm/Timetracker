@@ -1,6 +1,7 @@
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
 using Timetracker.App.Interfaces;
 using FakeItEasy;
+using Microsoft.Extensions.Logging.Abstractions;
 using Timetracker.App.Models;
 using Timetracker.App.ViewModels;
 
@@ -81,7 +82,12 @@ public static class TrackerViewModelFactory
         FakeIdleTimeProvider? idle = null,
         Func<DateTimeOffset>? now = null)
     {
-        var result = new TrackerViewModel(repository, timer ?? new FakeTimer(), idle ?? new FakeIdleTimeProvider(), now);
+        var result = new TrackerViewModel(
+            repository,
+            timer ?? new FakeTimer(),
+            idle ?? new FakeIdleTimeProvider(),
+            NullLogger<TrackerViewModel>.Instance,
+            now);
         return result;
     }
 }

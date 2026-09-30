@@ -1,4 +1,6 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Timetracker.App.Interfaces;
 using Timetracker.App.Models;
 
@@ -17,19 +19,19 @@ public sealed class TrackerFileMigrator : ITrackerFileMigrationRunner
 {
     private readonly string _jsonPath;
     private readonly IReadOnlyList<ITrackerFileMigration> _migrations;
-    private readonly Action<string, Exception> _log;
+    private readonly ILogger<TrackerFileMigrator> _logger;
 
     /// <param name="jsonPath">File to migrate.</param>
     /// <param name="migrations">Available steps (order does not matter).</param>
-    /// <param name="log">Receives failures so startup can continue despite a bad file.</param>
+    /// <param name="logger">Receives failures so startup can continue despite a bad file.</param>
     public TrackerFileMigrator(
         string jsonPath,
         IEnumerable<ITrackerFileMigration> migrations,
-        Action<string, Exception>? log = null)
+        ILogger<TrackerFileMigrator>? logger = null)
     {
         _jsonPath = jsonPath;
         _migrations = [.. migrations];
-        _log = log ?? ((_, _) => { });
+        _logger = logger ?? NullLogger<TrackerFileMigrator>.Instance;
     }
 
     public bool MigrateIfNeeded()
@@ -62,7 +64,7 @@ public sealed class TrackerFileMigrator : ITrackerFileMigrationRunner
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
-            _log("TrackerFileMigration", ex);
+            _logger.LogError(ex, "Could not migrate the tracker file {Path}", _jsonPath);
             return false;
         }
     }

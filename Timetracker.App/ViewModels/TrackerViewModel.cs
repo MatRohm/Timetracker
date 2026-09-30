@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows.Input;
+using Microsoft.Extensions.Logging;
 using Timetracker.App.Interfaces;
 using Timetracker.App.Models;
 using Timetracker.App.Services;
@@ -21,6 +22,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     private readonly ITrackerRepository _repository;
     private readonly IUiTimer _timer;
     private readonly IIdleTimeProvider _idleTime;
+    private readonly ILogger<TrackerViewModel> _logger;
     private readonly Stopwatch _watch = new();
 
     /// <summary>Current time; replaceable so idle behavior can be tested deterministically.</summary>
@@ -53,16 +55,19 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// <param name="repository">Reads and writes the session log.</param>
     /// <param name="timer">Ticks on the UI thread while a session runs.</param>
     /// <param name="idleTime">Reports how long there has been no keyboard or mouse input.</param>
+    /// <param name="logger">Receives failures to save or book entries.</param>
     /// <param name="now">Current time; replaceable so idle behavior can be tested deterministically.</param>
     public TrackerViewModel(
         ITrackerRepository repository,
         IUiTimer timer,
         IIdleTimeProvider idleTime,
+        ILogger<TrackerViewModel> logger,
         Func<DateTimeOffset>? now = null)
     {
         _repository = repository;
         _timer = timer;
         _idleTime = idleTime;
+        _logger = logger;
         _now = now ?? (() => DateTimeOffset.Now);
         _timer.Tick += OnTimerTick;
 
@@ -73,7 +78,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         // Same for the history list: the grid binds to this view model's forwards.
         _history.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
 
-        _editor = new EntryEditor(_repository.SaveAsync, ErrorLog.Log);
+        _editor = new EntryEditor(_repository.SaveAsync, _logger);
 
         _startCommand = new RelayCommand(Start, () => !IsRunning);
         _stopCommand = new AsyncRelayCommand(Stop, () => IsRunning);
@@ -496,7 +501,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            ErrorLog.Log("BookGap", ex);
+            _logger.LogError(ex, "Could not book the gap to {Task}", name);
             Week.ShowStatus("✗ Booking failed: " + ex.Message, WeekStatus.Error);
             return false;
         }
@@ -522,7 +527,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            ErrorLog.Log("SaveEntry", ex);
+            _logger.LogError(ex, "Could not save the entry of {Task}", entry.Task);
             Status = TrackerStatus.Error;
             StatusText = "✗ Save failed: " + ex.Message;
             ErrorOccurred?.Invoke("Could not save the entry:\n" + ex.Message);

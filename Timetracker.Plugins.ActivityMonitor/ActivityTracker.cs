@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
 
 namespace Timetracker.Plugins.ActivityMonitor;
@@ -19,7 +21,7 @@ public class ActivityTracker
 
     private readonly ActivityLog _log;
     private readonly IIdleTimeProvider _idleTime;
-    private readonly MonitorLog? _monitorLog;
+    private readonly ILogger<ActivityTracker> _logger;
     private Func<DateTimeOffset> _now;
 
     /// <summary>Moment of the last polling log entry; throttles it to <see cref="PollLogInterval"/>.</summary>
@@ -32,12 +34,12 @@ public class ActivityTracker
         ActivityLog log,
         Func<DateTimeOffset>? now = null,
         IIdleTimeProvider? idleTime = null,
-        MonitorLog? monitorLog = null)
+        ILogger<ActivityTracker>? logger = null)
     {
         _log = log;
         _now = now ?? (() => DateTimeOffset.Now);
         _idleTime = idleTime ?? IdleTimeProvider.CreateForCurrentPlatform();
-        _monitorLog = monitorLog;
+        _logger = logger ?? NullLogger<ActivityTracker>.Instance;
     }
 
     /// <summary>Path of the state file used to recover across restarts.</summary>
@@ -91,8 +93,9 @@ public class ActivityTracker
         _lastPollLog = now;
         SaveState(_state, _stateStart);
 
-        _monitorLog?.Info(
-            $"Started; resumed state \"{state}\", current span \"{_state}\" from {_stateStart:O}.");
+        _logger.LogInformation(
+            "Started; resumed state \"{State}\", current span \"{Span}\" from {SpanStart:O}.",
+            state, _state, _stateStart);
         return _stateStart;
     }
 
@@ -107,7 +110,7 @@ public class ActivityTracker
         if (now - _lastPollLog >= PollLogInterval)
         {
             _lastPollLog = now;
-            _monitorLog?.Info($"Poll; state \"{_state}\", idle {idle:hh\\:mm\\:ss}.");
+            _logger.LogInformation("Poll; state \"{State}\", idle {Idle:hh\\:mm\\:ss}.", _state, idle);
         }
     }
 
@@ -125,7 +128,7 @@ public class ActivityTracker
         _state = "off";
         SaveState(_state, null);
 
-        _monitorLog?.Info($"Stopped; closed \"{stoppedState}\" span at {endedAt:O}.");
+        _logger.LogInformation("Stopped; closed \"{Span}\" span at {EndedAt:O}.", stoppedState, endedAt);
     }
 
     private void CloseAndOpen(string newState, DateTimeOffset newStateStart)
@@ -161,7 +164,7 @@ public class ActivityTracker
         {
             if (!File.Exists(_statePath))
             {
-                _monitorLog?.Info($"No state file at \"{_statePath}\"; starting fresh.");
+                _logger.LogInformation("No state file at \"{Path}\"; starting fresh.", _statePath);
                 return ("active", null);
             }
 
@@ -177,8 +180,8 @@ public class ActivityTracker
                 }
                 else
                 {
-                    _monitorLog?.Info(
-                        $"State file \"{_statePath}\" held an unparsable start time; resuming without it.");
+                    _logger.LogWarning(
+                        "State file \"{Path}\" held an unparsable start time; resuming without it.", _statePath);
                 }
             }
 
@@ -186,7 +189,7 @@ public class ActivityTracker
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            _monitorLog?.Error($"Could not read the state file \"{_statePath}\"; starting fresh.", ex);
+            _logger.LogError(ex, "Could not read the state file \"{Path}\"; starting fresh.", _statePath);
             return ("active", null);
         }
     }

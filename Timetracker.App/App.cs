@@ -5,14 +5,15 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml.Styling;
 using Microsoft.Extensions.DependencyInjection;
-using Timetracker.App.Services;
+using Microsoft.Extensions.Logging;
 using Timetracker.App.Views;
+using Timetracker.Plugins.Contracts.Logging;
 
 namespace Timetracker.App;
 
 /// <summary>
-/// Avalonia application entry point and composition root. Global error handling
-/// is installed before the UI starts; the container is built and every
+/// Avalonia application entry point and composition root. File logging and global
+/// error handling are installed before the UI starts; the container is built and every
 /// component's startup hook runs once the main window is shown.
 /// </summary>
 public sealed class App : Application
@@ -21,6 +22,9 @@ public sealed class App : Application
     private Mutex? _singleInstanceMutex;
 
     private IServiceProvider? _services;
+
+    /// <summary>The process's file logging; flushed and closed when the app exits.</summary>
+    private ILoggerFactory? _loggerFactory;
 
     public override void Initialize()
     {
@@ -37,7 +41,10 @@ public sealed class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            AttachGlobalErrorHandling();
+            _loggerFactory = LoggerFactory.Create(builder => builder.AddTimetrackerFile("app"));
+            desktop.Exit += (_, _) => _loggerFactory.Dispose();
+            var logger = _loggerFactory.CreateLogger<App>();
+            AttachGlobalErrorHandling(logger);
 
             // Only one instance at a time, so entries are never written concurrently.
             var mutexName = OperatingSystem.IsWindows()
@@ -52,10 +59,10 @@ public sealed class App : Application
 
             // Composition root: build the container; every component registers
             // itself in HookRegistry, the shell resolves only interfaces.
-            _services = HookRegistry.BuildServiceProvider();
+            _services = HookRegistry.BuildServiceProvider(_loggerFactory);
 
             // Upgrade an older tracker file to the current format before the first read.
-            RunStartupMigrations(_services);
+            RunStartupMigrations(_services, logger);
 
             var viewModel = _services.GetRequiredService<ViewModels.TrackerViewModel>();
 
@@ -120,7 +127,7 @@ public sealed class App : Application
     /// Runs every registered file migration once, before any component reads the
     /// data file. A failure is ignored so a broken file can never stop startup.
     /// </summary>
-    private static void RunStartupMigrations(IServiceProvider services)
+    private static void RunStartupMigrations(IServiceProvider services, ILogger logger)
     {
         foreach (var runner in services.GetServices<ITrackerFileMigrationRunner>())
         {
@@ -130,7 +137,7 @@ public sealed class App : Application
             }
             catch (Exception ex)
             {
-                Services.ErrorLog.Log("TrackerFileMigration", ex);
+                logger.LogError(ex, "The tracker file migration failed");
             }
         }
     }
@@ -160,32 +167,28 @@ public sealed class App : Application
     }
 
     /// <summary>
-    /// Routes every exception that breaks through to <see cref="Report"/>:
-    /// a generic message is shown and the full details are written to the log.
+    /// Writes every exception that breaks through to the log with its full details.
     /// </summary>
-    private static void AttachGlobalErrorHandling()
+    private static void AttachGlobalErrorHandling(ILogger logger)
     {
         // Non-UI threads and finalizer-observed failures.
-        AppDomain.CurrentDomain.UnhandledException += (_, e) => Report(e.ExceptionObject, "AppDomain");
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            if (e.ExceptionObject is Exception ex)
+            {
+                logger.LogCritical(ex, "Unhandled exception");
+            }
+            else
+            {
+                logger.LogCritical("Unhandled error of unknown type: {Error}", e.ExceptionObject);
+            }
+        };
 
         // Exceptions in unobserved tasks.
         TaskScheduler.UnobservedTaskException += (_, e) =>
         {
-            Report(e.Exception, "Unobserved task");
+            logger.LogError(e.Exception, "Unobserved task exception");
             e.SetObserved();
         };
-    }
-
-    private static void Report(object? error, string context)
-    {
-        switch (error)
-        {
-            case Exception ex:
-                ErrorLog.Log(context, ex);
-                break;
-            default:
-                ErrorLog.Log(context, error?.ToString() ?? "Unknown error of unknown type");
-                break;
-        }
     }
 }

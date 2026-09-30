@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Timetracker.App.Models;
 
 namespace Timetracker.App.Services;
@@ -30,14 +31,14 @@ public sealed record EntryEditResult(EntryEditStatus Status, string Summary, Exc
 public sealed class EntryEditor
 {
     private readonly Func<IReadOnlyList<TrackerEntry>, Task> _saveEntries;
-    private readonly Action<string, Exception> _logError;
+    private readonly ILogger _logger;
 
     public EntryEditor(
         Func<IReadOnlyList<TrackerEntry>, Task> saveEntries,
-        Action<string, Exception> logError)
+        ILogger logger)
     {
         _saveEntries = saveEntries;
-        _logError = logError;
+        _logger = logger;
     }
 
     /// <summary>
@@ -68,7 +69,7 @@ public sealed class EntryEditor
         }
         catch (Exception ex)
         {
-            _logError("DeleteEntries", ex);
+            _logger.LogError(ex, "Could not delete {Summary}", summary);
             return new EntryEditResult(EntryEditStatus.Failed, summary, ex);
         }
     }
@@ -98,7 +99,7 @@ public sealed class EntryEditor
         }
         catch (Exception ex)
         {
-            _logError("ReplaceSessions", ex);
+            _logger.LogError(ex, "Could not replace the sessions of {Task}", key);
             return new EntryEditResult(EntryEditStatus.Failed, key, ex);
         }
     }
@@ -129,7 +130,7 @@ public sealed class EntryEditor
         }
         catch (Exception ex)
         {
-            _logError("UpdateEntryText", ex);
+            _logger.LogError(ex, "Could not rename the sessions to {Task}", task);
             return new EntryEditResult(EntryEditStatus.Failed, task, ex);
         }
     }
@@ -160,7 +161,7 @@ public sealed class EntryEditor
         {
             var stale = new InvalidOperationException(
                 "A changed session is no longer in the log; refresh and try again.");
-            _logError("ApplyChanges", stale);
+            _logger.LogError(stale, "Could not apply changes to {Summary}", summary);
             return new EntryEditResult(EntryEditStatus.Failed, summary, stale);
         }
 
@@ -176,7 +177,7 @@ public sealed class EntryEditor
         }
         catch (Exception ex)
         {
-            _logError("ApplyChanges", ex);
+            _logger.LogError(ex, "Could not apply changes to {Summary}", summary);
             return new EntryEditResult(EntryEditStatus.Failed, summary, ex);
         }
     }

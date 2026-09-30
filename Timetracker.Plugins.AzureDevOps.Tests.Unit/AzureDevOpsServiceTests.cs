@@ -1,5 +1,7 @@
 using System.Net;
 using AwesomeAssertions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Testing;
 using NUnit.Framework;
 using Timetracker.Plugins.Contracts;
 
@@ -118,6 +120,25 @@ public sealed class AzureDevOpsServiceTests
         result.Success.Should().BeFalse();
         result.Error.Should().Contain("not found");
         host.TaskName.Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task ApplyIssueAsync_WhenTheRequestFails_ShouldLogTheError()
+    {
+        var logger = new FakeLogger<AzureDevOpsService>();
+        var service = new AzureDevOpsService(
+            AzureDevOpsTestHelpers.Config(),
+            () => new AzureDevOpsClient(
+                AzureDevOpsTestHelpers.Config(),
+                FakeHttp.Create(_ => throw new HttpRequestException("no network"))),
+            logger);
+
+        var result = await service.ApplyIssueAsync("42", new FakeHost());
+
+        result.Success.Should().BeFalse();
+        logger.LatestRecord.Level.Should().Be(LogLevel.Error);
+        logger.LatestRecord.Exception.Should().BeOfType<HttpRequestException>();
+        logger.LatestRecord.Message.Should().Contain("42");
     }
 
     [Test]

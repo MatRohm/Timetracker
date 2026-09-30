@@ -1,12 +1,15 @@
+using Microsoft.Extensions.Logging;
 using Timetracker.Plugins.ActivityMonitor;
+using Timetracker.Plugins.Contracts.Logging;
 
 // Headless background monitor: starts the tracker, polls the idle state on a
 // timer and closes the open span when the process or session ends. No UI and no
 // window dependencies, so it runs the same on Windows and Linux.
 
-var monitorLog = new MonitorLog();
+// The monitor's own log file (monitor-<date>.log), next to the app's; flushed on exit.
+using var loggerFactory = LoggerFactory.Create(builder => builder.AddTimetrackerFile("monitor"));
 var log = new ActivityLog();
-var tracker = new ActivityTracker(log, monitorLog: monitorLog);
+var tracker = new ActivityTracker(log, logger: loggerFactory.CreateLogger<ActivityTracker>());
 tracker.Start();
 
 using var stopping = new CancellationTokenSource();

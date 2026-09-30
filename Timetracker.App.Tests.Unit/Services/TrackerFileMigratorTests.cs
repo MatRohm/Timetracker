@@ -1,5 +1,7 @@
 using Timetracker.App.Interfaces;
 using AwesomeAssertions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Testing;
 using NUnit.Framework;
 using Timetracker.App.Models;
 using Timetracker.App.Services;
@@ -148,13 +150,13 @@ public sealed class TrackerFileMigratorTests
     {
         var path = TempPath();
         WriteVersionOne(path, "{ not valid json");
-        string? loggedContext = null;
-        var migrator = new TrackerFileMigrator(
-            path, [new VersionOneToTwoMigration(path)], (context, _) => loggedContext = context);
+        var logger = new FakeLogger<TrackerFileMigrator>();
+        var migrator = new TrackerFileMigrator(path, [new VersionOneToTwoMigration(path)], logger);
 
         migrator.MigrateIfNeeded();
 
-        loggedContext.Should().Be("TrackerFileMigration");
+        logger.LatestRecord.Level.Should().Be(LogLevel.Error);
+        logger.LatestRecord.Exception.Should().NotBeNull();
     }
 
     [Test]

@@ -1,4 +1,6 @@
 using AwesomeAssertions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Testing;
 using NUnit.Framework;
 using static Timetracker.Plugins.ActivityMonitor.Tests.Unit.TestSupport;
 
@@ -101,25 +103,21 @@ public sealed class ActivityTrackerTests
     [Test]
     public void Start_WhenStarted_ShouldLogAStartupMessage()
     {
-        var (tracker, monitorLogPath) = TrackerWithLog("log-start");
+        var (tracker, logger) = TrackerWithLog("log-start");
 
         tracker.Start();
 
-        var text = File.ReadAllText(monitorLogPath);
-        text.Should().Contain("[Start]");
-        text.Should().Contain("Started;");
+        Messages(logger).Should().Contain(m => m.StartsWith("Started;"));
     }
 
     [Test]
     public void Start_WhenStateFileIsMissing_ShouldLogIt()
     {
-        var (tracker, monitorLogPath) = TrackerWithLog("log-load-missing");
+        var (tracker, logger) = TrackerWithLog("log-load-missing");
 
         tracker.Start();
 
-        var text = File.ReadAllText(monitorLogPath);
-        text.Should().Contain("[LoadState]");
-        text.Should().Contain("No state file");
+        Messages(logger).Should().Contain(m => m.StartsWith("No state file"));
     }
 
     [Test]
@@ -127,68 +125,69 @@ public sealed class ActivityTrackerTests
     {
         var statePath = TempPath($"state-bad-start-{Guid.NewGuid():N}.json");
         File.WriteAllText(statePath, "active\nnot-a-timestamp");
-        var monitorLogPath = TempPath($"monitor-bad-start-{Guid.NewGuid():N}.log");
+        var logger = new FakeLogger<ActivityTracker>();
         var tracker = new TrackerForTests(
             new ActivityLog(TempPath($"log-bad-start-{Guid.NewGuid():N}.json")),
-            () => At(9, 0), statePath, new MonitorLog(monitorLogPath));
+            () => At(9, 0), statePath, logger);
 
         tracker.Start();
 
-        var text = File.ReadAllText(monitorLogPath);
-        text.Should().Contain("[LoadState]");
-        text.Should().Contain("unparsable start time");
+        logger.Collector.GetSnapshot().Should().Contain(r =>
+            r.Level == LogLevel.Warning && r.Message.Contains("unparsable start time"));
     }
 
     [Test]
     public void Poll_WhenPolledPastInterval_ShouldLogOnePollingMessage()
     {
-        var (tracker, monitorLogPath) = TrackerWithLog("log-poll");
+        var (tracker, logger) = TrackerWithLog("log-poll");
         tracker.Start();
 
         // Within the interval: no extra polling entry.
         tracker.PollAt(At(9, 1));
-        File.ReadAllText(monitorLogPath).Should().NotContain("[Poll]", "the heartbeat is throttled");
+        Messages(logger).Should().NotContain(m => m.StartsWith("Poll;"), "the heartbeat is throttled");
 
         // Past the interval: one polling entry.
         tracker.PollAt(At(9, 6));
-        var text = File.ReadAllText(monitorLogPath);
-        text.Should().Contain("[Poll]");
-        text.Should().Contain("Poll;");
+        Messages(logger).Should().ContainSingle(m => m.StartsWith("Poll;"));
     }
 
     [Test]
     public void Stop_WhenStopped_ShouldLogAStoppingMessage()
     {
-        var (tracker, monitorLogPath) = TrackerWithLog("log-stop");
+        var (tracker, logger) = TrackerWithLog("log-stop");
         tracker.Start();
 
         tracker.Stop();
 
-        var text = File.ReadAllText(monitorLogPath);
-        text.Should().Contain("[Stop]");
-        text.Should().Contain("Stopped;");
+        Messages(logger).Should().Contain(m => m.StartsWith("Stopped;"));
     }
 
     [Test]
     public void Stop_WhenStopped_ShouldLogTheSpanItClosed()
     {
-        var (tracker, monitorLogPath) = TrackerWithLog("log-stop-span");
+        var (tracker, logger) = TrackerWithLog("log-stop-span");
         tracker.Start();
 
         tracker.Stop();
 
-        File.ReadAllText(monitorLogPath).Should().Contain("closed \"active\" span",
+        Messages(logger).Should().Contain(m => m.Contains("closed \"active\" span"),
             "the log names the span that was open, not the state it moved to");
     }
 
-    private static (TrackerForTests Tracker, string LogPath) TrackerWithLog(string name)
+    private static (TrackerForTests Tracker, FakeLogger<ActivityTracker> Logger) TrackerWithLog(string name)
     {
-        var logPath = TempPath($"{name}-{Guid.NewGuid():N}.log");
+        var logger = new FakeLogger<ActivityTracker>();
         var tracker = new TrackerForTests(
             new ActivityLog(TempPath($"{name}-activity-{Guid.NewGuid():N}.json")),
             () => At(9, 0),
             TempPath($"{name}-state-{Guid.NewGuid():N}.json"),
-            new MonitorLog(logPath));
-        return (tracker, logPath);
+            logger);
+        return (tracker, logger);
+    }
+
+    private static IReadOnlyList<string> Messages(FakeLogger<ActivityTracker> logger)
+    {
+        var result = logger.Collector.GetSnapshot().Select(r => r.Message).ToList();
+        return result;
     }
 }

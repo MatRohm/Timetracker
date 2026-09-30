@@ -1,6 +1,7 @@
 using Timetracker.App.Interfaces;
 using Timetracker.Plugins.Contracts.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Timetracker.App;
 
@@ -13,9 +14,18 @@ namespace Timetracker.App;
 public static class HookRegistry
 {
     /// <summary>Builds the application's service container.</summary>
-    public static IServiceProvider BuildServiceProvider()
+    /// <param name="loggerFactory">
+    /// Creates every component's <see cref="ILogger{TCategoryName}"/>. The app passes the
+    /// file logging it set up before the container, so start-up failures are logged
+    /// too; the caller owns and disposes it.
+    /// </param>
+    public static IServiceProvider BuildServiceProvider(ILoggerFactory loggerFactory)
     {
         var services = new ServiceCollection();
+
+        // Logging: ILogger<T> for every component, created by the given factory.
+        services.AddSingleton(loggerFactory);
+        services.AddLogging();
 
         // Framework services of the main app.
         // One repository instance is shared by every interface it implements.
@@ -31,7 +41,7 @@ public static class HookRegistry
             new Services.TrackerFileMigrator(
                 sp.GetRequiredService<Services.JsonTrackerRepository>().FilePath,
                 sp.GetServices<ITrackerFileMigration>(),
-                Services.ErrorLog.Log));
+                sp.GetRequiredService<ILogger<Services.TrackerFileMigrator>>()));
         services.AddSingleton<IUiTimer, Services.AvaloniaUiTimer>();
         // Idle detection comes from the monitor project's platform-specific provider.
         services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IIdleTimeProvider>(
@@ -59,11 +69,13 @@ public static class HookRegistry
         services.AddSingleton<IWeekStatusHost, Services.WeekStatusHost>();
 
         // Azure DevOps import.
-        services.AddSingleton<Plugins.AzureDevOps.AzureDevOpsConfig>(_ =>
-            Plugins.AzureDevOps.AzureDevOpsConfig.Load());
+        services.AddSingleton<Plugins.AzureDevOps.AzureDevOpsConfig>(sp =>
+            Plugins.AzureDevOps.AzureDevOpsConfig.Load(
+                logger: sp.GetRequiredService<ILogger<Plugins.AzureDevOps.AzureDevOpsConfig>>()));
         services.AddSingleton<Plugins.AzureDevOps.AzureDevOpsService>(sp =>
             new Plugins.AzureDevOps.AzureDevOpsService(
-                sp.GetRequiredService<Plugins.AzureDevOps.AzureDevOpsConfig>()));
+                sp.GetRequiredService<Plugins.AzureDevOps.AzureDevOpsConfig>(),
+                logger: sp.GetRequiredService<ILogger<Plugins.AzureDevOps.AzureDevOpsService>>()));
         services.AddSingleton<IUiContributor, Plugins.AzureDevOps.Views.AzureDevOpsUiContributor>();
 
         // PC activity monitor: activity log, per-day lines, installer UI.

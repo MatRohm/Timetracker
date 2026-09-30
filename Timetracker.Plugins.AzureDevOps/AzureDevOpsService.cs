@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Timetracker.Plugins.Contracts.Interfaces;
 using Timetracker.Plugins.Contracts;
 
@@ -12,6 +14,7 @@ public sealed class AzureDevOpsService
 {
     private readonly AzureDevOpsConfig _config;
     private readonly Func<AzureDevOpsClient> _clientFactory;
+    private readonly ILogger<AzureDevOpsService> _logger;
 
     /// <param name="configFilePath">Overrides the config path (used by tests).</param>
     public AzureDevOpsService(string? configFilePath = null)
@@ -19,10 +22,17 @@ public sealed class AzureDevOpsService
     {
     }
 
-    public AzureDevOpsService(AzureDevOpsConfig config, Func<AzureDevOpsClient>? clientFactory = null)
+    /// <param name="config">The connection to use.</param>
+    /// <param name="clientFactory">Creates the HTTP client (replaced by tests).</param>
+    /// <param name="logger">Receives failed lookups.</param>
+    public AzureDevOpsService(
+        AzureDevOpsConfig config,
+        Func<AzureDevOpsClient>? clientFactory = null,
+        ILogger<AzureDevOpsService>? logger = null)
     {
         _config = config;
         _clientFactory = clientFactory ?? (() => new AzureDevOpsClient(config));
+        _logger = logger ?? NullLogger<AzureDevOpsService>.Instance;
     }
 
     /// <summary>True when a config file with all three values was found.</summary>
@@ -75,7 +85,7 @@ public sealed class AzureDevOpsService
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException
             or InvalidOperationException or System.Net.Sockets.SocketException)
         {
-            ErrorLogAdapter.Log("AzureDevOps lookup", ex);
+            _logger.LogError(ex, "Could not look up work item {Id}", id);
             return ApplyResult.Failure("Azure DevOps request failed: " + ex.Message);
         }
 

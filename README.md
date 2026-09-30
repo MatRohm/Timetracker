@@ -54,7 +54,11 @@ unless noted otherwise.
 | `timetracker.json` | Tracked sessions, grouped per task (versioned format; older files are migrated at startup and backed up as `timetracker.json.v1-backup`). Written atomically. |
 | `timetracker-azdo.json` | Azure DevOps connection (optional, see below). |
 | `timetracker-activity.json` | Active/idle spans from the activity monitor. Idle spans are recorded only when they last at least one hour. |
-| `Timetracker.log` | Error log, next to the executable (falls back to the temp folder). |
+
+**Logs** are written to `%LOCALAPPDATA%\Timetracker\logs\` on Windows and to
+`$XDG_STATE_HOME/timetracker/logs/` (default `~/.local/state/timetracker/logs/`) on
+Linux: `app-<date>.log` for the app and `monitor-<date>.log` for the activity monitor.
+A new file starts each day (or past 10 MB); the newest 14 files per process are kept.
 
 **Azure DevOps:** create `timetracker-azdo.json` (template:
 `Timetracker.Plugins.AzureDevOps/timetracker-azdo.example.json`):
