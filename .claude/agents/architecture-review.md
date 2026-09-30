@@ -87,3 +87,9 @@ sentences.
 
 End with a short paragraph (at most three sentences) naming the most important
 finding to address first, or stating that none needs action.
+
+If there are findings or failing tests, close the report by asking whether
+exactly one beads issue should be created for them — one issue covering all
+findings, not one per finding. Do not create it yourself: it is created only
+once the user agrees, with the findings table as the plan in the design field
+and a short description of what the issue is about and why.
