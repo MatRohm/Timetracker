@@ -74,7 +74,7 @@ public sealed class JsonTrackerRepositoryTests
 
         var text = File.ReadAllText(path);
 
-        text.Should().Contain("\"version\": 2");
+        text.Should().Contain("\"version\": 3");
         text.Should().Contain("\"name\": \"Report\"");
         text.Should().Contain("\"sessions\"");
         // One record for the task, not one per session.

@@ -471,22 +471,12 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         // session inherits the task's latest booking element so grouping stays consistent.
         BookingElement = PreviewBookingElement.Length > 0
             ? PreviewBookingElement
-            : LatestBookingElement(TaskName),
+            : TrackerEntry.LatestBookingElement(_sessions, TaskName),
         Start = _startedAt,
         End = endedAt,
         Duration = elapsed.ToString(@"hh\:mm\:ss"),
         DurationSeconds = Math.Round(elapsed.TotalSeconds, 1),
     };
-
-    /// <summary>The task's most recent non-empty booking element; empty when it has none.</summary>
-    private string LatestBookingElement(string task)
-    {
-        var result = _sessions
-            .Where(e => e.Task.Trim().Equals(task.Trim(), StringComparison.OrdinalIgnoreCase))
-            .Select(e => e.BookingElement)
-            .LastOrDefault(b => !string.IsNullOrWhiteSpace(b)) ?? "";
-        return result;
-    }
 
     private async Task SaveAsync(TrackerEntry entry)
     {

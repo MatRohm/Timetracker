@@ -7,6 +7,9 @@ namespace Timetracker.Plugins.Contracts;
 /// </summary>
 public sealed record TrackedSession
 {
+    /// <summary>Stable identity of the session, so a planned change can be matched back to it.</summary>
+    public Guid Id { get; init; }
+
     /// <summary>Task name this session was booked to.</summary>
     public string Task { get; init; } = "";
 

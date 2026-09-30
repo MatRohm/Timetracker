@@ -27,7 +27,9 @@ public sealed class HookRegistryTests
 
         repository.Should().BeOfType<JsonTrackerRepository>();
         runner.Should().BeOfType<TrackerFileMigrator>();
-        steps.Should().ContainSingle().Which.Should().BeOfType<VersionOneToTwoMigration>();
+        steps.Should().HaveCount(2);
+        steps.Should().Contain(s => s is VersionOneToTwoMigration);
+        steps.Should().Contain(s => s is VersionTwoToThreeMigration);
     }
 
     [Test]

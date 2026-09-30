@@ -41,6 +41,21 @@ public sealed class TrackedSessionsHostTests
     }
 
     [Test]
+    public async Task BookAsync_WhenTheBookingElementIsEmpty_ShouldInheritTheTasksLatestBookingElement()
+    {
+        var (host, repo, tracker) = Create(Entry("Report", 9, "Project X"));
+        await tracker.InitialLoad;
+        var range = new TimeRange(
+            new DateTimeOffset(2026, 9, 21, 10, 15, 0, TimeSpan.FromHours(2)),
+            new DateTimeOffset(2026, 9, 21, 11, 5, 0, TimeSpan.FromHours(2)));
+
+        var booked = await host.BookAsync(range, "Report", "");
+
+        booked.Should().BeTrue();
+        RepositoryFake.Persisted(repo).Last().BookingElement.Should().Be("Project X");
+    }
+
+    [Test]
     public async Task ApplyChangesAsync_WhenAChangeIsApplied_ShouldPersistIt()
     {
         var (host, repo, tracker) = Create(Entry("Report", 9));
@@ -52,6 +67,25 @@ public sealed class TrackedSessionsHostTests
 
         saved.Should().BeTrue();
         RepositoryFake.Persisted(repo).Single().DurationSeconds.Should().Be(3600);
+    }
+
+    [Test]
+    public async Task ApplyChangesAsync_WhenTheOriginalIsNoLongerInTheLog_ShouldReturnFalse()
+    {
+        var (host, repo, tracker) = Create(Entry("Report", 9));
+        await tracker.InitialLoad;
+        var stale = new TrackedSession
+        {
+            Id = Guid.NewGuid(),
+            Task = "Report",
+            Start = new DateTimeOffset(2026, 9, 19, 9, 0, 0, TimeSpan.FromHours(2)),
+            End = new DateTimeOffset(2026, 9, 19, 9, 30, 0, TimeSpan.FromHours(2)),
+        };
+
+        var saved = await host.ApplyChangesAsync([new SessionChange(stale, stale)]);
+
+        saved.Should().BeFalse();
+        RepositoryFake.Persisted(repo).Should().ContainSingle("nothing was applied");
     }
 
     [Test]
@@ -87,9 +121,10 @@ public sealed class TrackedSessionsHostTests
         return (host, repo, tracker);
     }
 
-    private static TrackerEntry Entry(string task, int hour) => new()
+    private static TrackerEntry Entry(string task, int hour, string bookingElement = "") => new()
     {
         Task = task,
+        BookingElement = bookingElement,
         Start = new DateTimeOffset(2026, 9, 19, hour, 0, 0, TimeSpan.FromHours(2)),
         End = new DateTimeOffset(2026, 9, 19, hour, 30, 0, TimeSpan.FromHours(2)),
         Duration = "00:30:00",
