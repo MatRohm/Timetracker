@@ -26,7 +26,7 @@ public sealed class MonitorSetupPanel : UserControl
     /// <summary>Exposed so tests can assert the button state.</summary>
     public Button UninstallButton => _uninstallButton;
 
-    public MonitorSetupPanel(IActivityMonitorInstaller installer, IWeekStatusHost statusHost)
+    public MonitorSetupPanel(IActivityMonitorInstaller installer, IWeekStatusCommand statusHost)
     {
         _viewModel = new MonitorSetupViewModel(installer, statusHost);
 

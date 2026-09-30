@@ -35,8 +35,8 @@ public sealed class HookRegistryTests
     {
         var services = Timetracker.App.HookRegistry.BuildServiceProvider(NullLoggerFactory.Instance);
 
-        var store = services.GetRequiredService<IOptionsStore>();
-        var sections = services.GetServices<IOptionsContributor>().Select(c => c.Section);
+        var store = services.GetRequiredService<IOptionQuery>();
+        var sections = services.GetServices<IOptionDefinitionQuery>().Select(c => c.Section);
 
         store.Should().BeOfType<JsonOptionsStore>();
         sections.Should().Equal("General", "Azure DevOps", "Activity monitor");

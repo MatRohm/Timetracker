@@ -58,6 +58,7 @@ public sealed class OptionsTabViewRenderTests
         explorer = new RecordingExplorer();
         var viewModel = new OptionsViewModel(
             new EmptyStore(),
+            new EmptyStore(),
             [
                 new Contributor("General",
                     new OptionDefinition("General.TrackingFile", "Tracking file", OptionKind.Path,
@@ -72,14 +73,14 @@ public sealed class OptionsTabViewRenderTests
         return result;
     }
 
-    private sealed class Contributor(string section, params OptionDefinition[] options) : IOptionsContributor
+    private sealed class Contributor(string section, params OptionDefinition[] options) : IOptionDefinitionQuery
     {
         public string Section => section;
 
         public IReadOnlyList<OptionDefinition> Options => options;
     }
 
-    private sealed class EmptyStore : IOptionsStore
+    private sealed class EmptyStore : IOptionQuery, IOptionCommand
     {
         public string? GetValue(string key) => null;
 

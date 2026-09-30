@@ -10,7 +10,7 @@ namespace Timetracker.Plugins.ActivityMonitor;
 /// log's active/idle spans; the active stretches themselves are exposed too, so
 /// the week view can show when time went untracked.
 /// </summary>
-public sealed class ActivityWeekDayContributor : IWeekDayContributor, IDayActivitySource
+public sealed class ActivityWeekDayContributor : IWeekDayQuery, IDayActivityQuery
 {
     /// <summary>Span kind the activity log uses for periods with user input.</summary>
     private const string ActiveKind = "active";

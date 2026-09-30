@@ -4,9 +4,9 @@ namespace Timetracker.Plugins.AzureDevOps;
 
 /// <summary>
 /// The Azure DevOps connection as edited in the options tab; the values are kept
-/// in the <see cref="IOptionsStore"/>.
+/// in the <see cref="IOptionQuery"/>.
 /// </summary>
-public sealed class AzureDevOpsSettings(IOptionsStore store)
+public sealed class AzureDevOpsSettings(IOptionQuery store)
 {
     public const string UrlKey = "AzureDevOps.Url";
     public const string ProjectKey = "AzureDevOps.Project";

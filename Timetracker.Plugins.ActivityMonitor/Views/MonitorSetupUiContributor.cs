@@ -9,12 +9,12 @@ namespace Timetracker.Plugins.ActivityMonitor.Views;
 /// for the per-user autostart with a state label, reporting results through the
 /// shared status line.
 /// </summary>
-public sealed class MonitorSetupUiContributor : IUiContributor
+public sealed class MonitorSetupUiContributor : IUiQuery
 {
     public string TargetTab => "Week view";
 
     public Avalonia.Controls.Control CreateControl(IServiceProvider services) =>
         new MonitorSetupPanel(
             services.GetRequiredService<IActivityMonitorInstaller>(),
-            services.GetRequiredService<IWeekStatusHost>());
+            services.GetRequiredService<IWeekStatusCommand>());
 }

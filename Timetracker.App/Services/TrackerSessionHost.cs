@@ -9,7 +9,7 @@ namespace Timetracker.App.Services;
 /// start/stop path. The add-in resolves this through the DI container, so the
 /// view model stays the only place that owns the running session.
 /// </summary>
-public sealed class TrackerSessionHost : ITrackerSessionHost
+public sealed class TrackerSessionHost : ITrackerSessionQuery, ITrackerSessionCommand
 {
     private readonly TrackerViewModel _viewModel;
 

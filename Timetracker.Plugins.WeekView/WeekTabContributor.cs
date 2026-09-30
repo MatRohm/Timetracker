@@ -10,7 +10,7 @@ namespace Timetracker.Plugins.WeekView;
 /// Contributes the week view as a tab between the tracker and the options tab.
 /// The shell places the tab and passes the add-in controls targeted at it.
 /// </summary>
-public sealed class WeekTabContributor : ITabContributor
+public sealed class WeekTabContributor : ITabQuery
 {
     private readonly WeekViewModel _week;
 

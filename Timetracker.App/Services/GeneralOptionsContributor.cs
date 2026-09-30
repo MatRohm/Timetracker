@@ -9,7 +9,7 @@ namespace Timetracker.App.Services;
 /// options and the logs are kept. All entries are read-only.
 /// </summary>
 public sealed class GeneralOptionsContributor(string trackingFilePath, string optionsFilePath, string logDirectory)
-    : IOptionsContributor
+    : IOptionDefinitionQuery
 {
     public GeneralOptionsContributor(JsonTrackerRepository repository, JsonOptionsStore options)
         : this(repository.FilePath, options.FilePath, LogLocation.Directory)

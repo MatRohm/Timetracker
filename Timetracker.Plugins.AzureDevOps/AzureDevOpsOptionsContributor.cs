@@ -7,7 +7,7 @@ namespace Timetracker.Plugins.AzureDevOps;
 /// The "Azure DevOps" section of the options tab: organization URL, project and the
 /// personal access token (masked).
 /// </summary>
-public sealed class AzureDevOpsOptionsContributor : IOptionsContributor
+public sealed class AzureDevOpsOptionsContributor : IOptionDefinitionQuery
 {
     public string Section => "Azure DevOps";
 

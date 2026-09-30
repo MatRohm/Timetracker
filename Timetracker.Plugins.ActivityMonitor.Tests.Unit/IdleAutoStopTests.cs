@@ -16,7 +16,7 @@ public sealed class IdleAutoStopTests
     {
         var host = new FakeTrackerSessionHost { IsSessionRunning = true };
         var idle = new FakeIdleTimeProvider { CurrentIdleTime = IdleAutoStop.IdleStopThreshold };
-        var detector = new IdleAutoStop(host, idle);
+        var detector = new IdleAutoStop(host, host, idle);
 
         await detector.PollAsync();
 
@@ -31,7 +31,7 @@ public sealed class IdleAutoStopTests
         {
             CurrentIdleTime = IdleAutoStop.IdleStopThreshold - TimeSpan.FromSeconds(1),
         };
-        var detector = new IdleAutoStop(host, idle);
+        var detector = new IdleAutoStop(host, host, idle);
 
         await detector.PollAsync();
 
@@ -43,7 +43,7 @@ public sealed class IdleAutoStopTests
     {
         var host = new FakeTrackerSessionHost { IsSessionRunning = false };
         var idle = new FakeIdleTimeProvider { CurrentIdleTime = TimeSpan.FromHours(2) };
-        var detector = new IdleAutoStop(host, idle);
+        var detector = new IdleAutoStop(host, host, idle);
 
         await detector.PollAsync();
 
@@ -56,7 +56,7 @@ public sealed class IdleAutoStopTests
         var now = new DateTimeOffset(2026, 9, 22, 9, 0, 0, TimeSpan.FromHours(2));
         var host = new FakeTrackerSessionHost { IsSessionRunning = true };
         var idle = new FakeIdleTimeProvider { CurrentIdleTime = TimeSpan.FromMinutes(45) };
-        var detector = new IdleAutoStop(host, idle, now: () => now);
+        var detector = new IdleAutoStop(host, host, idle, now: () => now);
 
         await detector.PollAsync();
 
@@ -69,7 +69,7 @@ public sealed class IdleAutoStopTests
     {
         var host = new FakeTrackerSessionHost { IsSessionRunning = true };
         var idle = new FakeIdleTimeProvider { CurrentIdleTime = TimeSpan.FromMinutes(40) };
-        var detector = new IdleAutoStop(host, idle);
+        var detector = new IdleAutoStop(host, host, idle);
 
         await detector.PollAsync();
 

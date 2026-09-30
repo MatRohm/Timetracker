@@ -8,7 +8,7 @@ namespace Timetracker.Plugins.Contracts.Interfaces;
 /// contributor creates the tab's content and receives the add-in UI controls
 /// targeted at its tab key.
 /// </summary>
-public interface ITabContributor
+public interface ITabQuery
 {
     /// <summary>Stable key of the tab, one of the <c>TabKeys</c> constants.</summary>
     string TabKey { get; }
@@ -21,7 +21,7 @@ public interface ITabContributor
 
     /// <summary>
     /// Creates the tab's content. <paramref name="contributors"/> are the pre-built
-    /// add-in UI controls (from <see cref="IUiContributor"/>) targeted at this tab.
+    /// add-in UI controls (from <see cref="IUiQuery"/>) targeted at this tab.
     /// </summary>
     Control CreateView(IReadOnlyList<Control> contributors);
 }

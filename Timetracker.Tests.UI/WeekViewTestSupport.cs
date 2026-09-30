@@ -24,7 +24,7 @@ internal static class WeekViewTestSupport
             ActiveSpans = activeSpans ?? (_ => []),
         };
         var tracked = new FakeTrackedSessions();
-        var week = new WeekViewModel(tracked, [], [activity]);
+        var week = new WeekViewModel(tracked, tracked, [], [activity]);
         tracked.SetSessions([.. sessions]);
         return (new WeekTabView(week, contributors ?? []), week);
     }

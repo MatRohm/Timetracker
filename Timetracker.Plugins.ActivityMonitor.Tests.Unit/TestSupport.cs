@@ -65,7 +65,7 @@ internal sealed class InMemoryInstaller : IActivityMonitorInstaller
 }
 
 /// <summary>Status sink that records the last message; the setup view model only writes to it.</summary>
-internal sealed class FakeWeekStatusHost : IWeekStatusHost
+internal sealed class FakeWeekStatusHost : IWeekStatusCommand
 {
     public string? LastMessage { get; private set; }
 
@@ -85,7 +85,7 @@ internal sealed class FakeIdleTimeProvider : IIdleTimeProvider
 }
 
 /// <summary>Session host for tests: records the stop request the idle detector issues.</summary>
-internal sealed class FakeTrackerSessionHost : ITrackerSessionHost
+internal sealed class FakeTrackerSessionHost : ITrackerSessionQuery, ITrackerSessionCommand
 {
     public bool IsSessionRunning { get; set; }
 

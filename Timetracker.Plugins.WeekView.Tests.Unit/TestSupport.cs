@@ -4,10 +4,11 @@ using Timetracker.Plugins.Contracts.Interfaces;
 namespace Timetracker.Plugins.WeekView.Tests.Unit;
 
 /// <summary>
-/// In-memory <see cref="ITrackedSessions"/>: the session list and running state are
+/// In-memory <see cref="ITrackedSessionsQuery"/> and
+/// <see cref="ITrackedSessionsCommand"/>: the session list and running state are
 /// set directly, and the book/apply actions are wired as delegates.
 /// </summary>
-public sealed class FakeTrackedSessions : ITrackedSessions
+public sealed class FakeTrackedSessions : ITrackedSessionsQuery, ITrackedSessionsCommand
 {
     private List<TrackedSession> _sessions = [];
 
@@ -36,10 +37,10 @@ public sealed class FakeTrackedSessions : ITrackedSessions
 }
 
 /// <summary>
-/// In-memory <see cref="IDayActivitySource"/>: the per-day active time and active
+/// In-memory <see cref="IDayActivityQuery"/>: the per-day active time and active
 /// spans are set as delegates.
 /// </summary>
-public sealed class FakeDayActivitySource : IDayActivitySource
+public sealed class FakeDayActivitySource : IDayActivityQuery
 {
     public Func<DateOnly, TimeSpan> ActiveTime { get; set; } = _ => TimeSpan.Zero;
 

@@ -335,7 +335,7 @@ public sealed class WeekViewModelTests
     {
         sessions = new FakeTrackedSessions();
         activity = new FakeDayActivitySource();
-        var result = new WeekViewModel(sessions, [], [activity]);
+        var result = new WeekViewModel(sessions, sessions, [], [activity]);
         return result;
     }
 
