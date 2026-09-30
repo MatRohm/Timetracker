@@ -59,6 +59,17 @@ bd create "Short title" --description="Why this exists and what needs to be done
 bd close <id> --reason="Completed"
 ```
 
+## Issue Naming
+
+- Issue titles MUST NOT be prefixed with git conventions (`feat:`, `fix:`, `chore:`, etc.).
+- Use title case: capitalise the first letter of the first word only.
+- Write a short, precise description of the goal.
+
+Examples:
+
+- "Add a regex option to configure the copy options"
+- "Fix architecture-review finding"
+
 ## What Belongs In Beads
 
 Use Beads for:
