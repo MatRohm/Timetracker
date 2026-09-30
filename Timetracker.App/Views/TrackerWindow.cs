@@ -66,11 +66,21 @@ public sealed class TrackerWindow : Window
         }
     }
 
-    private void OnClosing(object? sender, WindowClosingEventArgs e)
+    private bool _closing;
+
+    private async void OnClosing(object? sender, WindowClosingEventArgs e)
     {
         // Never lose a running entry: the view model saves it before the window closes.
-        // This is the one deliberate synchronous wait in the app — the write must
-        // finish before the process exits, so a running entry cannot be lost.
-        _vm.SaveRunningEntryOnCloseAsync().GetAwaiter().GetResult();
+        // Hold the window open while the write completes so the UI thread stays free;
+        // Close() after the save re-raises Closing, so the guard stops the loop.
+        if (_closing)
+        {
+            return;
+        }
+
+        e.Cancel = true;
+        _closing = true;
+        await _vm.SaveRunningEntryOnCloseAsync();
+        Close();
     }
 }
