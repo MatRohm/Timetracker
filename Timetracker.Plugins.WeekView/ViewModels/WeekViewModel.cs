@@ -113,22 +113,35 @@ public sealed class WeekViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Distributes <paramref name="gap"/> over its bordering sessions after the user
-    /// confirmed the listed changes; false when there is nothing to distribute, the
-    /// user declined or the save failed.
+    /// Distributes <paramref name="day"/>'s untracked time over its tasks in
+    /// proportion to their durations, after the user confirmed the listed changes
+    /// (skipped tasks are listed too). False when there is nothing to distribute,
+    /// the user declined or the save failed.
     /// </summary>
     /// <param name="confirm">Shows the change lines and returns the user's answer.</param>
-    public async Task<bool> DistributeAsync(WeekGapViewModel gap, Func<IReadOnlyList<string>, Task<bool>> confirm)
+    public async Task<bool> DistributeDayAsync(WeekDayViewModel day, Func<IReadOnlyList<string>, Task<bool>> confirm)
     {
-        if (!gap.CanDistribute || !await confirm(gap.DistributionLines))
+        var plan = day.Distribution;
+        var skipped = day.DistributionSkippedLines.Select(s => "Skipped: " + s).ToList();
+        if (plan.Changes.Count == 0)
+        {
+            if (skipped.Count > 0)
+            {
+                ShowStatus("Nothing could be distributed. " + string.Join(" · ", skipped), WeekStatus.Info);
+            }
+            return false;
+        }
+
+        if (!await confirm([.. day.DistributionLines, .. skipped]))
         {
             return false;
         }
 
-        var saved = await _sessionCommands.ApplyChangesAsync(gap.Distribution);
+        var saved = await _sessionCommands.ApplyChangesAsync(plan.Changes);
         if (saved)
         {
-            ShowStatus($"✓ Distributed {gap.DurationText} over the neighboring sessions.", WeekStatus.Success);
+            var note = skipped.Count > 0 ? " " + string.Join(" · ", skipped) : "";
+            ShowStatus($"✓ Distributed the untracked time over {plan.Tasks.Count} task(s) on {day.Header}.{note}", WeekStatus.Success);
         }
 
         return saved;
@@ -214,6 +227,7 @@ public sealed class WeekViewModel : ObservableObject
                 .Select(s => s.GetActiveTime(date))
                 .DefaultIfEmpty(TimeSpan.Zero)
                 .Max();
+            _days[i].SetDistribution(DayDistribution.Plan(daySessions, _days[i].UntrackedTime, sessions, running));
 
             // Every session counts, not only the day's: one started the evening before
             // can cover the early hours of this day.
@@ -222,8 +236,7 @@ public sealed class WeekViewModel : ObservableObject
                     [.. _activitySources
                         .SelectMany(s => s.GetActiveSpans(date))
                         .Select(span => new TimeRange(span.Start, span.End))],
-                    sessions, running, WeekDayViewModel.MinimumGapDuration),
-                sessions);
+                    sessions, running, WeekDayViewModel.MinimumGapDuration));
         }
 
         WeekTotalText = $"Σ {WeekTimeFormat.HoursMinutes(weekSessions.Sum(s => s.DurationSeconds))}";

@@ -145,44 +145,57 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
-    public async Task DistributeAsync_WhenTheUserConfirms_ShouldApplyTheGapsPlannedChanges()
+    public async Task DistributeDayAsync_WhenTheUserConfirms_ShouldApplyTheDaysDistributionPlan()
     {
-        var (week, gap, sessions) = WeekWithOneGap(sessionBordersTheGap: true);
+        var week = Create(out var sessions, out var activity);
+        var monday = DateTimeOffset.Now.Date.AddDays(-(((int)DateTimeOffset.Now.DayOfWeek + 6) % 7));
+        var mondayDate = DateOnly.FromDateTime(monday);
+        activity.ActiveTime = day => day == mondayDate ? TimeSpan.FromMinutes(150) : TimeSpan.Zero;
+        sessions.SetSessions(Session(monday, 9, 60, "A"));
         IReadOnlyList<SessionChange>? applied = null;
         sessions.ApplyChanges = changes => { applied = changes; return Task.FromResult(true); };
         IReadOnlyList<string>? shown = null;
 
-        var result = await week.DistributeAsync(gap, lines => { shown = lines; return Task.FromResult(true); });
+        var day = week.Days[0];
+        var result = await week.DistributeDayAsync(day, lines => { shown = lines; return Task.FromResult(true); });
 
         result.Should().BeTrue();
-        applied.Should().BeSameAs(gap.Distribution);
-        shown.Should().ContainSingle().Which.Should().Be("A 09:00–10:00 → 09:00–12:00");
+        day.CanDistribute.Should().BeTrue();
+        applied.Should().BeSameAs(day.Distribution.Changes);
+        shown.Should().ContainSingle().Which.Should().Be("A 1:00 → 2:30: 09:00–10:00 → 09:00–11:30");
         week.Status.Should().Be(WeekStatus.Success);
     }
 
     [Test]
-    public async Task DistributeAsync_WhenTheUserDeclines_ShouldApplyNothing()
+    public async Task DistributeDayAsync_WhenTheUserDeclines_ShouldApplyNothing()
     {
-        var (week, gap, sessions) = WeekWithOneGap(sessionBordersTheGap: true);
+        var week = Create(out var sessions, out var activity);
+        var monday = DateTimeOffset.Now.Date.AddDays(-(((int)DateTimeOffset.Now.DayOfWeek + 6) % 7));
+        var mondayDate = DateOnly.FromDateTime(monday);
+        activity.ActiveTime = day => day == mondayDate ? TimeSpan.FromMinutes(150) : TimeSpan.Zero;
+        sessions.SetSessions(Session(monday, 9, 60, "A"));
         var applied = false;
         sessions.ApplyChanges = _ => { applied = true; return Task.FromResult(true); };
 
-        var result = await week.DistributeAsync(gap, _ => Task.FromResult(false));
+        var result = await week.DistributeDayAsync(week.Days[0], _ => Task.FromResult(false));
 
         result.Should().BeFalse();
         applied.Should().BeFalse();
     }
 
     [Test]
-    public async Task DistributeAsync_WhenNoSessionBordersTheGap_ShouldNotAskOrApply()
+    public async Task DistributeDayAsync_WhenThereIsNoUntrackedTime_ShouldNotAskOrApply()
     {
-        var (week, gap, sessions) = WeekWithOneGap(sessionBordersTheGap: false);
+        var week = Create(out var sessions, out _);
+        var monday = DateTimeOffset.Now.Date.AddDays(-(((int)DateTimeOffset.Now.DayOfWeek + 6) % 7));
+        sessions.SetSessions(Session(monday, 9, 60, "A"));
         var asked = false;
         sessions.ApplyChanges = _ => Task.FromResult(true);
 
-        var result = await week.DistributeAsync(gap, _ => { asked = true; return Task.FromResult(true); });
+        var day = week.Days[0];
+        var result = await week.DistributeDayAsync(day, _ => { asked = true; return Task.FromResult(true); });
 
-        gap.CanDistribute.Should().BeFalse();
+        day.CanDistribute.Should().BeFalse();
         result.Should().BeFalse();
         asked.Should().BeFalse();
     }
@@ -311,24 +324,6 @@ public sealed class WeekViewModelTests
         refreshed.IsExpanded.Should().BeTrue("the day stays expanded across a refresh");
         refreshed.Groups.Single().IsExpanded.Should().BeTrue("the element stays expanded too");
         refreshed.Groups.Single().Entries.Should().HaveCount(2);
-    }
-
-    /// <summary>
-    /// Monday active 09:00–12:00 with one session; the gap it leaves either borders
-    /// the session (session 09:00–10:00, gap 10:00–12:00) or not (session 08:00–08:30
-    /// outside the activity, gap 09:00–12:00).
-    /// </summary>
-    private static (WeekViewModel Week, WeekGapViewModel Gap, FakeTrackedSessions Sessions) WeekWithOneGap(bool sessionBordersTheGap)
-    {
-        var week = Create(out var sessions, out var activity);
-        var monday = DateTimeOffset.Now.Date.AddDays(-(((int)DateTimeOffset.Now.DayOfWeek + 6) % 7));
-        var offset = DateTimeOffset.Now.Offset;
-        activity.ActiveSpans = day => day == DateOnly.FromDateTime(monday)
-            ? [new ActiveSpan(new DateTimeOffset(monday.AddHours(9), offset), new DateTimeOffset(monday.AddHours(12), offset))]
-            : [];
-        sessions.SetSessions(sessionBordersTheGap ? Session(monday, 9, 60, "A") : Session(monday, 8, 30, "A"));
-        var result = (week, week.Days[0].Gaps.Single(), sessions);
-        return result;
     }
 
     private static WeekViewModel Create(out FakeTrackedSessions sessions, out FakeDayActivitySource activity)

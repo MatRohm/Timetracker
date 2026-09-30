@@ -114,9 +114,9 @@ public sealed class WeekTrackingTree : UserControl
     }
 
     /// <summary>
-    /// Untracked gap node: "⚠ 10:15–11:05 untracked (0:50)", a Book… button that
-    /// opens the booking dialog and a Distribute button that stretches the bordering
-    /// sessions over the gap. Sits at the element level, below the day's groups.
+    /// Untracked gap node: "⚠ 10:15–11:05 untracked (0:50)" and a Book… button
+    /// that opens the booking dialog. Sits at the element level, below the day's
+    /// groups.
     /// </summary>
     private Control BuildGapNode(WeekGapViewModel gap)
     {
@@ -145,23 +145,6 @@ public sealed class WeekTrackingTree : UserControl
         book.Click += async (_, _) => await BookAsync(gap);
         row.Children.Add(book);
 
-        var distribute = new Button
-        {
-            Content = "Distribute",
-            FontSize = 11,
-            Padding = new Thickness(6, 0),
-            VerticalAlignment = VerticalAlignment.Center,
-            IsEnabled = gap.CanDistribute,
-        };
-        ToolTip.SetTip(distribute, gap.DistributionHint);
-        // A disabled button shows no tooltip unless told to; the hint explains why.
-        ToolTip.SetShowOnDisabled(distribute, true);
-        distribute.Click += async (_, _) => await _week.DistributeAsync(
-            gap,
-            changes => Confirmations.ConfirmChangesAsync(
-                this, $"Distribute {gap.DurationText} over the neighboring sessions?", changes));
-        row.Children.Add(distribute);
-
         return row;
     }
 
@@ -181,7 +164,7 @@ public sealed class WeekTrackingTree : UserControl
 
     /// <summary>
     /// Day node: expander, caption, the day's sum, the PC activity line, the untracked
-    /// time and, for days with bookings, a Round ½h button.
+    /// time and, for days with bookings, Round ½h and Distribute buttons.
     /// </summary>
     private Control BuildDayNode(WeekDayViewModel day)
     {
@@ -254,6 +237,22 @@ public sealed class WeekTrackingTree : UserControl
                 changes => Confirmations.ConfirmChangesAsync(
                     this, $"Round the tasks of {day.Header} to half hours?", changes));
             row.Children.Add(round);
+
+            var distribute = new Button
+            {
+                Content = "Distribute",
+                FontSize = 11,
+                Padding = new Thickness(6, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                IsEnabled = day.CanDistribute,
+            };
+            ToolTip.SetTip(distribute, day.DistributionHint);
+            ToolTip.SetShowOnDisabled(distribute, true);
+            distribute.Click += async (_, _) => await _week.DistributeDayAsync(
+                day,
+                changes => Confirmations.ConfirmChangesAsync(
+                    this, $"Distribute the untracked time of {day.Header} over its tasks?", changes));
+            row.Children.Add(distribute);
         }
 
         return row;
