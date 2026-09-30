@@ -2,7 +2,7 @@ using Timetracker.Plugins.ActivityMonitor.Interfaces;
 using Timetracker.Plugins.Contracts.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Timetracker.Plugins.ActivityMonitor;
+namespace Timetracker.Plugins.ActivityMonitor.Views;
 
 /// <summary>
 /// Contributes the monitor setup band to the week view: install/remove buttons

@@ -3,7 +3,7 @@ using Timetracker.Plugins.Contracts.Interfaces;
 using System.ComponentModel;
 using Timetracker.Plugins.Contracts;
 
-namespace Timetracker.Plugins.ActivityMonitor;
+namespace Timetracker.Plugins.ActivityMonitor.ViewModels;
 
 /// <summary>
 /// Logic behind the monitor setup band: wraps the installer and reports the

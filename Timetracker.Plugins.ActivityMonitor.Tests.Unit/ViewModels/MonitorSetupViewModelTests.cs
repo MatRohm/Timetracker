@@ -1,8 +1,9 @@
 using AwesomeAssertions;
 using NUnit.Framework;
+using Timetracker.Plugins.ActivityMonitor.ViewModels;
 using Timetracker.Plugins.Contracts;
 
-namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit;
+namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit.ViewModels;
 
 [TestFixture]
 public sealed class MonitorSetupViewModelTests

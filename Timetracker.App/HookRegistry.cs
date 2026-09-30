@@ -88,6 +88,6 @@ public static class HookRegistry
             sp => sp.GetRequiredService<Plugins.ActivityMonitor.ActivityWeekDayContributor>());
         services.AddSingleton<IDayActivitySource>(
             sp => sp.GetRequiredService<Plugins.ActivityMonitor.ActivityWeekDayContributor>());
-        services.AddSingleton<IUiContributor, Plugins.ActivityMonitor.MonitorSetupUiContributor>();
+        services.AddSingleton<IUiContributor, Plugins.ActivityMonitor.Views.MonitorSetupUiContributor>();
     }
 }

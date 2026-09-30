@@ -3,8 +3,9 @@ using Timetracker.Plugins.Contracts.Interfaces;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Threading;
+using Timetracker.Plugins.ActivityMonitor.ViewModels;
 
-namespace Timetracker.Plugins.ActivityMonitor;
+namespace Timetracker.Plugins.ActivityMonitor.Views;
 
 /// <summary>
 /// Setup band for the week view: install/remove buttons for the per-user
