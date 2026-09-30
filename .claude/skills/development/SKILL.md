@@ -33,22 +33,25 @@ merged, pushed change. Four phases: **plan** (A), **implement** (B), **review**
 
 ## B) Implementation
 
-1. **Check out a branch for the work** — name it so it references the beads
+1. **Claim the beads issue** — `bd update <id> --claim`, which atomically sets
+   you as the assignee and moves the status to `in_progress`. Do this before
+   writing any code so other agents don't pick up the same work.
+2. **Check out a branch for the work** — name it so it references the beads
    issue, e.g. `timetracker-66k-week-view` (`<issue-id>-<short-slug>`).
-2. **TDD (red-green-refactor)** — write the failing test before production
+3. **TDD (red-green-refactor)** — write the failing test before production
    code; test *externally observable behavior*, not implementation details.
-3. **Follow C# conventions** — `.editorconfig` (file-scoped namespaces,
+4. **Follow C# conventions** — `.editorconfig` (file-scoped namespaces,
    explicit types, `_camelCase` fields, `I`-prefixed interfaces), async/await
    (no `.Result`/`.Wait()`, `Async` suffix, `CancellationToken` where
    reasonable), DI over service locators, immutable data where practical.
-4. **Test naming** — `<Method>_When<Condition>_Should<Result>`; the architecture
+5. **Test naming** — `<Method>_When<Condition>_Should<Result>`; the architecture
    tests report violations.
-5. **Match the architecture** — MVVM (view models know nothing about Avalonia,
+6. **Match the architecture** — MVVM (view models know nothing about Avalonia,
    views hold no logic); new plugin behavior via `IUiContributor`,
    `IWeekDayContributor` / `IAppHook`; register in `HookRegistry.cs`.
-6. **Keep changes minimal** — smallest change; no new NuGet packages; no public
+7. **Keep changes minimal** — smallest change; no new NuGet packages; no public
    API changes; no unrelated files.
-7. **Commit as you go** — Conventional Commits type + subject ending in the
+8. **Commit as you go** — Conventional Commits type + subject ending in the
    issue id (`feat: … (timetracker-66k)`), enforced by the `commit-msg` hook.
 
 ## C) Implementation review
@@ -66,6 +69,9 @@ merged, pushed change. Four phases: **plan** (A), **implement** (B), **review**
 6. **Straighten the history** — review the branch's commits and **squash or
    `fixup`** redundant, "wip", or better-told-as-one commits, so the final
    history reads as clean, logical commits.
+7. **Record the review results** — unless otherwise specified, write the review
+   findings into the issue's **notes** field (`bd update <id>
+   --append-notes="…"`) so the outcome survives the session.
 
 ## D) Finishing
 
