@@ -178,7 +178,10 @@ public sealed class WeekTrackingTree : UserControl
         }
     }
 
-    /// <summary>Day node: expander, caption, the day's sum, the PC activity line and the untracked time.</summary>
+    /// <summary>
+    /// Day node: expander, caption, the day's sum, the PC activity line, the untracked
+    /// time and, for days with bookings, a Round ½h button.
+    /// </summary>
     private Control BuildDayNode(WeekDayViewModel day)
     {
         var row = new StackPanel
@@ -231,6 +234,25 @@ public sealed class WeekTrackingTree : UserControl
             };
             ToolTip.SetTip(untracked, "PC active time that no tracked session covers");
             row.Children.Add(untracked);
+        }
+
+        if (day.TotalText.Length > 0)
+        {
+            var round = new Button
+            {
+                Content = "Round ½h",
+                FontSize = 11,
+                Padding = new Thickness(6, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                IsEnabled = day.CanRound,
+            };
+            ToolTip.SetTip(round, day.RoundingHint);
+            ToolTip.SetShowOnDisabled(round, true);
+            round.Click += async (_, _) => await _week.RoundDayAsync(
+                day,
+                changes => Confirmations.ConfirmChangesAsync(
+                    this, $"Round the tasks of {day.Header} to half hours?", changes));
+            row.Children.Add(round);
         }
 
         return row;

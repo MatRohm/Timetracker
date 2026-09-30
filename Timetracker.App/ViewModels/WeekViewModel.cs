@@ -174,6 +174,40 @@ public sealed class WeekViewModel : ObservableObject
         return saved;
     }
 
+    /// <summary>
+    /// Rounds each task's total on <paramref name="day"/> to the nearest half hour
+    /// after the user confirmed the listed changes (skipped tasks are listed too).
+    /// False when nothing could be rounded, the user declined or the save failed.
+    /// </summary>
+    /// <param name="confirm">Shows the change lines and returns the user's answer.</param>
+    public async Task<bool> RoundDayAsync(WeekDayViewModel day, Func<IReadOnlyList<string>, Task<bool>> confirm)
+    {
+        var plan = day.Rounding;
+        var skipped = plan.Skipped.Select(s => "Skipped: " + s).ToList();
+        if (plan.Changes.Count == 0)
+        {
+            if (skipped.Count > 0)
+            {
+                ShowStatus("Nothing could be rounded. " + string.Join(" · ", skipped), WeekStatus.Info);
+            }
+            return false;
+        }
+
+        if (ApplyChanges is null || !await confirm([.. plan.Lines, .. skipped]))
+        {
+            return false;
+        }
+
+        var saved = await ApplyChanges(plan.Changes);
+        if (saved)
+        {
+            var note = skipped.Count > 0 ? " " + string.Join(" · ", skipped) : "";
+            ShowStatus($"✓ Rounded {plan.Lines.Count} task(s) on {day.Header} to half hours.{note}", WeekStatus.Success);
+        }
+
+        return saved;
+    }
+
     public ICommand PreviousWeekCommand => _previousWeekCommand;
 
     public ICommand NextWeekCommand => _nextWeekCommand;
@@ -217,7 +251,9 @@ public sealed class WeekViewModel : ObservableObject
         for (var i = 0; i < 7; i++)
         {
             var day = _weekStart.AddDays(i);
-            _days[i].Update(day, weekSessions.Where(s => s.Start.Date == day.Date));
+            var daySessions = weekSessions.Where(s => s.Start.Date == day.Date).ToList();
+            _days[i].Update(day, daySessions);
+            _days[i].SetRounding(HalfHourRounding.Plan(daySessions, _sessions, running));
             var date = DateOnly.FromDateTime(day.Date);
             _days[i].ContributorText = DayContributorText?.Invoke(date) ?? "";
             _days[i].ActiveTime = DayActiveTime?.Invoke(date) ?? TimeSpan.Zero;

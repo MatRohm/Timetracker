@@ -99,6 +99,37 @@ public sealed class WeekUntrackedTimeTests
         distribute.IsEnabled.Should().BeFalse("nothing starts or ends at the gap, so nothing can absorb it");
     }
 
+    [AvaloniaTest]
+    public void WeekTrackingTree_WhenADayHasBookings_ShouldOfferRoundingOnlyWhenATaskIsOffTheHalfHour()
+    {
+        var (repo, _) = RepositoryFake.Create();
+        using var tracker = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        var today = DateTimeOffset.Now.Date;
+        var offset = DateTimeOffset.Now.Offset;
+        var yesterdayOrTomorrow = today.DayOfWeek == DayOfWeek.Monday ? today.AddDays(1) : today.AddDays(-1);
+        tracker.Week.UpdateSessions(
+        [
+            Session("Report", new DateTimeOffset(today.AddHours(9), offset), 50),
+            Session("Review", new DateTimeOffset(yesterdayOrTomorrow.AddHours(9), offset), 90),
+        ]);
+        var view = new WeekTabView(tracker.Week, []);
+
+        Realize(view);
+
+        var roundButtons = view.GetVisualDescendants().OfType<Button>()
+            .Where(b => b.Content as string == "Round ½h")
+            .ToList();
+        roundButtons.Should().HaveCount(2, "only the two days with bookings offer rounding");
+        roundButtons.Count(b => b.IsEnabled).Should().Be(1, "only the 0:50 day is off the half hour");
+    }
+
+    private static TrackerEntry Session(string task, DateTimeOffset start, int minutes)
+    {
+        var session = new TrackerEntry { Task = task };
+        session.Reschedule(start, start.AddMinutes(minutes));
+        return session;
+    }
+
     private static void Realize(Control root)
     {
         var host = new Window { Content = root, Width = 900, Height = 500 };

@@ -124,6 +124,25 @@ public sealed class WeekDayViewModel : ObservableObject
     /// </summary>
     public IReadOnlyList<WeekGapViewModel> Gaps { get; private set; } = [];
 
+    /// <summary>What rounding the day's task totals to half hours would change.</summary>
+    public RoundingPlan Rounding { get; private set; } = RoundingPlan.Empty;
+
+    /// <summary>True when some task of the day is not on a half hour.</summary>
+    public bool CanRound => Rounding.HasWork;
+
+    /// <summary>Tooltip for the round action.</summary>
+    public string RoundingHint => CanRound
+        ? "Round each task's time on this day to the nearest half hour"
+        : "Every task on this day is already on a half hour";
+
+    /// <summary>Replaces the day's rounding plan.</summary>
+    public void SetRounding(RoundingPlan rounding)
+    {
+        Rounding = rounding;
+        OnPropertyChanged(nameof(Rounding));
+        OnPropertyChanged(nameof(CanRound));
+    }
+
     /// <summary>
     /// Replaces the day's gap rows; each plans its distribution over the
     /// <paramref name="sessions"/> that border it.
