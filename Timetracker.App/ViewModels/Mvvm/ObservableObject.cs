@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace Timetracker.App.ViewModels;
+namespace Timetracker.App.ViewModels.Mvvm;
 
 public abstract class ObservableObject : INotifyPropertyChanged
 {

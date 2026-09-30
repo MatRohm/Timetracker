@@ -1,6 +1,6 @@
 using System.Windows.Input;
 
-namespace Timetracker.App.ViewModels;
+namespace Timetracker.App.ViewModels.Mvvm;
 
 /// <summary>
 /// Async variant of <see cref="RelayCommand"/>: runs a <see cref="Func{TResult}"/>
