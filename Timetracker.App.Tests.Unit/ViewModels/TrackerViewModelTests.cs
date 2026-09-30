@@ -61,7 +61,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public async Task Stop_WhenStopped_ShouldAppendSessionAndResetRunningState()
+    public async Task StopAsync_WhenStopped_ShouldAppendSessionAndResetRunningState()
     {
         var (repo, path) = RepositoryFake.Create();
         using var vm = TrackerViewModelFactory.Create(repo);
@@ -238,7 +238,7 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
-    public void Stop_WhenSavingFails_ShouldRaiseAnErrorAndKeepStateConsistent()
+    public void StopAsync_WhenSavingFails_ShouldRaiseAnErrorAndKeepStateConsistent()
     {
         var repo = A.Fake<ITrackerRepository>();
         A.CallTo(() => repo.FilePath).Returns(Path.Combine(Path.GetTempPath(), "does-not-matter.json"));

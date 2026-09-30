@@ -74,7 +74,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         _history.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
 
         _startCommand = new RelayCommand(Start, () => !IsRunning);
-        _stopCommand = new AsyncRelayCommand(Stop, () => IsRunning);
+        _stopCommand = new AsyncRelayCommand(StopAsync, () => IsRunning);
 
         StatusText = "Entries are appended to " + _repository.FilePath;
 
@@ -438,7 +438,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         SessionsChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private async Task Stop()
+    private async Task StopAsync()
     {
         if (!IsRunning)
             return;

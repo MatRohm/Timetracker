@@ -132,7 +132,7 @@ public sealed class EntryHistoryGrid : UserControl
 
         _grid.ItemsSource = _viewModel.Entries;
         _grid.Sorting += OnGridSorting;
-        _grid.KeyDown += OnGridKeyDown;
+        _grid.KeyDown += OnGridKeyDownAsync;
         _grid.CellEditEnded += OnGridCellEditEnded;
 
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
@@ -172,7 +172,7 @@ public sealed class EntryHistoryGrid : UserControl
         {
             if (button.DataContext is EntryRow row)
             {
-                OpenEditor(row);
+                OpenEditorAsync(row);
             }
         };
         return button;
@@ -217,7 +217,7 @@ public sealed class EntryHistoryGrid : UserControl
     /// Opens the per-item editor. The dialog returns the sessions to keep; when the
     /// user saved (result not null) they are persisted through the view model.
     /// </summary>
-    private async void OpenEditor(EntryRow row)
+    private async void OpenEditorAsync(EntryRow row)
     {
         if (TopLevel.GetTopLevel(this) is not Window owner)
         {
@@ -249,7 +249,7 @@ public sealed class EntryHistoryGrid : UserControl
         _viewModel.ApplySort(path);
     }
 
-    private async void OnGridKeyDown(object? sender, KeyEventArgs e)
+    private async void OnGridKeyDownAsync(object? sender, KeyEventArgs e)
     {
         // Edit mode now lives on F2 only; starting a task uses the play button.
         if (e.Key == Key.F2)
