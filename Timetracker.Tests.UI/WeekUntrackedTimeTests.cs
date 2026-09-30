@@ -5,7 +5,6 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Timetracker.App.Models;
 using Timetracker.App.Tests.Unit;
-using Timetracker.App.ViewModels;
 using Timetracker.App.Views;
 
 namespace Timetracker.Tests.UI;
@@ -20,7 +19,7 @@ public sealed class WeekUntrackedTimeTests
     public void WeekTrackingTree_WhenActiveTimeExceedsTheBookedTime_ShouldShowTheUntrackedTimeInTheDayRow()
     {
         var (repo, _) = RepositoryFake.Create();
-        using var tracker = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var tracker = TrackerViewModelFactory.Create(repo);
         var today = DateOnly.FromDateTime(DateTimeOffset.Now.Date);
         tracker.Week.DayActiveTime = day => day == today ? TimeSpan.FromMinutes(150) : TimeSpan.Zero;
         tracker.Week.UpdateSessions(
@@ -48,7 +47,7 @@ public sealed class WeekUntrackedTimeTests
     public void WeekTrackingTree_WhenADayWithAGapIsExpanded_ShouldShowTheGapRowWithABookButton()
     {
         var (repo, _) = RepositoryFake.Create();
-        using var tracker = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var tracker = TrackerViewModelFactory.Create(repo);
         var midnight = DateTimeOffset.Now.Date;
         var offset = DateTimeOffset.Now.Offset;
         tracker.Week.DayActiveSpans = day => day == DateOnly.FromDateTime(midnight)
@@ -82,7 +81,7 @@ public sealed class WeekUntrackedTimeTests
     public void WeekTrackingTree_WhenNoSessionBordersAGap_ShouldDisableItsDistributeButton()
     {
         var (repo, _) = RepositoryFake.Create();
-        using var tracker = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var tracker = TrackerViewModelFactory.Create(repo);
         var midnight = DateTimeOffset.Now.Date;
         var offset = DateTimeOffset.Now.Offset;
         tracker.Week.DayActiveSpans = day => day == DateOnly.FromDateTime(midnight)
@@ -103,7 +102,7 @@ public sealed class WeekUntrackedTimeTests
     public void WeekTrackingTree_WhenADayHasBookings_ShouldOfferRoundingOnlyWhenATaskIsOffTheHalfHour()
     {
         var (repo, _) = RepositoryFake.Create();
-        using var tracker = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var tracker = TrackerViewModelFactory.Create(repo);
         var today = DateTimeOffset.Now.Date;
         var offset = DateTimeOffset.Now.Offset;
         var yesterdayOrTomorrow = today.DayOfWeek == DayOfWeek.Monday ? today.AddDays(1) : today.AddDays(-1);

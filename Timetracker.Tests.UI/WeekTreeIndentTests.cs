@@ -55,7 +55,7 @@ public sealed class WeekTreeIndentTests
     private static (WeekTabView View, WeekViewModel Week) Build()
     {
         var repo = new FakeRepo();
-        using var tracker = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var tracker = TrackerViewModelFactory.Create(repo);
         tracker.Week.UpdateSessions(
         [
             new TrackerEntry

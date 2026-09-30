@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows.Input;
+using Timetracker.App.Interfaces;
 using Timetracker.App.Models;
 using Timetracker.App.Services;
 using Timetracker.App.ViewModels.Mvvm;
+using Timetracker.Plugins.ActivityMonitor.Interfaces;
 
 namespace Timetracker.App.ViewModels;
 
@@ -16,7 +18,9 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// </summary>
     public static readonly TimeSpan IdleStopThreshold = TimeSpan.FromMinutes(30);
 
-    private readonly TrackerDependencies _dependencies;
+    private readonly ITrackerRepository _repository;
+    private readonly IUiTimer _timer;
+    private readonly IIdleTimeProvider _idleTime;
     private readonly Stopwatch _watch = new();
 
     /// <summary>Current time; replaceable so idle behavior can be tested deterministically.</summary>
@@ -46,13 +50,21 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// <summary>Raised when saving an entry failed; the view shows the message.</summary>
     public event Action<string>? ErrorOccurred;
 
+    /// <param name="repository">Reads and writes the session log.</param>
+    /// <param name="timer">Ticks on the UI thread while a session runs.</param>
+    /// <param name="idleTime">Reports how long there has been no keyboard or mouse input.</param>
+    /// <param name="now">Current time; replaceable so idle behavior can be tested deterministically.</param>
     public TrackerViewModel(
-        TrackerDependencies dependencies,
+        ITrackerRepository repository,
+        IUiTimer timer,
+        IIdleTimeProvider idleTime,
         Func<DateTimeOffset>? now = null)
     {
-        _dependencies = dependencies;
+        _repository = repository;
+        _timer = timer;
+        _idleTime = idleTime;
         _now = now ?? (() => DateTimeOffset.Now);
-        _dependencies.SubscribeTick(OnTimerTick);
+        _timer.Tick += OnTimerTick;
 
         // Re-raise the suggestion list's changes so bindings on this view model
         // (Suggestions / ShowSuggestions) stay live through the forward.
@@ -61,7 +73,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         // Same for the history list: the grid binds to this view model's forwards.
         _history.PropertyChanged += (_, e) => OnPropertyChanged(e.PropertyName);
 
-        _editor = new EntryEditor(_dependencies.SaveEntries, _dependencies.LogError);
+        _editor = new EntryEditor(_repository.SaveAsync, ErrorLog.Log);
 
         _startCommand = new RelayCommand(Start, () => !IsRunning);
         _stopCommand = new AsyncRelayCommand(Stop, () => IsRunning);
@@ -71,7 +83,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         Week.BookGap = BookGapAsync;
         Week.ApplyChanges = ApplySessionChangesAsync;
 
-        StatusText = "Entries are appended to " + _dependencies.FilePath();
+        StatusText = "Entries are appended to " + _repository.FilePath;
 
         // Load the history in the background; Avalonia posts the continuation back
         // to the UI thread, so the entries populate as soon as the read completes.
@@ -352,7 +364,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         }
     }
 
-    public void Dispose() => _dependencies.DisposeTimer();
+    public void Dispose() => _timer.Dispose();
 
     private void Start()
     {
@@ -367,7 +379,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         }
         _startedAt = _now();
         _watch.Restart();
-        _dependencies.StartTimer();
+        _timer.Start();
         IsRunning = true;
         Week.RunningSince = _startedAt;
 
@@ -389,7 +401,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
     private async Task HaltAndSaveAsync(DateTimeOffset endedAt, TimeSpan elapsed)
     {
-        _dependencies.StopTimer();
+        _timer.Stop();
         _watch.Stop();
         IsRunning = false;
         Title = "Timetracker";
@@ -480,11 +492,11 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
         try
         {
-            await _dependencies.AddEntry(entry);
+            await _repository.AddAsync(entry);
         }
         catch (Exception ex)
         {
-            _dependencies.LogError("BookGap", ex);
+            ErrorLog.Log("BookGap", ex);
             Week.ShowStatus("✗ Booking failed: " + ex.Message, WeekStatus.Error);
             return false;
         }
@@ -500,17 +512,17 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     {
         try
         {
-            await _dependencies.AddEntry(entry);
+            await _repository.AddAsync(entry);
 
             Status = TrackerStatus.Success;
-            StatusText = $"✓ Saved {entry.Duration} to {_dependencies.FilePath()}";
+            StatusText = $"✓ Saved {entry.Duration} to {_repository.FilePath}";
 
             await RefreshEntriesAsync();
             _history.RevealTask(entry.Task);
         }
         catch (Exception ex)
         {
-            _dependencies.LogError("SaveEntry", ex);
+            ErrorLog.Log("SaveEntry", ex);
             Status = TrackerStatus.Error;
             StatusText = "✗ Save failed: " + ex.Message;
             ErrorOccurred?.Invoke("Could not save the entry:\n" + ex.Message);
@@ -527,7 +539,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
     public async Task RefreshEntriesAsync()
     {
-        _sessions = [.. await _dependencies.LoadEntries()];
+        _sessions = [.. await _repository.GetAllAsync()];
 
         // The history list groups the sessions into one row per task, applies the
         // active sort and filter, and pages the result.
@@ -549,7 +561,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         }
 
         // No input for the threshold: stop and bill only up to the last input.
-        if (_dependencies.CurrentIdleTime() >= IdleStopThreshold)
+        if (_idleTime.CurrentIdleTime >= IdleStopThreshold)
         {
             await StopForIdleAsync();
             return;
@@ -565,7 +577,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// </summary>
     private async Task StopForIdleAsync()
     {
-        var idle = _dependencies.CurrentIdleTime();
+        var idle = _idleTime.CurrentIdleTime;
 
         // The last input happened when the idle stretch began; the session ends
         // there, so the idle time is not billed to the task.

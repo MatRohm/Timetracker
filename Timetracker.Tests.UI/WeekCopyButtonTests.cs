@@ -102,7 +102,7 @@ public sealed class WeekCopyButtonTests
         params (DateTimeOffset Start, string Task, string Booking)[] sessions)
     {
         var repo = new FakeRepo();
-        using var tracker = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var tracker = TrackerViewModelFactory.Create(repo);
         tracker.Week.UpdateSessions(
         [
             .. sessions.Select(s => new TrackerEntry

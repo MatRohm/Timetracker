@@ -178,7 +178,7 @@ public sealed class ViewRenderTests
     public void WeekTabView_WhenRendered_ShouldShowSevenDayNodesWithBookings()
     {
         var (repo, _) = RepositoryFake.Create();
-        using var tracker = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var tracker = TrackerViewModelFactory.Create(repo);
         tracker.Week.UpdateSessions([
             new TrackerEntry
             {
@@ -285,7 +285,7 @@ public sealed class ViewRenderTests
         params TrackerEntry[] entries)
     {
         var (repo, _) = RepositoryFake.Create(entries);
-        var viewModel = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        var viewModel = TrackerViewModelFactory.Create(repo);
         var view = new TrackerTabView(viewModel, []);
         return (view, viewModel);
     }

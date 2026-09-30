@@ -119,7 +119,7 @@ public sealed class ColumnResizeTests
                 Duration = "01:00:00", DurationSeconds = 3600,
             },
         ]);
-        var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        var vm = TrackerViewModelFactory.Create(repo);
         return (new TrackerTabView(vm, []), vm);
     }
 

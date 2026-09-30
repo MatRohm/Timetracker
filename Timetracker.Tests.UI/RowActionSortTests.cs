@@ -117,7 +117,7 @@ public sealed class RowActionSortTests
     private static (TrackerTabView View, TrackerViewModel ViewModel) Build(params TrackerEntry[] entries)
     {
         var repo = new FakeRepo(entries);
-        var viewModel = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        var viewModel = TrackerViewModelFactory.Create(repo);
         return (new TrackerTabView(viewModel, []), viewModel);
     }
 

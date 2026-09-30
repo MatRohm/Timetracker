@@ -36,36 +36,16 @@ public static class HookRegistry
         // Idle detection comes from the monitor project's platform-specific provider.
         services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IIdleTimeProvider>(
             _ => Plugins.ActivityMonitor.IdleTimeProvider.CreateForCurrentPlatform());
-        services.AddSingleton<ViewModels.TrackerDependencies>(BuildTrackerDependencies);
         services.AddSingleton<ViewModels.TrackerViewModel>();
         services.AddSingleton<ViewModels.WeekViewModel>();
 
         // Add-in registrations: one block per component.
         AddComponents(services);
 
-        return services.BuildServiceProvider();
-    }
-
-    /// <summary>
-    /// Bundles the repository, timer and idle provider into the delegate set the
-    /// tracker view model consumes, so the view model stays free of concrete services.
-    /// </summary>
-    private static ViewModels.TrackerDependencies BuildTrackerDependencies(IServiceProvider services)
-    {
-        var repository = services.GetRequiredService<ITrackerRepository>();
-        var timer = services.GetRequiredService<IUiTimer>();
-        var idleTime = services.GetRequiredService<Plugins.ActivityMonitor.Interfaces.IIdleTimeProvider>();
-        return new ViewModels.TrackerDependencies(
-            repository.GetAllAsync,
-            repository.AddAsync,
-            repository.SaveAsync,
-            () => repository.FilePath,
-            handler => { timer.Tick += handler; },
-            timer.Start,
-            timer.Stop,
-            timer.Dispose,
-            () => idleTime.CurrentIdleTime,
-            (context, exception) => Services.ErrorLog.Log(context, exception));
+        // Check at build time that every registered type can be constructed from its
+        // dependencies (nothing is created yet), so a wiring mistake fails at startup
+        // and in HookRegistryTests instead of on first use.
+        return services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
     }
 
     /// <summary>

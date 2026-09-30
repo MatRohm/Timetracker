@@ -15,7 +15,7 @@ public sealed class TrackerViewModelTests
     public void Start_WhenTaskNameIsSet_ShouldStartTheTimer()
     {
         var (repo, _) = RepositoryFake.Create();
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
 
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
@@ -27,7 +27,7 @@ public sealed class TrackerViewModelTests
     public void Start_WhenTheTaskNameIsEmpty_ShouldRejectAndRaiseInvalidTaskName()
     {
         var (repo, _) = RepositoryFake.Create();
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         var invalidNameRaised = false;
         vm.InvalidTaskName += () => invalidNameRaised = true;
 
@@ -50,7 +50,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
 
@@ -64,7 +64,7 @@ public sealed class TrackerViewModelTests
     public async Task Stop_WhenStopped_ShouldAppendSessionAndResetRunningState()
     {
         var (repo, path) = RepositoryFake.Create();
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
 
@@ -90,7 +90,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
 
         vm.StartFromRow(vm.Entries.Single(r => r.Task == "Report"));
         Thread.Sleep(50);
@@ -115,7 +115,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         var row = vm.Entries[0];
         row.BookingElement = "edited via grid"; // binding stages first, as in the real grid
         (await vm.UpdateEntryTextAsync(row, row.Task, row.BookingElement)).Should().BeTrue();
@@ -139,7 +139,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         var row = vm.Entries[0];
 
         var result = await vm.UpdateEntryTextAsync(row, "   ", row.BookingElement);
@@ -152,7 +152,7 @@ public sealed class TrackerViewModelTests
     public async Task UpdateEntryTextAsync_WhenNothingChanged_ShouldRestoreTheCommittedTextWithoutSaving()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9));
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         await vm.InitialLoad;
         var row = vm.Entries.Single();
         row.BookingElement = "staged but uncommitted";
@@ -168,7 +168,7 @@ public sealed class TrackerViewModelTests
     public async Task UpdateEntryTextAsync_WhenChanged_ShouldPersistAndCommitTheRow()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", "quarterly", 9));
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         await vm.InitialLoad;
         var row = vm.Entries.Single();
 
@@ -208,7 +208,7 @@ public sealed class TrackerViewModelTests
                 Duration = "00:30:00",
                 DurationSeconds = 1800,
             });
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         vm.TaskName = "mee";
 
         vm.AcceptSuggestion(vm.Suggestions.Single());
@@ -229,7 +229,7 @@ public sealed class TrackerViewModelTests
                 Duration = "01:00:00",
                 DurationSeconds = 3600,
             });
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
 
         vm.StartFromRow(vm.Entries[0]);
 
@@ -243,7 +243,7 @@ public sealed class TrackerViewModelTests
         var repo = A.Fake<ITrackerRepository>();
         A.CallTo(() => repo.FilePath).Returns(Path.Combine(Path.GetTempPath(), "does-not-matter.json"));
         A.CallTo(() => repo.AddAsync(A<TrackerEntry>._)).ThrowsAsync(new IOException("disk full"));
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         string? reported = null;
         vm.ErrorOccurred += m => reported = m;
         vm.TaskName = "Report";
@@ -260,7 +260,7 @@ public sealed class TrackerViewModelTests
     public void Suggestions_WhenTheTaskIsOnAnotherPage_ShouldUseAllTasks()
     {
         var repo = SeedTasks(25); // "Task 00" is the oldest row → page 3
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
 
         vm.TaskName = "task 0";
 
@@ -272,7 +272,7 @@ public sealed class TrackerViewModelTests
     public void StartCommand_WhenSavingANewSessionOnAnotherPage_ShouldRevealTheTaskRow()
     {
         var repo = SeedTasks(25);
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         vm.NextPageCommand.Execute(null);
         vm.TaskName = "Brand new task";
 
@@ -288,7 +288,7 @@ public sealed class TrackerViewModelTests
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 9), Entry("Meeting", 11), Entry("Review", 13));
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         var row = vm.Entries.Single(r => r.Task == "Meeting");
 
         var deleted = await vm.DeleteEntriesAsync([row], _ => true);
@@ -304,7 +304,7 @@ public sealed class TrackerViewModelTests
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 9), Entry("Report", 14), Entry("Meeting", 11));
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         var row = vm.Entries.Single(r => r.Task == "Report");
 
         await vm.DeleteEntriesAsync([row], _ => true);
@@ -318,7 +318,7 @@ public sealed class TrackerViewModelTests
     {
         var (repo, _) = RepositoryFake.Create(
             Entry("Report", 9), Entry("Meeting", 11), Entry("Review", 13));
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
 
         var rows = vm.Entries.Where(r => r.Task != "Meeting").ToList();
         var deleted = await vm.DeleteEntriesAsync(rows, _ => true);
@@ -332,7 +332,7 @@ public sealed class TrackerViewModelTests
     public async Task DeleteEntriesAsync_WhenUserDeclines_ShouldDoNothing()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9), Entry("Meeting", 11));
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         var row = vm.Entries.Single(r => r.Task == "Report");
 
         var declined = await vm.DeleteEntriesAsync([row], _ => false);
@@ -347,7 +347,7 @@ public sealed class TrackerViewModelTests
     public async Task DeleteEntriesAsync_WhenThereAreNoRows_ShouldDoNothing()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9));
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
 
         (await vm.DeleteEntriesAsync([], _ => true)).Should().BeFalse();
         (await vm.DeleteEntriesAsync(null!, _ => true)).Should().BeFalse();
@@ -364,7 +364,7 @@ public sealed class TrackerViewModelTests
         A.CallTo(() => repo.GetAllAsync()).Returns(
             Task.FromResult<IReadOnlyList<TrackerEntry>>([Entry("Report", 9), Entry("Meeting", 11)]));
         A.CallTo(() => repo.SaveAsync(A<IReadOnlyList<TrackerEntry>>._)).ThrowsAsync(new IOException("disk full"));
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         string? reported = null;
         vm.ErrorOccurred += m => reported = m;
         var row = vm.Entries.Single(r => r.Task == "Report");
@@ -390,7 +390,7 @@ public sealed class TrackerViewModelTests
               { "task": "Meeting", "bookingElement": "", "start": "2026-09-19T11:00:00+02:00", "end": "2026-09-19T11:30:00+02:00", "duration": "00:30:00", "durationSeconds": 1800 }
             ]
             """);
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(new JsonTrackerRepository(path)));
+        using var vm = TrackerViewModelFactory.Create(new JsonTrackerRepository(path));
         await vm.InitialLoad;
         var row = vm.Entries.Single(r => r.Task == "Report");
 
@@ -411,7 +411,7 @@ public sealed class TrackerViewModelTests
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
         var idle = new FakeIdleTimeProvider();
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo, timer, idle));
+        using var vm = TrackerViewModelFactory.Create(repo, timer, idle);
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
         vm.IsRunning.Should().BeTrue();
@@ -429,7 +429,7 @@ public sealed class TrackerViewModelTests
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
         var idle = new FakeIdleTimeProvider();
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo, timer, idle));
+        using var vm = TrackerViewModelFactory.Create(repo, timer, idle);
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
 
@@ -449,7 +449,7 @@ public sealed class TrackerViewModelTests
         var timer = new FakeTimer();
         var idle = new FakeIdleTimeProvider();
         var now = new DateTimeOffset(2026, 9, 22, 9, 0, 0, TimeSpan.FromHours(2));
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo, timer, idle), () => now);
+        using var vm = TrackerViewModelFactory.Create(repo, timer, idle, now: () => now);
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
 
@@ -472,7 +472,7 @@ public sealed class TrackerViewModelTests
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
         var idle = new FakeIdleTimeProvider();
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo, timer, idle));
+        using var vm = TrackerViewModelFactory.Create(repo, timer, idle);
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
 
@@ -489,7 +489,7 @@ public sealed class TrackerViewModelTests
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
         var idle = new FakeIdleTimeProvider();
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo, timer, idle));
+        using var vm = TrackerViewModelFactory.Create(repo, timer, idle);
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
 
@@ -507,7 +507,7 @@ public sealed class TrackerViewModelTests
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
         var idle = new FakeIdleTimeProvider();
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo, timer, idle));
+        using var vm = TrackerViewModelFactory.Create(repo, timer, idle);
 
         idle.CurrentIdleTime = TimeSpan.FromHours(2);
         timer.RaiseTick();
@@ -522,7 +522,7 @@ public sealed class TrackerViewModelTests
         var (repo, _) = RepositoryFake.Create();
         var timer = new FakeTimer();
         var idle = new FakeIdleTimeProvider();
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo, timer, idle));
+        using var vm = TrackerViewModelFactory.Create(repo, timer, idle);
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);
         idle.CurrentIdleTime = TimeSpan.FromMinutes(45);
@@ -546,7 +546,7 @@ public sealed class TrackerViewModelTests
     public async Task BuildEntry_WhenAPreviewBookingElementIsSet_ShouldUseItForTheNextSessionThenClearIt()
     {
         var (repo, _) = RepositoryFake.Create();
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         vm.PreviewBookingElement = "Quarterly figures";
 
         vm.TaskName = "Report";
@@ -561,7 +561,7 @@ public sealed class TrackerViewModelTests
     public async Task BookGapAsync_WhenATaskIsGiven_ShouldSaveASessionWithTheGapsTimes()
     {
         var (repo, _) = RepositoryFake.Create();
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         await vm.InitialLoad;
         var gap = new TimeRange(
             new DateTimeOffset(2026, 9, 21, 10, 15, 0, TimeSpan.FromHours(2)),
@@ -583,7 +583,7 @@ public sealed class TrackerViewModelTests
     public async Task BookGapAsync_WhenNoBookingElementIsGiven_ShouldInheritTheTasksLatestOne()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", "Quarterly", 9));
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         await vm.InitialLoad;
         var gap = new TimeRange(
             new DateTimeOffset(2026, 9, 19, 14, 0, 0, TimeSpan.FromHours(2)),
@@ -598,7 +598,7 @@ public sealed class TrackerViewModelTests
     public async Task BookGapAsync_WhenTheTaskNameIsEmpty_ShouldSaveNothingAndReportIt()
     {
         var (repo, _) = RepositoryFake.Create();
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         await vm.InitialLoad;
         var gap = new TimeRange(
             new DateTimeOffset(2026, 9, 21, 10, 0, 0, TimeSpan.FromHours(2)),
@@ -615,7 +615,7 @@ public sealed class TrackerViewModelTests
     public async Task ApplySessionChangesAsync_WhenAChangeIsApplied_ShouldPersistItAndReload()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9));
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         await vm.InitialLoad;
         var original = vm.Week.Sessions.Single();
         var stretched = original.Clone();
@@ -632,7 +632,7 @@ public sealed class TrackerViewModelTests
     public async Task ApplySessionChangesAsync_WhenTheChangedSessionIsNotInTheLoadedLog_ShouldSaveNothingAndReportIt()
     {
         var (repo, _) = RepositoryFake.Create(Entry("Report", 9));
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var vm = TrackerViewModelFactory.Create(repo);
         await vm.InitialLoad;
         // An equal-looking copy stands for a session from an earlier load: a reload
         // from the file creates new objects, so a plan made before it no longer matches.
@@ -650,7 +650,7 @@ public sealed class TrackerViewModelTests
     {
         var (repo, _) = RepositoryFake.Create();
         var startedAt = new DateTimeOffset(2026, 9, 21, 10, 0, 0, TimeSpan.FromHours(2));
-        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo), () => startedAt);
+        using var vm = TrackerViewModelFactory.Create(repo, now: () => startedAt);
 
         vm.TaskName = "Report";
         vm.StartCommand.Execute(null);

@@ -6,7 +6,6 @@ using Avalonia.Headless.NUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Timetracker.App.Tests.Unit;
-using Timetracker.App.ViewModels;
 using Timetracker.App.Views;
 using Timetracker.App.Views.Components;
 
@@ -23,7 +22,7 @@ public sealed class WeekContributorPlacementTests
     public void WeekTabView_WhenRendered_ShouldPlaceContributorControlsAboveTheStatusLine()
     {
         var repo = new FakeRepo();
-        using var tracker = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        using var tracker = TrackerViewModelFactory.Create(repo);
 
         var view = new WeekTabView(tracker.Week, [new Button { Content = "Test contributor" }]);
 

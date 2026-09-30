@@ -2,7 +2,6 @@ using Timetracker.Plugins.ActivityMonitor.Interfaces;
 using Timetracker.App.Interfaces;
 using FakeItEasy;
 using Timetracker.App.Models;
-using Timetracker.App.Services;
 using Timetracker.App.ViewModels;
 
 namespace Timetracker.App.Tests.Unit;
@@ -70,29 +69,19 @@ public static class RepositoryFake
 }
 
 /// <summary>
-/// Builds the delegate set the tracker view model consumes, wired to the manual
-/// fakes. Tests that need to drive the timer or idle provider keep references to
-/// those fakes and pass them in; the others accept fresh instances.
+/// Creates the tracker view model wired to the fakes. Tests that need to drive the
+/// timer or idle provider keep references to those fakes and pass them in; the
+/// others accept fresh instances.
 /// </summary>
-public static class TrackerDependenciesFactory
+public static class TrackerViewModelFactory
 {
-    public static TrackerDependencies Create(
+    public static TrackerViewModel Create(
         ITrackerRepository repository,
         FakeTimer? timer = null,
-        FakeIdleTimeProvider? idle = null)
+        FakeIdleTimeProvider? idle = null,
+        Func<DateTimeOffset>? now = null)
     {
-        timer ??= new FakeTimer();
-        idle ??= new FakeIdleTimeProvider();
-        return new TrackerDependencies(
-            repository.GetAllAsync,
-            repository.AddAsync,
-            repository.SaveAsync,
-            () => repository.FilePath,
-            handler => { timer.Tick += handler; },
-            timer.Start,
-            timer.Stop,
-            timer.Dispose,
-            () => idle.CurrentIdleTime,
-            (context, exception) => ErrorLog.Log(context, exception));
+        var result = new TrackerViewModel(repository, timer ?? new FakeTimer(), idle ?? new FakeIdleTimeProvider(), now);
+        return result;
     }
 }
