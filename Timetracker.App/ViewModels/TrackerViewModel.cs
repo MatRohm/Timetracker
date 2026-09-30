@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows.Input;
 using Timetracker.App.Models;
+using Timetracker.App.Services;
 
 namespace Timetracker.App.ViewModels;
 
@@ -203,7 +204,9 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// asynchronously without blocking the UI thread.
     /// </summary>
     public static string BuildDeleteSummary(IReadOnlyList<EntryRow> rows) =>
-        EntryEditor.BuildDeleteSummary(rows);
+        rows.Count == 1
+            ? $"\"{rows[0].Task}\" (all {rows[0].Sessions.Count} sessions)"
+            : $"{rows.Count} tasks ({rows.Sum(r => r.Sessions.Count)} sessions)";
 
     /// <summary>Saves the running entry (if any); called by the view when the app is closing.</summary>
     public async Task SaveRunningEntryOnCloseAsync()
@@ -221,9 +224,20 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// </summary>
     public async Task<bool> DeleteEntriesAsync(IReadOnlyList<EntryRow> rows, Func<string, bool> confirm)
     {
+        if (rows is null || rows.Count == 0)
+        {
+            return false;
+        }
+
+        var summary = BuildDeleteSummary(rows);
+        if (!confirm(summary))
+        {
+            return false;
+        }
+
         // Snapshot so a failed save can restore exactly the previous state.
         var backup = _sessions.Select(e => e.Clone()).ToList();
-        var result = await _editor.DeleteAsync(rows, _sessions, confirm);
+        var result = await _editor.DeleteAsync([.. rows.SelectMany(r => r.Sessions)], _sessions);
 
         switch (result.Status)
         {
@@ -232,7 +246,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
             case EntryEditStatus.Saved:
                 Status = TrackerStatus.Success;
-                StatusText = $"✓ Deleted {result.Summary}";
+                StatusText = $"✓ Deleted {summary}";
                 await RefreshEntriesAsync();
                 return true;
 
@@ -256,7 +270,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     public async Task<bool> ReplaceSessionsAsync(string task, IReadOnlyList<SessionEditRow> sessions)
     {
         var backup = _sessions.Select(e => e.Clone()).ToList();
-        var result = await _editor.ReplaceSessionsAsync(task, sessions, _sessions);
+        var result = await _editor.ReplaceSessionsAsync(task, [.. sessions.Select(s => s.Entry)], _sessions);
 
         if (result.Status == EntryEditStatus.Saved)
         {
@@ -297,23 +311,34 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// </summary>
     public async Task<bool> UpdateEntryTextAsync(EntryRow row, string task, string bookingElement)
     {
-        var result = await _editor.UpdateTextAsync(row, task, bookingElement, _sessions);
+        task = task.Trim();
+        if (task.Length == 0)
+        {
+            InvalidTaskName?.Invoke();
+            return false;
+        }
+
+        // Compare against the committed snapshot: the grid binding stages the edited
+        // text in the row BEFORE this runs, so row.Task/row.BookingElement already
+        // hold the new values and cannot be used to detect a change.
+        if (task == row.CommittedTask && bookingElement == row.CommittedBookingElement)
+        {
+            // Nothing changed; drop the staged edit and restore the committed text.
+            row.CommitText(row.CommittedTask, row.CommittedBookingElement);
+            return true;
+        }
+
+        var result = await _editor.UpdateTextAsync(row.Sessions, task, bookingElement, _sessions);
 
         switch (result.Status)
         {
             case EntryEditStatus.Saved:
+                row.CommitText(task, bookingElement);
                 Status = TrackerStatus.Success;
                 StatusText = $"✓ Updated \"{result.Summary}\"";
                 await RefreshEntriesAsync();
                 _history.RevealTask(result.Summary);
                 return true;
-
-            case EntryEditStatus.Unchanged:
-                return true;
-
-            case EntryEditStatus.InvalidTaskName:
-                InvalidTaskName?.Invoke();
-                return false;
 
             default:
                 // The file was not changed; rebuild the in-memory state from it.

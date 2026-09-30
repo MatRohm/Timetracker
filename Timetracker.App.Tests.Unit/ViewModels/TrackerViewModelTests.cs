@@ -149,6 +149,54 @@ public sealed class TrackerViewModelTests
     }
 
     [Test]
+    public async Task UpdateEntryTextAsync_WhenNothingChanged_ShouldRestoreTheCommittedTextWithoutSaving()
+    {
+        var (repo, _) = RepositoryFake.Create(Entry("Report", 9));
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        await vm.InitialLoad;
+        var row = vm.Entries.Single();
+        row.BookingElement = "staged but uncommitted";
+
+        var result = await vm.UpdateEntryTextAsync(row, "Report", "");
+
+        result.Should().BeTrue();
+        row.CommittedBookingElement.Should().BeEmpty("the committed snapshot is unchanged");
+        A.CallTo(() => repo.SaveAsync(A<IReadOnlyList<TrackerEntry>>._)).MustNotHaveHappened();
+    }
+
+    [Test]
+    public async Task UpdateEntryTextAsync_WhenChanged_ShouldPersistAndCommitTheRow()
+    {
+        var (repo, _) = RepositoryFake.Create(Entry("Report", "quarterly", 9));
+        using var vm = new TrackerViewModel(TrackerDependenciesFactory.Create(repo));
+        await vm.InitialLoad;
+        var row = vm.Entries.Single();
+
+        var result = await vm.UpdateEntryTextAsync(row, " Edited ", "new element");
+
+        result.Should().BeTrue();
+        row.CommittedTask.Should().Be("Edited", "the task name is trimmed");
+        row.CommittedBookingElement.Should().Be("new element");
+        RepositoryFake.Persisted(repo).Single().Task.Should().Be("Edited");
+    }
+
+    [Test]
+    public void BuildDeleteSummary_WhenOneRow_ShouldNameTheTaskAndItsSessionCount()
+    {
+        var row = new EntryRow([Entry("Report", 9), Entry("Report", 14)]);
+
+        TrackerViewModel.BuildDeleteSummary([row]).Should().Be("\"Report\" (all 2 sessions)");
+    }
+
+    [Test]
+    public void BuildDeleteSummary_WhenSeveralRows_ShouldCountTasksAndSessions()
+    {
+        var rows = new[] { new EntryRow([Entry("Report", 9)]), new EntryRow([Entry("Meeting", 11), Entry("Meeting", 14)]) };
+
+        TrackerViewModel.BuildDeleteSummary(rows).Should().Be("2 tasks (3 sessions)");
+    }
+
+    [Test]
     public void AcceptSuggestion_WhenAccepted_ShouldFillTheTaskName()
     {
         var (repo, _) = RepositoryFake.Create(
