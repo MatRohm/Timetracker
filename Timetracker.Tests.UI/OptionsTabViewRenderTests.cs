@@ -43,9 +43,11 @@ public sealed class OptionsTabViewRenderTests
         window.Show();
 
         var explorerButtons = view.GetLogicalDescendants().OfType<Button>()
-            .Where(b => Equals(b.Content, "Show in explorer"))
+            .Where(b => b.Name == "ShowInExplorerButton")
             .ToList();
         explorerButtons.Should().ContainSingle("only the tracking file is a path");
+        explorerButtons[0].Content.Should().BeOfType<Avalonia.Controls.Shapes.Path>(
+            "the button shows a folder icon, not text");
         explorerButtons[0].Command!.Execute(null);
 
         explorer.Shown.Should().Equal("C:/data/timetracker.json");
