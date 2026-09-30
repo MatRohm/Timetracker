@@ -4,7 +4,7 @@ namespace Timetracker.Plugins.Contracts.Interfaces;
 public interface IAppCommand
 {
     /// <summary>Called after the composition root built the container.</summary>
-    void OnAppStarted(IServiceProvider services);
+    void OnAppStarted();
 
     /// <summary>Called when the main window is closing; the app exits afterwards.</summary>
     void OnAppClosing();

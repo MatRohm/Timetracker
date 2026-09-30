@@ -99,7 +99,7 @@ public sealed class App : Application
             // Let the components run their startup hooks.
             foreach (var hook in _services.GetServices<IAppCommand>())
             {
-                hook.OnAppStarted(_services);
+                hook.OnAppStarted();
             }
 
             desktop.ShutdownRequested += (_, _) =>
