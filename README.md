@@ -59,7 +59,7 @@ unless noted otherwise.
 
 The **Options** tab shows where these files and the logs are; **Show in explorer**
 opens each location in the file manager. Plugins add their own sections there and
-read and write their options through `IOptionsStore`.
+read and write their options through `IOptionQuery` and `IOptionCommand`.
 
 **Logs** are written to `%LOCALAPPDATA%\Timetracker\logs\` on Windows and to
 `$XDG_STATE_HOME/timetracker/logs/` (default `~/.local/state/timetracker/logs/`) on
@@ -83,7 +83,7 @@ registers a per-user autostart (HKCU Run key on Windows,
 ## Architecture
 
 The app is a shell with plugins. `Timetracker.Plugins.Contracts` defines the hook
-interfaces (`IUiContributor`, `IWeekDayContributor`, `IAppHook`) and the host
+interfaces (`IUiQuery`, `IWeekDayQuery`, `IAppCommand`) and the host
 interfaces plugins call back into. Every component registers in
 `Timetracker.App/HookRegistry.cs`; the shell resolves only the interfaces. The UI
 follows MVVM: view models know nothing about Avalonia, views hold no logic.

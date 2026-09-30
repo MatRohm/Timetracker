@@ -12,13 +12,13 @@ namespace Timetracker.Plugins.AzureDevOps.Views;
 /// Add-in control for the tracker tab: a single button with the Azure DevOps
 /// favicon. Clicking it opens a small popup where the user types the issue
 /// number; fetching runs asynchronously and results are pushed into the tracker
-/// inputs and the shared status line through <see cref="ITrackerUiHost"/>.
+/// inputs and the shared status line through <see cref="ITrackerUiCommand"/>.
 /// View-only.
 /// </summary>
 public sealed class AzureDevOpsPanel : UserControl
 {
     private readonly AzureDevOpsService _service;
-    private readonly ITrackerUiHost _host;
+    private readonly ITrackerUiCommand _host;
 
     private readonly Button _importButton = new();
 
@@ -28,7 +28,7 @@ public sealed class AzureDevOpsPanel : UserControl
     /// <summary>Exposed so tests can assert the busy state.</summary>
     public Button ImportButton => _importButton;
 
-    public AzureDevOpsPanel(AzureDevOpsService service, ITrackerUiHost host)
+    public AzureDevOpsPanel(AzureDevOpsService service, ITrackerUiCommand host)
     {
         _service = service;
         _host = host;

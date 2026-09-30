@@ -56,7 +56,7 @@ public sealed class AzureDevOpsService
     /// the values (they are also returned for tests).
     /// </summary>
     public async Task<ApplyResult> ApplyIssueAsync(
-        string issueNumberText, ITrackerUiHost host, CancellationToken cancellationToken = default)
+        string issueNumberText, ITrackerUiCommand host, CancellationToken cancellationToken = default)
     {
         var numberText = issueNumberText.Trim();
         if (numberText.Length == 0 || !int.TryParse(numberText, out var id) || id <= 0)

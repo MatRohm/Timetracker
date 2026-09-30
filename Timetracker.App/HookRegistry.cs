@@ -53,8 +53,9 @@ public static class HookRegistry
         // own section first (sections appear in registration order).
         services.AddSingleton<Services.JsonOptionsStore>(sp =>
             new Services.JsonOptionsStore(logger: sp.GetRequiredService<ILogger<Services.JsonOptionsStore>>()));
-        services.AddSingleton<IOptionsStore>(sp => sp.GetRequiredService<Services.JsonOptionsStore>());
-        services.AddSingleton<IOptionsContributor>(sp => new Services.GeneralOptionsContributor(
+        services.AddSingleton<IOptionQuery>(sp => sp.GetRequiredService<Services.JsonOptionsStore>());
+        services.AddSingleton<IOptionCommand>(sp => sp.GetRequiredService<Services.JsonOptionsStore>());
+        services.AddSingleton<IOptionDefinitionQuery>(sp => new Services.GeneralOptionsContributor(
             sp.GetRequiredService<Services.JsonTrackerRepository>(),
             sp.GetRequiredService<Services.JsonOptionsStore>()));
         services.AddSingleton<IFileExplorer, Services.FileExplorer>();
@@ -76,14 +77,21 @@ public static class HookRegistry
     private static void AddComponents(IServiceCollection services)
     {
         // Add-in UI hosts: forwarded to the view models by the app's own services.
-        services.AddSingleton<ITrackerUiHost, Services.TrackerUiHost>();
-        services.AddSingleton<ITrackerSessionHost, Services.TrackerSessionHost>();
-        services.AddSingleton<ITrackedSessions, Services.TrackedSessionsHost>();
+        services.AddSingleton<ITrackerUiCommand, Services.TrackerUiHost>();
+        // One session-host instance serves both its query and command surface.
+        services.AddSingleton<Services.TrackerSessionHost>();
+        services.AddSingleton<ITrackerSessionQuery>(sp => sp.GetRequiredService<Services.TrackerSessionHost>());
+        services.AddSingleton<ITrackerSessionCommand>(sp => sp.GetRequiredService<Services.TrackerSessionHost>());
+        // One tracked-sessions instance serves both its query and command surface, so
+        // the Changed event and the booked changes stay on the same object.
+        services.AddSingleton<Services.TrackedSessionsHost>();
+        services.AddSingleton<ITrackedSessionsQuery>(sp => sp.GetRequiredService<Services.TrackedSessionsHost>());
+        services.AddSingleton<ITrackedSessionsCommand>(sp => sp.GetRequiredService<Services.TrackedSessionsHost>());
 
         // Week view plugin: its tab, its status line, and its view model.
         services.AddSingleton<Plugins.WeekView.ViewModels.WeekViewModel>();
-        services.AddSingleton<IWeekStatusHost, Plugins.WeekView.Services.WeekStatusHost>();
-        services.AddSingleton<ITabContributor, Plugins.WeekView.WeekTabContributor>();
+        services.AddSingleton<IWeekStatusCommand, Plugins.WeekView.Services.WeekStatusHost>();
+        services.AddSingleton<ITabQuery, Plugins.WeekView.WeekTabContributor>();
 
         // Azure DevOps import: the connection is edited in the options tab.
         services.AddSingleton<Plugins.AzureDevOps.AzureDevOpsSettings>();
@@ -91,8 +99,8 @@ public static class HookRegistry
             new Plugins.AzureDevOps.AzureDevOpsService(
                 sp.GetRequiredService<Plugins.AzureDevOps.AzureDevOpsSettings>().Current,
                 logger: sp.GetRequiredService<ILogger<Plugins.AzureDevOps.AzureDevOpsService>>()));
-        services.AddSingleton<IOptionsContributor, Plugins.AzureDevOps.AzureDevOpsOptionsContributor>();
-        services.AddSingleton<IUiContributor, Plugins.AzureDevOps.Views.AzureDevOpsUiContributor>();
+        services.AddSingleton<IOptionDefinitionQuery, Plugins.AzureDevOps.AzureDevOpsOptionsContributor>();
+        services.AddSingleton<IUiQuery, Plugins.AzureDevOps.Views.AzureDevOpsUiContributor>();
 
         // PC activity monitor: activity log, per-day lines, installer UI.
         services.AddSingleton<Plugins.ActivityMonitor.ActivityLog>();
@@ -103,15 +111,15 @@ public static class HookRegistry
             _ => Plugins.ActivityMonitor.IdleTimeProvider.CreateForCurrentPlatform());
         // The idle auto-stop rule: stops the tracker's session after a long idle stretch.
         services.AddSingleton<Plugins.ActivityMonitor.IdleAutoStop>();
-        services.AddSingleton<IAppHook>(sp =>
+        services.AddSingleton<IAppCommand>(sp =>
             sp.GetRequiredService<Plugins.ActivityMonitor.IdleAutoStop>());
         // One contributor instance serves the per-day line and the day's active time.
         services.AddSingleton<Plugins.ActivityMonitor.ActivityWeekDayContributor>();
-        services.AddSingleton<IWeekDayContributor>(
+        services.AddSingleton<IWeekDayQuery>(
             sp => sp.GetRequiredService<Plugins.ActivityMonitor.ActivityWeekDayContributor>());
-        services.AddSingleton<IDayActivitySource>(
+        services.AddSingleton<IDayActivityQuery>(
             sp => sp.GetRequiredService<Plugins.ActivityMonitor.ActivityWeekDayContributor>());
-        services.AddSingleton<IUiContributor, Plugins.ActivityMonitor.Views.MonitorSetupUiContributor>();
-        services.AddSingleton<IOptionsContributor, Plugins.ActivityMonitor.ActivityOptionsContributor>();
+        services.AddSingleton<IUiQuery, Plugins.ActivityMonitor.Views.MonitorSetupUiContributor>();
+        services.AddSingleton<IOptionDefinitionQuery, Plugins.ActivityMonitor.ActivityOptionsContributor>();
     }
 }

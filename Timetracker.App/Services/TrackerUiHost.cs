@@ -10,7 +10,7 @@ namespace Timetracker.App.Services;
 /// status line through its normal bindings. The add-in resolves this through the
 /// DI container, so the view no longer implements the host itself.
 /// </summary>
-public sealed class TrackerUiHost : ITrackerUiHost
+public sealed class TrackerUiHost : ITrackerUiCommand
 {
     private readonly TrackerViewModel _viewModel;
 

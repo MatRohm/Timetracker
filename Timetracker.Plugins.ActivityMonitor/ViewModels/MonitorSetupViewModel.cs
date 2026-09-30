@@ -14,10 +14,10 @@ namespace Timetracker.Plugins.ActivityMonitor.ViewModels;
 public sealed class MonitorSetupViewModel : INotifyPropertyChanged
 {
     private readonly IActivityMonitorInstaller _installer;
-    private readonly IWeekStatusHost _statusHost;
+    private readonly IWeekStatusCommand _statusHost;
 
     public MonitorSetupViewModel(
-        IActivityMonitorInstaller installer, IWeekStatusHost statusHost)
+        IActivityMonitorInstaller installer, IWeekStatusCommand statusHost)
     {
         _installer = installer;
         _statusHost = statusHost;

@@ -7,7 +7,7 @@ namespace Timetracker.Plugins.ActivityMonitor;
 /// The "Activity monitor" section of the options tab: where the monitor keeps the
 /// recorded spans and its state across restarts. Both entries are read-only.
 /// </summary>
-public sealed class ActivityOptionsContributor(ActivityLog log) : IOptionsContributor
+public sealed class ActivityOptionsContributor(ActivityLog log) : IOptionDefinitionQuery
 {
     public string Section => "Activity monitor";
 

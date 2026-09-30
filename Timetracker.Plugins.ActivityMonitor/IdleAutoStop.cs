@@ -10,7 +10,7 @@ namespace Timetracker.Plugins.ActivityMonitor;
 /// auto-stop rule that used to live in the tracker view model; runs as an
 /// application hook, polling the idle state on a UI-thread timer.
 /// </summary>
-public sealed class IdleAutoStop : IAppHook, IDisposable
+public sealed class IdleAutoStop : IAppCommand, IDisposable
 {
     /// <summary>No keyboard/mouse input for this long stops the running session.</summary>
     public static readonly TimeSpan IdleStopThreshold = TimeSpan.FromMinutes(30);
@@ -18,7 +18,8 @@ public sealed class IdleAutoStop : IAppHook, IDisposable
     /// <summary>How often the idle state is polled while the app runs.</summary>
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(5);
 
-    private readonly ITrackerSessionHost _sessionHost;
+    private readonly ITrackerSessionQuery _sessionQuery;
+    private readonly ITrackerSessionCommand _sessionCommand;
     private readonly IIdleTimeProvider _idleTime;
     private readonly Func<DateTimeOffset> _now;
 
@@ -26,11 +27,13 @@ public sealed class IdleAutoStop : IAppHook, IDisposable
 
     /// <param name="now">Current time; replaceable so back-dating can be tested deterministically.</param>
     public IdleAutoStop(
-        ITrackerSessionHost sessionHost,
+        ITrackerSessionQuery sessionQuery,
+        ITrackerSessionCommand sessionCommand,
         IIdleTimeProvider idleTime,
         Func<DateTimeOffset>? now = null)
     {
-        _sessionHost = sessionHost;
+        _sessionQuery = sessionQuery;
+        _sessionCommand = sessionCommand;
         _idleTime = idleTime;
         _now = now ?? (() => DateTimeOffset.Now);
     }
@@ -52,7 +55,7 @@ public sealed class IdleAutoStop : IAppHook, IDisposable
     /// </summary>
     public async Task PollAsync()
     {
-        if (!_sessionHost.IsSessionRunning)
+        if (!_sessionQuery.IsSessionRunning)
         {
             return;
         }
@@ -64,7 +67,7 @@ public sealed class IdleAutoStop : IAppHook, IDisposable
         }
 
         var endedAt = _now() - idle;
-        await _sessionHost.StopSessionAsync(endedAt, $"⏸ Stopped after {FormatIdle(idle)} idle.");
+        await _sessionCommand.StopSessionAsync(endedAt, $"⏸ Stopped after {FormatIdle(idle)} idle.");
     }
 
     private static string FormatIdle(TimeSpan idle)

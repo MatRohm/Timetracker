@@ -47,7 +47,7 @@ internal static class FakeHttp
 }
 
 /// <summary>Options kept in memory; tests set <see cref="Values"/> directly.</summary>
-internal sealed class InMemoryOptionsStore : IOptionsStore
+internal sealed class InMemoryOptionsStore : IOptionQuery, IOptionCommand
 {
     public Dictionary<string, string> Values { get; } = [];
 
@@ -67,7 +67,7 @@ internal sealed class InMemoryOptionsStore : IOptionsStore
     }
 }
 
-internal sealed class FakeHost : ITrackerUiHost
+internal sealed class FakeHost : ITrackerUiCommand
 {
     public string TaskName { get; private set; } = "";
 

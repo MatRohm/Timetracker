@@ -16,9 +16,10 @@ namespace Timetracker.Plugins.WeekView.ViewModels;
 /// </summary>
 public sealed class WeekViewModel : ObservableObject
 {
-    private readonly ITrackedSessions _sessions;
-    private readonly IReadOnlyList<IWeekDayContributor> _dayContributors;
-    private readonly IReadOnlyList<IDayActivitySource> _activitySources;
+    private readonly ITrackedSessionsQuery _sessions;
+    private readonly ITrackedSessionsCommand _sessionCommands;
+    private readonly IReadOnlyList<IWeekDayQuery> _dayContributors;
+    private readonly IReadOnlyList<IDayActivityQuery> _activitySources;
 
     private readonly ObservableCollection<WeekDayViewModel> _days = new();
     private readonly RelayCommand _previousWeekCommand;
@@ -32,11 +33,13 @@ public sealed class WeekViewModel : ObservableObject
     private WeekStatus _status = WeekStatus.Info;
 
     public WeekViewModel(
-        ITrackedSessions sessions,
-        IEnumerable<IWeekDayContributor> dayContributors,
-        IEnumerable<IDayActivitySource> activitySources)
+        ITrackedSessionsQuery sessions,
+        ITrackedSessionsCommand sessionCommands,
+        IEnumerable<IWeekDayQuery> dayContributors,
+        IEnumerable<IDayActivityQuery> activitySources)
     {
         _sessions = sessions;
+        _sessionCommands = sessionCommands;
         _dayContributors = dayContributors.ToList();
         _activitySources = activitySources.ToList();
 
@@ -105,7 +108,7 @@ public sealed class WeekViewModel : ObservableObject
     /// <summary>Books the confirmed dialog state as a session; false when nothing was saved.</summary>
     public async Task<bool> BookAsync(BookGapViewModel booking)
     {
-        var result = await _sessions.BookAsync(booking.Range, booking.TaskName, booking.BookingElement);
+        var result = await _sessionCommands.BookAsync(booking.Range, booking.TaskName, booking.BookingElement);
         return result;
     }
 
@@ -122,7 +125,7 @@ public sealed class WeekViewModel : ObservableObject
             return false;
         }
 
-        var saved = await _sessions.ApplyChangesAsync(gap.Distribution);
+        var saved = await _sessionCommands.ApplyChangesAsync(gap.Distribution);
         if (saved)
         {
             ShowStatus($"✓ Distributed {gap.DurationText} over the neighboring sessions.", WeekStatus.Success);
@@ -155,7 +158,7 @@ public sealed class WeekViewModel : ObservableObject
             return false;
         }
 
-        var saved = await _sessions.ApplyChangesAsync(plan.Changes);
+        var saved = await _sessionCommands.ApplyChangesAsync(plan.Changes);
         if (saved)
         {
             var note = skipped.Count > 0 ? " " + string.Join(" · ", skipped) : "";

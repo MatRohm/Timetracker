@@ -47,8 +47,8 @@ merged, pushed change. Four phases: **plan** (A), **implement** (B), **review**
 5. **Test naming** — `<Method>_When<Condition>_Should<Result>`; the architecture
    tests report violations.
 6. **Match the architecture** — MVVM (view models know nothing about Avalonia,
-   views hold no logic); new plugin behavior via `IUiContributor`,
-   `IWeekDayContributor` / `IAppHook`; register in `HookRegistry.cs`.
+   views hold no logic); new plugin behavior via `IUiQuery`,
+   `IWeekDayQuery` / `IAppCommand`; register in `HookRegistry.cs`.
 7. **Keep changes minimal** — smallest change; no new NuGet packages; no public
    API changes; no unrelated files.
 8. **Commit as you go** — Conventional Commits type + subject ending in the

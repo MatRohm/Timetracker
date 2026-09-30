@@ -7,7 +7,7 @@ namespace Timetracker.Plugins.Contracts.Interfaces;
 /// places the control and the add-in wires it up itself, using the services it
 /// gets from the DI container.
 /// </summary>
-public interface IUiContributor
+public interface IUiQuery
 {
     /// <summary>Stable key of the tab to place the control on ("Tracker", "Week view").</summary>
     string TargetTab { get; }
@@ -23,7 +23,7 @@ public interface IUiContributor
 /// Contributes data lines shown per weekday in the week view (like the PC
 /// activity line). Implement this to add further per-day summaries.
 /// </summary>
-public interface IWeekDayContributor
+public interface IWeekDayQuery
 {
     /// <summary>Text for the given day, e.g. "PC 7:15 active"; empty when none.</summary>
     string GetDayText(DateOnly day);
@@ -34,7 +34,7 @@ public interface IWeekDayContributor
 /// activity monitor). The week view compares it with the booked time to show how
 /// much of the day was not tracked.
 /// </summary>
-public interface IDayActivitySource
+public interface IDayActivityQuery
 {
     /// <summary>Active time on the given day; <see cref="TimeSpan.Zero"/> when nothing was recorded.</summary>
     TimeSpan GetActiveTime(DateOnly day);
@@ -47,7 +47,7 @@ public interface IDayActivitySource
 }
 
 /// <summary>Runs once when the application starts or closes.</summary>
-public interface IAppHook
+public interface IAppCommand
 {
     /// <summary>Called after the composition root built the container.</summary>
     void OnAppStarted(IServiceProvider services);

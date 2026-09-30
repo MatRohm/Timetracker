@@ -11,7 +11,7 @@ namespace Timetracker.App.Services;
 /// created and rewritten atomically on every change; a missing or broken file
 /// yields no options, so every component falls back to its defaults.
 /// </summary>
-public sealed class JsonOptionsStore : IOptionsStore
+public sealed class JsonOptionsStore : IOptionQuery, IOptionCommand
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 

@@ -12,7 +12,7 @@ namespace Timetracker.App.Services;
 /// stored sessions. It reuses the tracker view model's session log and its editor,
 /// so the session data stays in one place while add-ins only see the contract.
 /// </summary>
-public sealed class TrackedSessionsHost : ITrackedSessions
+public sealed class TrackedSessionsHost : ITrackedSessionsQuery, ITrackedSessionsCommand
 {
     private readonly ITrackerRepository _repository;
     private readonly EntryEditor _editor;

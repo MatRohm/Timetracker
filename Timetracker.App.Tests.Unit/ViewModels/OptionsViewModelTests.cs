@@ -29,7 +29,7 @@ public sealed class OptionsViewModelTests
     public void Sections_WhenTheStoreHoldsAValue_ShouldShowItInsteadOfTheDefault()
     {
         var store = EmptyStore();
-        A.CallTo(() => store.GetValue(Url.Key)).Returns("https://dev.azure.com/my-org");
+        A.CallTo(() => store.Query.GetValue(Url.Key)).Returns("https://dev.azure.com/my-org");
 
         var viewModel = Create(store, out _, Contributor("Azure DevOps", Url));
 
@@ -65,8 +65,8 @@ public sealed class OptionsViewModelTests
 
         await viewModel.SaveAsync();
 
-        A.CallTo(() => store.SetValueAsync(Pat.Key, "new-token", A<CancellationToken>._)).MustHaveHappenedOnceExactly();
-        A.CallTo(() => store.SetValueAsync(Url.Key, A<string?>._, A<CancellationToken>._)).MustNotHaveHappened();
+        A.CallTo(() => store.Command.SetValueAsync(Pat.Key, "new-token", A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+        A.CallTo(() => store.Command.SetValueAsync(Url.Key, A<string?>._, A<CancellationToken>._)).MustNotHaveHappened();
         viewModel.HasChanges.Should().BeFalse();
         viewModel.StatusText.Should().Be("Options saved.");
     }
@@ -75,7 +75,7 @@ public sealed class OptionsViewModelTests
     public async Task SaveAsync_WhenTheFileCannotBeWritten_ShouldReportItAndKeepTheChange()
     {
         var store = EmptyStore();
-        A.CallTo(() => store.SetValueAsync(A<string>._, A<string?>._, A<CancellationToken>._))
+        A.CallTo(() => store.Command.SetValueAsync(A<string>._, A<string?>._, A<CancellationToken>._))
             .ThrowsAsync(new IOException("disk full"));
         var viewModel = Create(store, out _, Contributor("Azure DevOps", Url));
         viewModel.Sections[0].Rows[0].Value = "https://dev.azure.com/other";
@@ -98,24 +98,26 @@ public sealed class OptionsViewModelTests
     }
 
     /// <summary>A store without values; FakeItEasy would return "" instead of null.</summary>
-    private static IOptionsStore EmptyStore()
+    private static (IOptionQuery Query, IOptionCommand Command) EmptyStore()
     {
-        var store = A.Fake<IOptionsStore>();
-        A.CallTo(() => store.GetValue(A<string>._)).Returns(null);
-        return store;
+        var query = A.Fake<IOptionQuery>();
+        var command = A.Fake<IOptionCommand>();
+        A.CallTo(() => query.GetValue(A<string>._)).Returns(null);
+        return (query, command);
     }
 
     private static OptionsViewModel Create(
-        IOptionsStore store, out IFileExplorer explorer, params IOptionsContributor[] contributors)
+        (IOptionQuery Query, IOptionCommand Command) store, out IFileExplorer explorer,
+        params IOptionDefinitionQuery[] contributors)
     {
         explorer = A.Fake<IFileExplorer>();
-        var result = new OptionsViewModel(store, contributors, explorer);
+        var result = new OptionsViewModel(store.Query, store.Command, contributors, explorer);
         return result;
     }
 
-    private static IOptionsContributor Contributor(string section, params OptionDefinition[] options)
+    private static IOptionDefinitionQuery Contributor(string section, params OptionDefinition[] options)
     {
-        var contributor = A.Fake<IOptionsContributor>();
+        var contributor = A.Fake<IOptionDefinitionQuery>();
         A.CallTo(() => contributor.Section).Returns(section);
         A.CallTo(() => contributor.Options).Returns(options);
         return contributor;

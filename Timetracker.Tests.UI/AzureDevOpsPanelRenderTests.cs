@@ -27,7 +27,7 @@ public sealed class AzureDevOpsPanelRenderTests
         icon.Should().NotBeNull("the favicon is embedded as a PNG resource");
     }
 
-    private sealed class FakeTrackerHost : ITrackerUiHost
+    private sealed class FakeTrackerHost : ITrackerUiCommand
     {
         public void SetTaskName(string taskName) { }
 

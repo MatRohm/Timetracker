@@ -9,25 +9,27 @@ namespace Timetracker.App.ViewModels;
 public sealed record OptionSection(string Title, IReadOnlyList<OptionRowViewModel> Rows);
 
 /// <summary>
-/// State of the options tab: one section per <see cref="IOptionsContributor"/> in
+/// State of the options tab: one section per <see cref="IOptionDefinitionQuery"/> in
 /// registration order (the app's "General" section first), and saving the edited
-/// values to the <see cref="IOptionsStore"/>.
+/// values through the <see cref="IOptionCommand"/>.
 /// </summary>
 public sealed class OptionsViewModel : ObservableObject
 {
-    private readonly IOptionsStore _store;
+    private readonly IOptionQuery _query;
+    private readonly IOptionCommand _command;
     private string _statusText = "";
 
     public OptionsViewModel(
-        IOptionsStore store, IEnumerable<IOptionsContributor> contributors, IFileExplorer explorer)
+        IOptionQuery query, IOptionCommand command, IEnumerable<IOptionDefinitionQuery> contributors, IFileExplorer explorer)
     {
-        _store = store;
+        _query = query;
+        _command = command;
         Sections =
         [
             .. contributors.Select(contributor => new OptionSection(
                 contributor.Section,
                 [.. contributor.Options.Select(option =>
-                    new OptionRowViewModel(option, store.GetValue(option.Key), explorer))])),
+                    new OptionRowViewModel(option, query.GetValue(option.Key), explorer))])),
         ];
 
         SaveCommand = new AsyncRelayCommand(() => SaveAsync(), () => HasChanges);
@@ -59,7 +61,7 @@ public sealed class OptionsViewModel : ObservableObject
         {
             foreach (var row in changed)
             {
-                await _store.SetValueAsync(row.Definition.Key, row.Value, cancellationToken);
+                await _command.SetValueAsync(row.Definition.Key, row.Value, cancellationToken);
                 row.AcceptValue();
             }
             StatusText = "Options saved.";

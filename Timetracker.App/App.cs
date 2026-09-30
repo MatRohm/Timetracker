@@ -69,20 +69,20 @@ public sealed class App : Application
 
             // Resolve the add-in UI contributors and build their controls here, so
             // the tab views stay free of the plugin contract.
-            var trackerContributors = _services.GetServices<IUiContributor>()
+            var trackerContributors = _services.GetServices<IUiQuery>()
                 .Where(c => c.TargetTab == TabKeys.Tracker)
                 .Select(c => c.CreateControl(_services))
                 .ToList();
 
             // Each plugin tab builds its content and receives the add-in controls
             // targeted at its tab key, ordered between the tracker and options tabs.
-            var pluginTabs = _services.GetServices<ITabContributor>()
+            var pluginTabs = _services.GetServices<ITabQuery>()
                 .OrderBy(t => t.Order)
                 .Select(t => new TabItem
                 {
                     Header = t.Header,
                     Content = t.CreateView(
-                        _services.GetServices<IUiContributor>()
+                        _services.GetServices<IUiQuery>()
                             .Where(c => c.TargetTab == t.TabKey)
                             .Select(c => c.CreateControl(_services))
                             .ToList()),
@@ -97,14 +97,14 @@ public sealed class App : Application
             desktop.MainWindow = window;
 
             // Let the components run their startup hooks.
-            foreach (var hook in _services.GetServices<IAppHook>())
+            foreach (var hook in _services.GetServices<IAppCommand>())
             {
                 hook.OnAppStarted(_services);
             }
 
             desktop.ShutdownRequested += (_, _) =>
             {
-                foreach (var hook in _services.GetServices<IAppHook>())
+                foreach (var hook in _services.GetServices<IAppCommand>())
                 {
                     hook.OnAppClosing();
                 }

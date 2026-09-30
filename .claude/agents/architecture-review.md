@@ -37,7 +37,7 @@ Check each principle with this code base in mind:
 | Principle | What to look for |
 |---|---|
 | SRP | Classes with several reasons to change: view models doing persistence, calculation or formatting that belongs in `Services`; very long classes or methods; classes whose summary needs "and". |
-| OCP | `switch`/`if` chains over types or kinds that grow with every feature; add-in behaviour hard-coded in the app instead of going through `IUiContributor`, `IWeekDayContributor` and the other contracts. |
+| OCP | `switch`/`if` chains over types or kinds that grow with every feature; add-in behaviour hard-coded in the app instead of going through `IUiQuery`, `IWeekDayQuery` and the other contracts. |
 | LSP | Implementations that throw `NotSupportedException`/`NotImplementedException`, ignore parameters, or weaken the contract of the interface they implement. |
 | ISP | Interfaces with members that some implementers or callers do not need; "fat" contracts in `Timetracker.Plugins.Contracts`. |
 | DIP | Concrete dependencies created with `new` inside view models or services instead of being injected; `IServiceProvider` used as a service locator outside `HookRegistry` and the composition root; static access to I/O, time or the clock that makes a class hard to test. |
