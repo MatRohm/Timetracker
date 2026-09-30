@@ -82,6 +82,11 @@ dotnet_naming_style.end_in_async.required_suffix = Async
 dotnet_naming_style.end_in_async.capitalization = pascal_case
 dotnet_naming_style.end_in_async.word_separator = 
 
+# Test method names follow <Method>_When<Condition>_Should<Result>; exclude them
+# from the Async-suffix rule, but keep it active for test doubles and fakes.
+[**/*Tests.cs]
+dotnet_naming_rule.async_methods_end_in_async.severity = none
+
 # Modifiers & ordering
 csharp_preferred_modifier_order = public,private,protected,internal,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,volatile,async:suggestion
 dotnet_sort_system_directives_using_first = true:suggestion
