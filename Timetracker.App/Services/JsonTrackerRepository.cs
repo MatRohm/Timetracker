@@ -27,27 +27,28 @@ public sealed class JsonTrackerRepository : ITrackerRepository
 
     public string FilePath => _jsonPath;
 
-    public async Task<IReadOnlyList<TrackerEntry>> GetAllAsync() => await LoadEntriesAsync();
+    public async Task<IReadOnlyList<TrackerEntry>> GetAllAsync(CancellationToken cancellationToken = default) =>
+        await LoadEntriesAsync(cancellationToken);
 
-    public async Task AddAsync(TrackerEntry entry)
+    public async Task AddAsync(TrackerEntry entry, CancellationToken cancellationToken = default)
     {
-        var entries = await LoadEntriesAsync();
+        var entries = await LoadEntriesAsync(cancellationToken);
         entries.Add(entry);
-        await WriteAllAsync(entries);
+        await WriteAllAsync(entries, cancellationToken);
     }
 
-    public async Task SaveAsync(IReadOnlyList<TrackerEntry> entries) =>
-        await WriteAllAsync([.. entries]);
+    public async Task SaveAsync(IReadOnlyList<TrackerEntry> entries, CancellationToken cancellationToken = default) =>
+        await WriteAllAsync([.. entries], cancellationToken);
 
-    private async Task WriteAllAsync(List<TrackerEntry> entries)
+    private async Task WriteAllAsync(List<TrackerEntry> entries, CancellationToken cancellationToken)
     {
         var document = TrackerFileFormat.ToDocument(entries);
         var json = JsonSerializer.Serialize(document, TrackerFileFormat.JsonOptions);
-        await WriteTextAsync(json);
+        await WriteTextAsync(json, cancellationToken);
     }
 
     /// <summary>Writes the file atomically, backing up a previously corrupt file first.</summary>
-    private async Task WriteTextAsync(string json)
+    private async Task WriteTextAsync(string json, CancellationToken cancellationToken)
     {
         if (_fileWasCorrupt && File.Exists(_jsonPath))
         {
@@ -58,17 +59,17 @@ public sealed class JsonTrackerRepository : ITrackerRepository
 
         // Atomic replace: readers never see a half-written file, and a failed write
         // leaves the previous file intact (the caller reports the error).
-        await AtomicFile.WriteAllTextAsync(_jsonPath, json);
+        await AtomicFile.WriteAllTextAsync(_jsonPath, json, cancellationToken);
     }
 
-    private async Task<List<TrackerEntry>> LoadEntriesAsync()
+    private async Task<List<TrackerEntry>> LoadEntriesAsync(CancellationToken cancellationToken)
     {
         _fileWasCorrupt = false;
         try
         {
             if (!File.Exists(_jsonPath))
                 return [];
-            var text = await File.ReadAllTextAsync(_jsonPath);
+            var text = await File.ReadAllTextAsync(_jsonPath, cancellationToken);
             if (string.IsNullOrWhiteSpace(text))
                 return [];
             return [.. ReadEntries(text)];

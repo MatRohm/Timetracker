@@ -124,8 +124,8 @@ public sealed class RowActionSortTests
     private sealed class FakeRepo(IReadOnlyList<TrackerEntry> entries) : ITrackerRepository
     {
         public string FilePath => "memory.json";
-        public Task<IReadOnlyList<TrackerEntry>> GetAllAsync() => Task.FromResult(entries);
-        public Task AddAsync(TrackerEntry entry) => Task.CompletedTask;
-        public Task SaveAsync(IReadOnlyList<TrackerEntry> e) => Task.CompletedTask;
+        public Task<IReadOnlyList<TrackerEntry>> GetAllAsync(CancellationToken cancellationToken = default) => Task.FromResult(entries);
+        public Task AddAsync(TrackerEntry entry, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task SaveAsync(IReadOnlyList<TrackerEntry> e, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }
