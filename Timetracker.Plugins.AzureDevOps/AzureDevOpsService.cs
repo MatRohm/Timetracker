@@ -93,12 +93,12 @@ public sealed class AzureDevOpsService : IDisposable
 
         var taskName = $"{workItem.Id} {workItem.Title}".Trim();
         host.SetTaskName(taskName);
-        host.SetBookingElement(workItem.AzeElement);
+        host.SetBookingElement(workItem.BookingElement);
         host.ShowStatus($"✓ Applied \"{taskName}\""
-            + (workItem.AzeElement.Length > 0 ? $" ({workItem.AzeElement})" : ""),
+            + (workItem.BookingElement.Length > 0 ? $" ({workItem.BookingElement})" : ""),
             TrackerStatusKind.Success);
 
-        var result = ApplyResult.Successful(taskName, workItem.AzeElement);
+        var result = ApplyResult.Successful(taskName, workItem.BookingElement);
         return result;
     }
 

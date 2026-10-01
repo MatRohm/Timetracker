@@ -16,6 +16,7 @@ public sealed class AzureDevOpsSettingsTests
         config.Url.Should().BeEmpty();
         config.Project.Should().BeEmpty();
         config.Pat.Should().BeEmpty();
+        config.BookingElementField.Should().BeEmpty();
         config.IsUsable.Should().BeFalse();
     }
 
@@ -26,6 +27,7 @@ public sealed class AzureDevOpsSettingsTests
         store.Values[AzureDevOpsSettings.UrlKey] = "https://dev.azure.com/my-org";
         store.Values[AzureDevOpsSettings.ProjectKey] = "MyProject";
         store.Values[AzureDevOpsSettings.PatKey] = "secret-token";
+        store.Values[AzureDevOpsSettings.BookingElementFieldKey] = "Custom.BookingElement";
         var settings = new AzureDevOpsSettings(store);
 
         var config = settings.Current();
@@ -33,6 +35,7 @@ public sealed class AzureDevOpsSettingsTests
         config.Url.Should().Be("https://dev.azure.com/my-org");
         config.Project.Should().Be("MyProject");
         config.Pat.Should().Be("secret-token");
+        config.BookingElementField.Should().Be("Custom.BookingElement");
         config.IsUsable.Should().BeTrue();
     }
 

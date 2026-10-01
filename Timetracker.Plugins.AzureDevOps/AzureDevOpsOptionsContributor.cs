@@ -16,5 +16,6 @@ public sealed class AzureDevOpsOptionsContributor : IOptionDefinitionQuery
         new(AzureDevOpsSettings.UrlKey, "Organization URL", OptionKind.Text),
         new(AzureDevOpsSettings.ProjectKey, "Project", OptionKind.Text),
         new(AzureDevOpsSettings.PatKey, "Personal access token", OptionKind.Secret),
+        new(AzureDevOpsSettings.BookingElementFieldKey, "Booking element field", OptionKind.Text),
     ];
 }

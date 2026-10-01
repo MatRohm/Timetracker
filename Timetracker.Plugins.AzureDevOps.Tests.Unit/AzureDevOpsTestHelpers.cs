@@ -12,6 +12,7 @@ internal static class AzureDevOpsTestHelpers
         Url = "https://dev.azure.com/my-org",
         Project = "MyProject",
         Pat = "secret-token",
+        BookingElementField = "Custom.BookingElement",
     };
 }
 
@@ -23,11 +24,11 @@ internal static class FakeHttp
         return new HttpClient(handler) { BaseAddress = new Uri("https://dev.azure.com") };
     }
 
-    public static HttpClient WorkItem(int id, string title, string azeElement) =>
+    public static HttpClient WorkItem(int id, string title, string bookingElement) =>
         Create((request) => new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new StringContent(
-                $$"""{"id": {{id}}, "fields": {"System.Title": "{{title}}", "Custom.AZEElement": "{{azeElement}}"} }""",
+                $$"""{"id": {{id}}, "fields": {"System.Title": "{{title}}", "Custom.BookingElement": "{{bookingElement}}"} }""",
                 System.Text.Encoding.UTF8, "application/json"),
         });
 

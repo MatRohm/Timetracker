@@ -16,6 +16,12 @@ public sealed class AzureDevOpsConfig
     /// <summary>Personal access token used as Basic password (user name is empty).</summary>
     public string Pat { get; set; } = "";
 
+    /// <summary>
+    /// Reference name of the custom field holding the booking element. When empty
+    /// the booking element is not read and stays empty.
+    /// </summary>
+    public string BookingElementField { get; set; } = "";
+
     /// <summary>True when the values look complete enough for a request.</summary>
     public bool IsUsable =>
         Uri.TryCreate(Url.Trim(), UriKind.Absolute, out var url)

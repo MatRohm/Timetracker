@@ -11,6 +11,7 @@ public sealed class AzureDevOpsSettings(IOptionQuery store)
     public const string UrlKey = "AzureDevOps.Url";
     public const string ProjectKey = "AzureDevOps.Project";
     public const string PatKey = "AzureDevOps.Pat";
+    public const string BookingElementFieldKey = "AzureDevOps.BookingElementField";
 
     /// <summary>The connection to use now; an option that was never saved is empty.</summary>
     public AzureDevOpsConfig Current()
@@ -20,6 +21,7 @@ public sealed class AzureDevOpsSettings(IOptionQuery store)
             Url = store.GetValue(UrlKey) ?? "",
             Project = store.GetValue(ProjectKey) ?? "",
             Pat = store.GetValue(PatKey) ?? "",
+            BookingElementField = store.GetValue(BookingElementFieldKey) ?? "",
         };
         return result;
     }

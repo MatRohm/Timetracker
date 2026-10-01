@@ -17,7 +17,8 @@ public sealed class AzureDevOpsOptionsContributorTests
         options.Select(o => (o.Key, o.Kind)).Should().Equal(
             (AzureDevOpsSettings.UrlKey, OptionKind.Text),
             (AzureDevOpsSettings.ProjectKey, OptionKind.Text),
-            (AzureDevOpsSettings.PatKey, OptionKind.Secret));
+            (AzureDevOpsSettings.PatKey, OptionKind.Secret),
+            (AzureDevOpsSettings.BookingElementFieldKey, OptionKind.Text));
         options.Should().OnlyContain(o => !o.IsReadOnly && o.DefaultValue.Length == 0);
         contributor.Section.Should().Be("Azure DevOps");
     }

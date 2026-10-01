@@ -11,7 +11,7 @@ namespace Timetracker.Plugins.AzureDevOps.Tests.Unit;
 public sealed class AzureDevOpsServiceTests
 {
     [Test]
-    public async Task ApplyIssueAsync_WhenTheWorkItemHasAnAzeElement_ShouldParseTitleAndAzeElement()
+    public async Task ApplyIssueAsync_WhenTheWorkItemHasABookingElement_ShouldParseTitleAndBookingElement()
     {
         var http = FakeHttp.Create((request) => new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -20,7 +20,7 @@ public sealed class AzureDevOpsServiceTests
                   "id": 42,
                   "fields": {
                     "System.Title": "Fix login bug",
-                    "Custom.2c1e4e3f-b6ad-4004-a072-a65e75547971": "10831 Genesis Abschnitte"
+                    "Custom.BookingElement": "10831 Genesis Abschnitte"
                   }
                 }
                 """, System.Text.Encoding.UTF8, "application/json"),
@@ -32,13 +32,15 @@ public sealed class AzureDevOpsServiceTests
         workItem.Should().NotBeNull();
         workItem!.Id.Should().Be(42);
         workItem.Title.Should().Be("Fix login bug");
-        workItem.AzeElement.Should().Be("10831 Genesis Abschnitte",
-            "the AZE-Element field uses a GUID-based reference name in Azure DevOps");
+        workItem.BookingElement.Should().Be("10831 Genesis Abschnitte",
+            "the booking element is read from the configured custom field");
     }
 
     [Test]
-    public async Task ApplyIssueAsync_WhenTheAzeElementUsesTheFriendlyFieldName_ShouldFallBackToIt()
+    public async Task ApplyIssueAsync_WhenTheBookingElementFieldIsNotConfigured_ShouldLeaveTheBookingElementEmpty()
     {
+        var config = AzureDevOpsTestHelpers.Config();
+        config.BookingElementField = "";
         var http = FakeHttp.Create((request) => new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new StringContent("""
@@ -46,16 +48,16 @@ public sealed class AzureDevOpsServiceTests
                   "id": 42,
                   "fields": {
                     "System.Title": "Fix login bug",
-                    "Custom.AZEElement": "Quarterly figures"
+                    "Custom.BookingElement": "Quarterly figures"
                   }
                 }
                 """, System.Text.Encoding.UTF8, "application/json"),
         });
-        using var client = new AzureDevOpsClient(AzureDevOpsTestHelpers.Config(), http);
+        using var client = new AzureDevOpsClient(config, http);
 
         var workItem = await client.GetWorkItemAsync(42);
 
-        workItem!.AzeElement.Should().Be("Quarterly figures");
+        workItem!.BookingElement.Should().BeEmpty();
     }
 
     [Test]
@@ -93,7 +95,7 @@ public sealed class AzureDevOpsServiceTests
     }
 
     [Test]
-    public async Task ApplyIssueAsync_WhenTheWorkItemExists_ShouldFillTheHostWithNumberTitleAndAzeElement()
+    public async Task ApplyIssueAsync_WhenTheWorkItemExists_ShouldFillTheHostWithNumberTitleAndBookingElement()
     {
         var service = new AzureDevOpsService(AzureDevOpsTestHelpers.Config(), () => new AzureDevOpsClient(
             AzureDevOpsTestHelpers.Config(), FakeHttp.WorkItem(42, "Fix login bug", "Quarterly figures")));
