@@ -145,7 +145,25 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
-    public async Task DistributeDayAsync_WhenTheUserConfirms_ShouldApplyTheDaysDistributionPlan()
+    public void CreateDistributeDay_WhenTheDayHasUntrackedTime_ShouldPrefillTheProportionalShares()
+    {
+        var week = Create(out var sessions, out var activity);
+        var monday = DateTimeOffset.Now.Date.AddDays(-(((int)DateTimeOffset.Now.DayOfWeek + 6) % 7));
+        var mondayDate = DateOnly.FromDateTime(monday);
+        activity.ActiveTime = day => day == mondayDate ? TimeSpan.FromMinutes(150) : TimeSpan.Zero;
+        sessions.SetSessions(Session(monday, 9, 60, "A"));
+
+        var day = week.Days[0];
+        var dialog = week.CreateDistributeDay(day);
+
+        dialog.Rows.Should().ContainSingle(r => r.Task == "A");
+        dialog.Rows[0].ShareText.Should().Be("+1:30", "the whole untracked time goes to the single task");
+        dialog.MissingText.Should().Be("1:30 untracked");
+        dialog.Plan.Changes.Should().ContainSingle().Which.Updated!.End.Hour.Should().Be(11, "A's 09:00–10:00 grows to 09:00–11:30");
+    }
+
+    [Test]
+    public async Task ApplyDistributeAsync_WhenTheUserAccepts_ShouldApplyThePlansChanges()
     {
         var week = Create(out var sessions, out var activity);
         var monday = DateTimeOffset.Now.Date.AddDays(-(((int)DateTimeOffset.Now.DayOfWeek + 6) % 7));
@@ -154,50 +172,35 @@ public sealed class WeekViewModelTests
         sessions.SetSessions(Session(monday, 9, 60, "A"));
         IReadOnlyList<SessionChange>? applied = null;
         sessions.ApplyChanges = changes => { applied = changes; return Task.FromResult(true); };
-        IReadOnlyList<string>? shown = null;
 
         var day = week.Days[0];
-        var result = await week.DistributeDayAsync(day, lines => { shown = lines; return Task.FromResult(true); });
+        var dialog = week.CreateDistributeDay(day);
+        var result = await week.ApplyDistributeAsync(day, dialog.Plan);
 
         result.Should().BeTrue();
-        day.CanDistribute.Should().BeTrue();
-        applied.Should().BeSameAs(day.Distribution.Changes);
-        shown.Should().ContainSingle().Which.Should().Be("A 1:00 → 2:30: 09:00–10:00 → 09:00–11:30");
+        applied.Should().BeSameAs(dialog.Plan.Changes);
         week.Status.Should().Be(WeekStatus.Success);
+        week.StatusText.Should().StartWith("✓ Distributed");
     }
 
     [Test]
-    public async Task DistributeDayAsync_WhenTheUserDeclines_ShouldApplyNothing()
-    {
-        var week = Create(out var sessions, out var activity);
-        var monday = DateTimeOffset.Now.Date.AddDays(-(((int)DateTimeOffset.Now.DayOfWeek + 6) % 7));
-        var mondayDate = DateOnly.FromDateTime(monday);
-        activity.ActiveTime = day => day == mondayDate ? TimeSpan.FromMinutes(150) : TimeSpan.Zero;
-        sessions.SetSessions(Session(monday, 9, 60, "A"));
-        var applied = false;
-        sessions.ApplyChanges = _ => { applied = true; return Task.FromResult(true); };
-
-        var result = await week.DistributeDayAsync(week.Days[0], _ => Task.FromResult(false));
-
-        result.Should().BeFalse();
-        applied.Should().BeFalse();
-    }
-
-    [Test]
-    public async Task DistributeDayAsync_WhenThereIsNoUntrackedTime_ShouldNotAskOrApply()
+    public async Task ApplyDistributeAsync_WhenThePlanIsEmpty_ShouldReportAndApplyNothing()
     {
         var week = Create(out var sessions, out _);
         var monday = DateTimeOffset.Now.Date.AddDays(-(((int)DateTimeOffset.Now.DayOfWeek + 6) % 7));
         sessions.SetSessions(Session(monday, 9, 60, "A"));
-        var asked = false;
-        sessions.ApplyChanges = _ => Task.FromResult(true);
+        var applied = false;
+        sessions.ApplyChanges = _ => { applied = true; return Task.FromResult(true); };
 
         var day = week.Days[0];
-        var result = await week.DistributeDayAsync(day, _ => { asked = true; return Task.FromResult(true); });
+        day.CanDistribute.Should().BeFalse("the day has no untracked time");
 
-        day.CanDistribute.Should().BeFalse();
+        var result = await week.ApplyDistributeAsync(day, day.Distribution);
+
         result.Should().BeFalse();
-        asked.Should().BeFalse();
+        applied.Should().BeFalse();
+        week.Status.Should().Be(WeekStatus.Info);
+        week.StatusText.Should().Contain("Nothing could be distributed");
     }
 
     [Test]

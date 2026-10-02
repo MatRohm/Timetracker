@@ -118,35 +118,36 @@ public sealed class WeekViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Distributes <paramref name="day"/>'s untracked time over its tasks in
-    /// proportion to their durations, after the user confirmed the listed changes
-    /// (skipped tasks are listed too). False when there is nothing to distribute,
-    /// the user declined or the save failed.
+    /// Dialog state for distributing <paramref name="day"/>'s untracked time over its
+    /// tasks: one row per task with a proportional prefilled share and −/+ steppers
+    /// in 15-minute steps. Lets the view open the dialog without handling model types.
     /// </summary>
-    /// <param name="confirm">Shows the change lines and returns the user's answer.</param>
-    public async Task<bool> DistributeDayAsync(WeekDayViewModel day, Func<IReadOnlyList<string>, Task<bool>> confirm)
+    public DistributeDayViewModel CreateDistributeDay(WeekDayViewModel day)
     {
-        var plan = day.Distribution;
-        var skipped = day.DistributionSkippedLines.Select(s => "Skipped: " + s).ToList();
+        var daySessions = _sessions.Sessions.Where(s => s.Start.Date == day.Date.Date).ToList();
+        TimeRange? running = _sessions.RunningSince is { } since ? new TimeRange(since, DateTimeOffset.MaxValue) : null;
+        var result = new DistributeDayViewModel(day.Header, day.UntrackedTime, daySessions, _sessions.Sessions, running);
+        return result;
+    }
+
+    /// <summary>Applies the confirmed distribute plan; false when nothing was applied.</summary>
+    public async Task<bool> ApplyDistributeAsync(WeekDayViewModel day, DistributionPlan plan)
+    {
         if (plan.Changes.Count == 0)
         {
-            if (skipped.Count > 0)
-            {
-                ShowStatus("Nothing could be distributed. " + string.Join(" · ", skipped), WeekStatus.Info);
-            }
-            return false;
-        }
-
-        if (!await confirm([.. day.DistributionLines, .. skipped]))
-        {
+            ShowStatus("Nothing could be distributed.", WeekStatus.Info);
             return false;
         }
 
         var saved = await _sessionCommands.ApplyChangesAsync(plan.Changes);
         if (saved)
         {
-            var note = skipped.Count > 0 ? " " + string.Join(" · ", skipped) : "";
-            ShowStatus($"✓ Distributed the untracked time over {plan.Tasks.Count} task(s) on {day.Header}.{note}", WeekStatus.Success);
+            var assigned = TimeSpan.Zero;
+            foreach (var task in plan.Tasks)
+            {
+                assigned += task.Share;
+            }
+            ShowStatus($"✓ Distributed {WeekTimeFormat.HoursMinutes(assigned)} over {plan.Tasks.Count} task(s) on {day.Header}.", WeekStatus.Success);
         }
 
         return saved;
