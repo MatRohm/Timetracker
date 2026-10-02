@@ -7,13 +7,14 @@ namespace Timetracker.Plugins.ActivityMonitor;
 /// <summary>
 /// Tracks the machine state (active/idle/off) and writes one span per state
 /// change to the <see cref="ActivityLog"/>: "active" spans cover user-present
-/// periods, "idle" spans only periods of at least one hour (shorter breaks are
-/// ignored). Survives process restarts via a small state file, so logoff/shutdown
+/// periods, "idle" spans only periods of at least the configured idle span
+/// threshold (default one hour; shorter breaks are ignored). Survives process
+/// restarts via a small state file, so logoff/shutdown
 /// ends the open span correctly on the next start.
 /// </summary>
 public class ActivityTracker
 {
-    /// <summary>Idle periods shorter than this are not logged.</summary>
+    /// <summary>Idle periods shorter than the configured threshold are not logged; the default.</summary>
     public static readonly TimeSpan DefaultIdleThreshold = TimeSpan.FromHours(1);
 
     /// <summary>How often a routine polling entry is written to the monitor log.</summary>
@@ -23,6 +24,9 @@ public class ActivityTracker
     private readonly IIdleTimeProvider _idleTime;
     private readonly ILogger<ActivityTracker> _logger;
     private Func<DateTimeOffset> _now;
+
+    /// <summary>Idle stretches shorter than this are not logged; the option may lower or raise it.</summary>
+    private TimeSpan _idleSpanThreshold;
 
     /// <summary>Moment of the last polling log entry; throttles it to <see cref="PollLogInterval"/>.</summary>
     private DateTimeOffset _lastPollLog;
@@ -34,12 +38,21 @@ public class ActivityTracker
         ActivityLog log,
         Func<DateTimeOffset>? now = null,
         IIdleTimeProvider? idleTime = null,
-        ILogger<ActivityTracker>? logger = null)
+        ILogger<ActivityTracker>? logger = null,
+        TimeSpan? idleSpanThreshold = null)
     {
         _log = log;
         _now = now ?? (() => DateTimeOffset.Now);
         _idleTime = idleTime ?? IdleTimeProvider.CreateForCurrentPlatform();
         _logger = logger ?? NullLogger<ActivityTracker>.Instance;
+        _idleSpanThreshold = idleSpanThreshold ?? DefaultIdleThreshold;
+    }
+
+    /// <summary>The configured shortest logged idle stretch; tests set it directly.</summary>
+    internal TimeSpan IdleSpanThreshold
+    {
+        get => _idleSpanThreshold;
+        set => _idleSpanThreshold = value;
     }
 
     /// <summary>Path of the state file used to recover across restarts.</summary>
@@ -61,12 +74,12 @@ public class ActivityTracker
 
     private void PollWithIdle(TimeSpan idle)
     {
-        if (_state == "active" && idle >= DefaultIdleThreshold)
+        if (_state == "active" && idle >= _idleSpanThreshold)
         {
             var idleStart = _now() - idle;
             CloseAndOpen("idle", idleStart);
         }
-        else if (_state == "idle" && idle < DefaultIdleThreshold)
+        else if (_state == "idle" && idle < _idleSpanThreshold)
         {
             CloseAndOpen("active", _now());
         }
@@ -150,7 +163,7 @@ public class ActivityTracker
             return;
         }
 
-        if (state == "idle" && end - start < DefaultIdleThreshold)
+        if (state == "idle" && end - start < _idleSpanThreshold)
         {
             return; // Short break: ignore entirely.
         }

@@ -21,20 +21,24 @@ public sealed class IdleAutoStop : IAppCommand, IDisposable
     private readonly ITrackerSessionQuery _sessionQuery;
     private readonly ITrackerSessionCommand _sessionCommand;
     private readonly IIdleTimeProvider _idleTime;
+    private readonly IOptionQuery? _options;
     private readonly Func<DateTimeOffset> _now;
 
     private DispatcherTimer? _timer;
 
     /// <param name="now">Current time; replaceable so back-dating can be tested deterministically.</param>
+    /// <param name="options">The user's options; null keeps the built-in threshold.</param>
     public IdleAutoStop(
         ITrackerSessionQuery sessionQuery,
         ITrackerSessionCommand sessionCommand,
         IIdleTimeProvider idleTime,
-        Func<DateTimeOffset>? now = null)
+        Func<DateTimeOffset>? now = null,
+        IOptionQuery? options = null)
     {
         _sessionQuery = sessionQuery;
         _sessionCommand = sessionCommand;
         _idleTime = idleTime;
+        _options = options;
         _now = now ?? (() => DateTimeOffset.Now);
     }
 
@@ -61,7 +65,10 @@ public sealed class IdleAutoStop : IAppCommand, IDisposable
         }
 
         var idle = _idleTime.CurrentIdleTime;
-        if (idle < IdleStopThreshold)
+        var threshold = _options is null
+            ? IdleStopThreshold
+            : IdleOptions.IdleStopThreshold(_options.GetValue(IdleOptions.IdleStopThresholdKey));
+        if (idle < threshold)
         {
             return;
         }
