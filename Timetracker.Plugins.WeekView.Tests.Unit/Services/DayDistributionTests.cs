@@ -113,6 +113,75 @@ public sealed class DayDistributionTests
         report.End.Should().Be(At(10, 0));
     }
 
+    [Test]
+    public void Plan_WhenGivenExplicitShares_ShouldHandOutExactlyThoseShares()
+    {
+        var report = Session("Report", At(9, 0), At(10, 0));
+        var review = Session("Review", At(10, 30), At(11, 30));
+        var adhoc = Session("Adhoc", At(12, 45), At(13, 15));
+        var sessions = new[] { report, review, adhoc };
+        var shares = new[]
+        {
+            new AssignedShare("Report", TimeSpan.FromMinutes(15)),
+            new AssignedShare("Review", TimeSpan.FromMinutes(45)),
+            new AssignedShare("Adhoc", TimeSpan.Zero),
+        };
+
+        var plan = DayDistribution.Plan(shares, sessions, sessions, null);
+
+        plan.Tasks.Select(t => (t.Name, t.Share)).Should().Equal(
+            ("Report", TimeSpan.FromMinutes(15)),
+            ("Review", TimeSpan.FromMinutes(45)));
+        plan.Tasks.Should().NotContain(t => t.Name == "Adhoc", "a zero share gets nothing");
+        plan.Tasks.Single(t => t.Name == "Report").Changes.Should().ContainSingle()
+            .Which.Updated!.End.Should().Be(At(10, 15));
+        plan.Tasks.Single(t => t.Name == "Review").Changes.Should().ContainSingle()
+            .Which.Updated!.End.Should().Be(At(12, 15));
+    }
+
+    [Test]
+    public void Plan_WhenAnExplicitShareCannotBePlaced_ShouldSkipThatTask()
+    {
+        var report = Session("Report", At(9, 0), At(10, 0));
+        var sessions = new[]
+        {
+            Session("Meeting", At(8, 0), At(9, 0)),
+            report,
+            Session("Meeting", At(10, 0), At(11, 0)),
+        };
+
+        var plan = DayDistribution.Plan(
+            [new AssignedShare("Report", TimeSpan.FromMinutes(15))], sessions, sessions, null);
+
+        plan.Tasks.Should().BeEmpty();
+        plan.Skipped.Should().ContainSingle().Which.Name.Should().Be("Report");
+    }
+
+    [Test]
+    public void ProportionalShares_WhenSharesAreNotStepAligned_ShouldFloorToStepsAndGiveTheRemainderToTheLastTask()
+    {
+        var report = Session("Report", At(9, 0), At(10, 0));
+        var review = Session("Review", At(10, 30), At(12, 30));
+
+        var shares = DayDistribution.ProportionalShares(
+            [report, review], TimeSpan.FromMinutes(50), TimeSpan.FromMinutes(15));
+
+        shares.Select(s => (s.Task, s.Share)).Should().Equal(
+            ("Report", TimeSpan.FromMinutes(15)),
+            ("Review", TimeSpan.FromMinutes(35)));
+    }
+
+    [Test]
+    public void ProportionalShares_WhenMissingIsSmallerThanTheStep_ShouldGiveTheRemainderToTheLastTask()
+    {
+        var report = Session("Report", At(9, 0), At(10, 0));
+
+        var shares = DayDistribution.ProportionalShares(
+            [report], TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(15));
+
+        shares.Select(s => (s.Task, s.Share)).Should().Equal(("Report", TimeSpan.FromMinutes(5)));
+    }
+
     private static DateTimeOffset At(int hour, int minute) => new(2026, 9, 21, hour, minute, 0, Offset);
 
     private static TrackedSession Session(string task, DateTimeOffset start, DateTimeOffset end)

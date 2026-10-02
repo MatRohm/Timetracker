@@ -248,14 +248,26 @@ public sealed class WeekTrackingTree : UserControl
             };
             ToolTip.SetTip(distribute, day.DistributionHint);
             ToolTip.SetShowOnDisabled(distribute, true);
-            distribute.Click += async (_, _) => await _week.DistributeDayAsync(
-                day,
-                changes => Confirmations.ConfirmChangesAsync(
-                    this, $"Distribute the untracked time of {day.Header} over its tasks?", changes));
+            distribute.Click += async (_, _) => await DistributeAsync(day);
             row.Children.Add(distribute);
         }
 
         return row;
+    }
+
+    /// <summary>Opens the distribute dialog and applies the confirmed plan.</summary>
+    private async Task DistributeAsync(WeekDayViewModel day)
+    {
+        if (TopLevel.GetTopLevel(this) is not Window owner)
+        {
+            return;
+        }
+
+        var dialog = new DistributeDayWindow(_week.CreateDistributeDay(day));
+        if (await dialog.ShowDialog<bool>(owner))
+        {
+            await _week.ApplyDistributeAsync(day, dialog.ViewModel.Plan);
+        }
     }
 
     /// <summary>

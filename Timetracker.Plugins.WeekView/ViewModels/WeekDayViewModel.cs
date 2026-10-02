@@ -155,7 +155,7 @@ public sealed class WeekDayViewModel : ObservableObject
     public IReadOnlyList<string> RoundingLines =>
         [.. Rounding.Tasks.Select(t =>
             $"{t.Name} {WeekTimeFormat.HoursMinutes(t.Total)} → {WeekTimeFormat.HoursMinutes(t.Target)}: "
-            + string.Join("; ", t.Changes.Select(DescribeChange)))];
+            + string.Join("; ", t.Changes.Select(WeekTimeFormat.Describe)))];
 
     /// <summary>One line per task that could not be rounded, with the reason.</summary>
     public IReadOnlyList<string> RoundingSkippedLines =>
@@ -178,22 +178,8 @@ public sealed class WeekDayViewModel : ObservableObject
 
     /// <summary>Tooltip for the distribute action.</summary>
     public string DistributionHint => CanDistribute
-        ? "Distribute the day's untracked time over its tasks in proportion to their durations"
+        ? "Distribute the day's untracked time over its tasks"
         : "Nothing to distribute: the day has no untracked time, or no task can absorb it";
-
-    /// <summary>
-    /// One confirmation line per task that gets a share, e.g.
-    /// "Report 1:00 → 1:30: 09:00–10:00 → 09:00–10:30".
-    /// </summary>
-    public IReadOnlyList<string> DistributionLines =>
-        [.. Distribution.Tasks.Select(t =>
-            $"{t.Name} {WeekTimeFormat.HoursMinutes(t.Total)} → {WeekTimeFormat.HoursMinutes(t.Total + t.Share)}: "
-            + string.Join("; ", t.Changes.Select(DescribeChange)))];
-
-    /// <summary>One line per task that could not take a share, with the reason.</summary>
-    public IReadOnlyList<string> DistributionSkippedLines =>
-        [.. Distribution.Skipped.Select(t =>
-            $"{t.Name} {WeekTimeFormat.HoursMinutes(t.Total)} (no free time next to its last session)")];
 
     /// <summary>Replaces the day's distribution plan.</summary>
     public void SetDistribution(DistributionPlan distribution)
@@ -201,15 +187,6 @@ public sealed class WeekDayViewModel : ObservableObject
         Distribution = distribution;
         OnPropertyChanged(nameof(Distribution));
         OnPropertyChanged(nameof(CanDistribute));
-    }
-
-    private static string DescribeChange(SessionChange change)
-    {
-        var original = WeekTimeFormat.ClockRange(change.Original.Start, change.Original.End);
-        var result = change.Updated is { } updated
-            ? $"{original} → {WeekTimeFormat.ClockRange(updated.Start, updated.End)}"
-            : $"{original} removed";
-        return result;
     }
 
     /// <summary>

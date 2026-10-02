@@ -1,3 +1,5 @@
+using Timetracker.Plugins.Contracts;
+
 namespace Timetracker.Plugins.WeekView.ViewModels;
 
 /// <summary>
@@ -12,6 +14,16 @@ internal static class WeekTimeFormat
 
     /// <summary>A duration as "h:mm", e.g. 1:30.</summary>
     public static string HoursMinutes(TimeSpan duration) => HoursMinutes(duration.TotalSeconds);
+
+    /// <summary>A planned session change as "HH:mm–HH:mm → HH:mm–HH:mm" or "… removed".</summary>
+    internal static string Describe(SessionChange change)
+    {
+        var original = ClockRange(change.Original.Start, change.Original.End);
+        var result = change.Updated is { } updated
+            ? $"{original} → {ClockRange(updated.Start, updated.End)}"
+            : $"{original} removed";
+        return result;
+    }
 
     /// <summary>A clock range as "HH:mm–HH:mm", e.g. "10:15–11:05".</summary>
     public static string ClockRange(DateTimeOffset start, DateTimeOffset end) =>
