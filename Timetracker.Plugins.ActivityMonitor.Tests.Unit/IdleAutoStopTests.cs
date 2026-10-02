@@ -75,4 +75,57 @@ public sealed class IdleAutoStopTests
 
         host.StoppedReason.Should().Contain("40 min", "the idle duration is reported");
     }
+
+    [Test]
+    public async Task PollAsync_WhenThresholdIsConfiguredLower_ShouldStopEarlier()
+    {
+        var host = new FakeTrackerSessionHost { IsSessionRunning = true };
+        var idle = new FakeIdleTimeProvider { CurrentIdleTime = TimeSpan.FromMinutes(20) };
+        var options = new InMemoryOptionsStore
+        {
+            Values = { [IdleOptions.IdleStopThresholdKey] = "15" },
+        };
+        var detector = new IdleAutoStop(host, host, idle, options: options);
+
+        await detector.PollAsync();
+
+        host.StopCalls.Should().Be(1, "the configured threshold of 15 minutes is reached at 20");
+    }
+
+    [Test]
+    public async Task PollAsync_WhenTheConfiguredValueChanges_ShouldUseTheNewValueOnTheNextPoll()
+    {
+        var host = new FakeTrackerSessionHost { IsSessionRunning = true };
+        var idle = new FakeIdleTimeProvider { CurrentIdleTime = TimeSpan.FromMinutes(50) };
+        var options = new InMemoryOptionsStore
+        {
+            Values = { [IdleOptions.IdleStopThresholdKey] = "60" },
+        };
+        var detector = new IdleAutoStop(host, host, idle, options: options);
+
+        await detector.PollAsync();
+        host.StopCalls.Should().Be(0, "50 minutes idle is below the configured 60");
+
+        idle.CurrentIdleTime = TimeSpan.FromMinutes(70);
+        options.Values[IdleOptions.IdleStopThresholdKey] = "45";
+        await detector.PollAsync();
+
+        host.StopCalls.Should().Be(1, "the user lowered the threshold to 45 without a restart");
+    }
+
+    [Test]
+    public async Task PollAsync_WhenTheConfiguredValueIsInvalid_ShouldUseTheDefault()
+    {
+        var host = new FakeTrackerSessionHost { IsSessionRunning = true };
+        var idle = new FakeIdleTimeProvider { CurrentIdleTime = TimeSpan.FromMinutes(25) };
+        var options = new InMemoryOptionsStore
+        {
+            Values = { [IdleOptions.IdleStopThresholdKey] = "often" },
+        };
+        var detector = new IdleAutoStop(host, host, idle, options: options);
+
+        await detector.PollAsync();
+
+        host.StopCalls.Should().Be(0, "an unparsable value falls back to the 30-minute default");
+    }
 }

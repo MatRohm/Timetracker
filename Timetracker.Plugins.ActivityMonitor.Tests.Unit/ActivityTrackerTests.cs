@@ -45,6 +45,59 @@ public sealed class ActivityTrackerTests
     }
 
     [Test]
+    public void Poll_WhenSpanThresholdIsConfiguredLower_ShouldLogShorterIdleSpans()
+    {
+        var path = TempPath("log-configured-span.json");
+        File.Delete(path);
+        var log = new ActivityLog(path);
+        var tracker = new TrackerForTests(log, () => At(9, 0), path + ".state.json")
+        {
+            IdleSpanThreshold = TimeSpan.FromMinutes(20),
+        };
+
+        // 30 minutes without input: below the default hour, above the configured threshold.
+        tracker.PollWithDuration(TimeSpan.FromMinutes(30), At(9, 30));
+        tracker.PollWithDuration(TimeSpan.FromSeconds(5), At(9, 31));
+
+        var spans = log.GetAll();
+        spans.Select(s => s.Kind).Should().Equal("active", "idle");
+        spans[1].Start.Should().Be(At(9, 0), "the idle span is back-dated to the last input");
+    }
+
+    [Test]
+    public void Poll_WhenSpanThresholdIsConfiguredHigher_ShouldIgnoreIdleBelowIt()
+    {
+        var path = TempPath("log-configured-span-high.json");
+        File.Delete(path);
+        var log = new ActivityLog(path);
+        var tracker = new TrackerForTests(log, () => At(9, 0), path + ".state.json")
+        {
+            IdleSpanThreshold = TimeSpan.FromMinutes(90),
+        };
+
+        // 45 minutes without input: below the configured 90-minute threshold.
+        tracker.PollWithDuration(TimeSpan.FromMinutes(45), At(9, 45));
+        tracker.PollWithDuration(TimeSpan.FromSeconds(5), At(9, 46));
+
+        log.GetAll().Should().BeEmpty("45 idle minutes are below the configured threshold");
+    }
+
+    [Test]
+    public void Poll_WhenNoThresholdIsConfigured_ShouldUseTheDefault()
+    {
+        var path = TempPath("log-default-span.json");
+        File.Delete(path);
+        var log = new ActivityLog(path);
+        var tracker = new TrackerForTests(log, () => At(9, 0), path + ".state.json");
+
+        // 45 minutes without input: below the default one-hour threshold.
+        tracker.PollWithDuration(TimeSpan.FromMinutes(45), At(9, 45));
+        tracker.PollWithDuration(TimeSpan.FromSeconds(5), At(9, 46));
+
+        log.GetAll().Should().BeEmpty("the fallback is the built-in one hour");
+    }
+
+    [Test]
     public void Stop_WhenStopped_ShouldWriteOpenSpanAndMarkStateOff()
     {
         var path = TempPath("log-stop.json");

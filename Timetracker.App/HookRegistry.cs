@@ -112,8 +112,14 @@ public static class HookRegistry
         // Idle detection comes from the monitor project's platform-specific provider.
         services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IIdleTimeProvider>(
             _ => Plugins.ActivityMonitor.IdleTimeProvider.CreateForCurrentPlatform());
-        // The idle auto-stop rule: stops the tracker's session after a long idle stretch.
-        services.AddSingleton<Plugins.ActivityMonitor.IdleAutoStop>();
+        // The idle auto-stop rule: stops the tracker's session after a long idle stretch,
+        // with the idle-stop threshold the user configured in the options tab.
+        services.AddSingleton<Plugins.ActivityMonitor.IdleAutoStop>(sp =>
+            new Plugins.ActivityMonitor.IdleAutoStop(
+                sp.GetRequiredService<ITrackerSessionQuery>(),
+                sp.GetRequiredService<ITrackerSessionCommand>(),
+                sp.GetRequiredService<Plugins.ActivityMonitor.Interfaces.IIdleTimeProvider>(),
+                options: sp.GetRequiredService<IOptionQuery>()));
         services.AddSingleton<IAppCommand>(sp =>
             sp.GetRequiredService<Plugins.ActivityMonitor.IdleAutoStop>());
         // One contributor instance serves the per-day line and the day's active time.

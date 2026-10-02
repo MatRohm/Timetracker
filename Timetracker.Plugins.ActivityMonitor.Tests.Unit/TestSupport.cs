@@ -84,6 +84,14 @@ internal sealed class FakeIdleTimeProvider : IIdleTimeProvider
     public TimeSpan CurrentIdleTime { get; set; }
 }
 
+/// <summary>Options kept in memory; tests set <see cref="Values"/> directly.</summary>
+internal sealed class InMemoryOptionsStore : IOptionQuery
+{
+    public Dictionary<string, string> Values { get; } = [];
+
+    public string? GetValue(string key) => Values.TryGetValue(key, out var value) ? value : null;
+}
+
 /// <summary>Session host for tests: records the stop request the idle detector issues.</summary>
 internal sealed class FakeTrackerSessionHost : ITrackerSessionQuery, ITrackerSessionCommand
 {

@@ -9,7 +9,12 @@ using Timetracker.Plugins.Contracts.Logging;
 // The monitor's own log file (monitor-<date>.log), next to the app's; flushed on exit.
 using var loggerFactory = LoggerFactory.Create(builder => builder.AddTimetrackerFile("monitor"));
 var log = new ActivityLog();
-var tracker = new ActivityTracker(log, logger: loggerFactory.CreateLogger<ActivityTracker>());
+
+// The monitor has no DI container; it reads the idle-span threshold from the
+// options file the app writes, falling back to one hour.
+var idleSpanThreshold = IdleOptions.IdleSpanThreshold(
+    IdleOptions.ReadValueFromOptionsFile(IdleOptions.OptionsFilePath, IdleOptions.IdleSpanThresholdKey));
+var tracker = new ActivityTracker(log, logger: loggerFactory.CreateLogger<ActivityTracker>(), idleSpanThreshold: idleSpanThreshold);
 tracker.Start();
 
 using var stopping = new CancellationTokenSource();
