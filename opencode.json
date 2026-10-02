@@ -9,6 +9,12 @@
       "mode": "subagent",
       "prompt": "{file:./.claude/agents/architecture-review.md}",
       "tools": { "write": false, "edit": false }
+    },
+    "grotz": {
+      "description": "The testers. Hunt for crash weak points in the code and the app, then report the findings to the boss. Read-only.",
+      "mode": "subagent",
+      "prompt": "{file:./.claude/agents/grotz.md}",
+      "tools": { "write": false, "edit": false }
     }
   },
   "lsp": {
