@@ -11,3 +11,6 @@ obj/
 # refs/dolt/data (bd dolt push), so tracking the export only produced
 # follow-up "sync beads issue export" commits.
 .beads/issues.jsonl
+
+*/.idea/workspace.xml
+*/.idea/tasks.xml
