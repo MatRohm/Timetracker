@@ -41,6 +41,12 @@ public sealed class DistributeRowViewModel : ObservableObject
     /// <summary>Why the assigned share cannot be placed; empty when the share is placeable.</summary>
     public string BlockedText { get; private set; } = "";
 
+    /// <summary>
+    /// What the target cell shows: the expected total, or the reason when the share
+    /// cannot be placed.
+    /// </summary>
+    public string TargetDisplayText => TargetText.Length > 0 ? TargetText : BlockedText;
+
     /// <summary>True when the assigned share cannot be placed next to the task's last session.</summary>
     public bool IsBlocked => BlockedText.Length > 0;
 
@@ -77,6 +83,7 @@ public sealed class DistributeRowViewModel : ObservableObject
         BlockedText = blockedText;
         OnPropertyChanged(nameof(ShareText));
         OnPropertyChanged(nameof(TargetText));
+        OnPropertyChanged(nameof(TargetDisplayText));
         OnPropertyChanged(nameof(ChangeText));
         OnPropertyChanged(nameof(BlockedText));
         OnPropertyChanged(nameof(IsBlocked));

@@ -162,9 +162,19 @@ public sealed class DistributeDayWindow : Window
         target.Bind(TextBlock.TextProperty, new Binding
         {
             Source = item,
-            Path = nameof(DistributeRowViewModel.TargetText),
+            Path = nameof(DistributeRowViewModel.TargetDisplayText),
         });
-        ToolTip.SetTip(target, "The task's total once its assigned share is applied");
+        // When placed, the tooltip lists the row's planned session changes; blocked
+        // rows show their reason in the cell itself.
+        var tip = new TextBlock();
+        tip.Bind(TextBlock.TextProperty, new Binding
+        {
+            Source = item,
+            Path = nameof(DistributeRowViewModel.ChangeText),
+            Mode = BindingMode.OneWay,
+            FallbackValue = "The task's total once its assigned share is applied",
+        });
+        ToolTip.SetTip(target, tip);
 
         var minus = new Button
         {

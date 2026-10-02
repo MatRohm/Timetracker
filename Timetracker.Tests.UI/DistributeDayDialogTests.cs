@@ -26,13 +26,16 @@ public sealed class DistributeDayDialogTests
             WeekViewTestSupport.Session(At(12, 0), "Review", minutes: 30));
 
         var texts = DialogTexts(dialog);
-        // The row shows "Now → target" (e.g. "1:00 → 1:30"); the prefill itself is
-        // not printed as a share. Steppers and the summary line must be there.
-        texts.Should().Contain("1:00");
-        texts.Should().Contain("1:30");
-        texts.Should().Contain("0:45");
+        texts.Should().Contain("Report");
+        texts.Should().Contain("Review");
+        texts.Should().Contain("0:45 untracked", "the day's missing time heads the dialog");
         texts.Should().Contain("left 0:00");
-        DialogButtons(dialog).Where(b => (string)(b.Content ?? "") is "−" or "+").Should().HaveCount(4, "two steppers per task row");
+        texts.Should().Contain(t => t.Contains("→"), "each row shows Now → target");
+        DialogButtons(dialog).Where(b => (string)(b.Content ?? "") is "−" or "+")
+            .Should().HaveCount(4, "two steppers per task row");
+        var reportRow = dialog.ViewModel.Rows.Single(r => r.Task == "Report");
+        reportRow.ChangeText.Should().Be("09:00–10:00 → 09:00–10:30",
+            "the row's change tooltip names the planned reschedule");
     }
 
     [AvaloniaTest]
@@ -73,6 +76,12 @@ public sealed class DistributeDayDialogTests
         var reportRow = dialog.ViewModel.Rows.Single(r => r.Task == "Report");
         reportRow.IsBlocked.Should().BeTrue();
         reportRow.BlockedText.Should().Be("no free time next to its last session");
+        reportRow.TargetDisplayText.Should().Be("no free time next to its last session");
+        DialogTexts(dialog).Should().Contain("no free time next to its last session",
+            "the reason is shown in the row's target cell");
+        DialogButtons(dialog).Where(b => (string)(b.Content ?? "") == "−")
+            .Count(b => b.Command is { } && !b.Command.CanExecute(null))
+            .Should().BeGreaterThanOrEqualTo(1, "the boxed row's steppers are disabled");
         dialog.ViewModel.Plan.Tasks.Should().NotContain(t => t.Name == "Report");
         reportRow.IncreaseCommand.CanExecute(null).Should().BeFalse();
     }
