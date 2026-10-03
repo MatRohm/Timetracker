@@ -58,58 +58,29 @@ Only what survives this pass goes into the issue.
 
 ### Step 2: Draft the issue, per repo conventions
 
-Every feature description opens with these four sections at the top, in this
-order — no section may be missing:
+**Use the three templates — do not improvise:**
 
-1. **Goal** — what needs to be achieved, one or two sentences of observable
-   end-state. The reader learns within seconds what "done" means.
-2. **Inputs** (when the feature takes user input from the UI, e.g. an option,
-   a dialog field, a tab) — a table of every input: which type it is
-   (string, alphabetical string, positive integer, decimal, path …) and which
-   validation rules it must adhere to; write "everything is allowed" when
-   none apply. Never omit the column: an unallowed-but-unvalidated input is
-   the classic grot finding. When a feature takes no UI input, the Inputs
-   section is omitted (not left empty) and implied by the non-goals.
-3. **Non-goals** — what this feature deliberately does NOT do, so scope
-   disputes die before they start.
-4. **Acceptance criteria** — the list of conditions that make the feature
-   done, written in Cucumber/Gherkin style (`Given/When/Then`), one scenario
-   per observable behavior. Cover every validation rule from the Inputs
-   table: valid and rejected inputs both get a scenario. Never left
-   implicit: a description without acceptance criteria is a red flag (see
-   Red Flags). Format them for bd's terminal renderer: plain paragraphs are
-   re-flowed by `bd show` (lipgloss), which **strips line-leading indents**;
-   wrap **each scenario in its own fenced ```-block** so Given/When/Then
-   line breaks and indentation survive (`bd show` preserves relative indents
-   inside fences; verified against bd 1.3.1). They go into the beads issue's
-   **acceptance field** (`bd create/update --acceptance`), not the
-   description; if bd has no acceptance field, put them at the top of the
-   design and say so when filing.
+- **Description template** (`--description` value): opens with `Goal`,
+  `Inputs` (a table of every UI input: type + validation rules, or omit the
+  section when the feature takes no UI input), and `Non-goals`, in that
+  order. See
+  [references/description.md](references/description.md).
+- **Acceptance criteria template** (`--acceptance` value): Given/When/Then
+  scenarios, one per observable behavior, each in its own fenced ```-block
+  so `bd show`'s reflowing cannot strip the indents. See
+  [references/acceptance-criteria.md](references/acceptance-criteria.md).
+- **Design template** (`--design` / `--design-file` value): the plan —
+  Context why, ordered Approach steps with concrete anchors, Verification,
+  critical files & anchors, assumptions & contingencies, sequencing.
+  Scale down for small plans, never reorder. See
+  [references/design.md](references/design.md).
 
-The skeleton shows all four sections at the top of the work order (the
-description holds Goal/Inputs/Non-goals; Acceptance criteria lives in the
-acceptance field):
-
-```markdown
-Goal
-    <what needs to be achieved>
-
-Inputs
-    | Input       | Type               | Validation rules                  |
-    | ----------- | ------------------ | --------------------------------- |
-    | Issue count | Positive integer   | 1–500; rejects 0, negatives, text |
-
-Non-goals
-    - <deliberately out of scope>
-
-Acceptance criteria — --acceptance value (fenced per scenario):
-    ```
-    Scenario: <one observable behavior>
-        Given <initial state>
-        When <action>
-        Then <expected outcome>
-    ```
-```
+Read all three template files before drafting; they hold the exact section
+skeletons, filled examples, and the renderer-formatting rules. In short:
+description = what + why only (never the plan — the plan goes to `--design`
+/ `--design-file`); acceptance criteria go to the beads acceptance field,
+not the description; if bd has no acceptance field, put them at the top of
+the design and say so when filing.
 
 Apply the repo's beads conventions exactly:
 
@@ -149,6 +120,9 @@ resolve first.
   generalization) beyond what the goal demands?
 - (If a plan/design exists) [ ] Steps in dependency order, each independently
   verifiable? [ ] Smallest set of touched files?
+- (If a design exists) [ ] Design follows the design template: Context why,
+  ordered Approach with concrete anchors, Verification, assumptions &
+  contingencies? [ ] Plan lives in the design field, never the description?
 
 **Explanation**
 - [ ] Why does this work exist (what user pain / rule / bug)?
@@ -201,18 +175,25 @@ the plan in the description.
 
 When reporting a challenge (the draft fails a check), return:
 
-1. One line: `Commisar review: <n> gaps (<h> heresy, <w> worth asking, <o> ok
-   after fix).`
+1. One line: `Commisar review: <n> gaps (<h> heresy, <i> inquisitor, <c>
+   commisar's duty).`
 2. Table:
 
    | # | Verdict | Check | Gap | Suggested fix |
    |---|---|---|---|---|
    | 1 | Heresy | Precision | "etc." in scope of Step 3 | List the exact files; "etc." forbids execution |
-   | 2 | Ask | Explanation | Unknown why for dropping `Foo` | Offer 2 concrete options |
+   | 2 | Call the inquisitor | Explanation | Unknown why for dropping `Foo` | Offer 2 concrete options |
+   | 3 | Commisar's duty | Precision | Input table missing a row | Added a row for `Foo`, verify rules |
 
-   - `Verdict`: `Heresy` (blocks filing), `Ask` (inputter must answer), or
-     `Fix` (I can fix in the draft), sorted in that order.
-   - `Check` is one of the nine checklist labels above.
+   - `Verdict`: sorted in this order —
+     - **`Heresy`** — obvious defects/gaps in the story (e.g. "etc.", "and
+       so on"); these MUST NOT survive the end definition of the story.
+       They block filing.
+     - **`Call the inquisitor`** — less obvious things that should be
+       discussed in more detail; the inputter must answer before filing.
+     - **`Commisar's duty`** — things the Commisar changed himself during
+       processing; already fixed in the draft.
+   - `Check` is one of the checklist labels above.
    - `Gap`: what is missing, ≤ 8 words. `Suggested fix`: ≤ 8 words, concrete.
 3. Nothing else. No summary paragraph, no re-litigation of decided points.
    Decided things stay decided unless new evidence appears ("commissars do not
