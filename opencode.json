@@ -15,6 +15,12 @@
       "mode": "subagent",
       "prompt": "{file:./.claude/agents/grotz.md}",
       "tools": { "write": false, "edit": false }
+    },
+    "lictor": {
+      "description": "The infiltrator. Measures coverage with dotnet-coverage, reports the gaps it will close and the gaps it leaves alone (with reasons), then closes three to five of them with test code only. Production code is never touched.",
+      "mode": "subagent",
+      "prompt": "{file:./.claude/agents/lictor.md}",
+      "tools": { "write": true, "edit": true }
     }
   },
   "lsp": {

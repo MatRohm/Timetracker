@@ -64,7 +64,7 @@ public sealed class AgentConfigurationRules
 
         File.Exists(Path.Combine(root, SharedInstructions)).Should().BeTrue(
             $"{SharedInstructions} holds the instructions for both agents");
-        foreach (var skill in new[] { "beads", "solid" })
+        foreach (var skill in new[] { "beads", "solid", "lictor" })
         {
             File.Exists(Path.Combine(root, SharedSkills, skill, "SKILL.md")).Should().BeTrue(
                 $"the {skill} skill must live in {SharedSkills}, where both agents read it");
@@ -72,6 +72,8 @@ public sealed class AgentConfigurationRules
     }
 
     [TestCase("architecture-review")]
+    [TestCase("grotz")]
+    [TestCase("lictor")]
     public void Opencode_config_uses_the_shared_agent_definition(string agent)
     {
         // The subagent is defined once in .claude/agents; opencode must load that
