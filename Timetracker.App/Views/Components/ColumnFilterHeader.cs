@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Timetracker.App.Localization;
 using Timetracker.App.ViewModels;
 
 namespace Timetracker.App.Views.Components;
@@ -43,7 +44,7 @@ public sealed class ColumnFilterHeader : UserControl
         _toggle.Content = BuildFunnelIcon();
         _toggle.Padding = new Thickness(4, 1);
         _toggle.VerticalAlignment = VerticalAlignment.Center;
-        ToolTip.SetTip(_toggle, $"Filter by {caption}");
+        ToolTip.SetTip(_toggle, string.Format(Strings.Grid_FilterBy, caption));
         _toggle.IsCheckedChanged += (_, _) => OnToggleChanged();
 
         _filterBox.Watermark = caption;

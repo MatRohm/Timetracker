@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Timetracker.Plugins.WeekView.Localization;
 using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Contracts.Interfaces;
 using Timetracker.Plugins.WeekView.ViewModels;
@@ -21,7 +22,7 @@ public sealed class WeekTabContributor : ITabQuery
 
     public string TabKey => TabKeys.WeekView;
 
-    public string Header => "Week view";
+    public string Header => Strings.Tab_WeekView;
 
     public int Order => 1;
 

@@ -82,4 +82,14 @@
     <Warning Text="$(ActivityMonitorFileName) was not found to publish; the install button will not find the monitor." Condition="!Exists('$(ActivityMonitorOutputDir)$(ActivityMonitorFileName)')" />
   </Target>
 
+  <ItemGroup>
+    <EmbeddedResource Update="Localization\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <Compile Update="Localization\Strings.Designer.cs">
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
 </Project>

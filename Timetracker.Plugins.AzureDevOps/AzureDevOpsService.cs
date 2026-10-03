@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Timetracker.Plugins.AzureDevOps.Localization;
 using Timetracker.Plugins.Contracts.Interfaces;
 using Timetracker.Plugins.Contracts;
 
@@ -14,9 +15,7 @@ namespace Timetracker.Plugins.AzureDevOps;
 public sealed class AzureDevOpsService : IDisposable
 {
     /// <summary>Shown when the import is used without a usable connection.</summary>
-    public const string NotConfiguredMessage =
-        "Azure DevOps is not configured. Enter the organization URL, project and "
-        + "personal access token in the Azure DevOps section of the Options tab.";
+    public static readonly string NotConfiguredMessage = Strings.AzureDevOps_NotConfigured;
 
     private readonly Func<AzureDevOpsConfig> _config;
     private readonly Func<AzureDevOpsConfig, AzureDevOpsClient> _clientFactory;
@@ -64,7 +63,7 @@ public sealed class AzureDevOpsService : IDisposable
         var numberText = issueNumberText.Trim();
         if (numberText.Length == 0 || !int.TryParse(numberText, out var id) || id <= 0)
         {
-            return ApplyResult.Failure("Please enter a numeric issue number first.");
+            return ApplyResult.Failure(Strings.AzureDevOps_NumericFirst);
         }
 
         var config = _config();
@@ -83,19 +82,19 @@ public sealed class AzureDevOpsService : IDisposable
             or InvalidOperationException or System.Net.Sockets.SocketException)
         {
             _logger.LogError(ex, "Could not look up work item {Id}", id);
-            return ApplyResult.Failure("Azure DevOps request failed: " + ex.Message);
+            return ApplyResult.Failure(string.Format(Strings.AzureDevOps_RequestFailed, ex.Message));
         }
 
         if (workItem is null)
         {
-            return ApplyResult.Failure($"Work item {id} was not found.");
+            return ApplyResult.Failure(string.Format(Strings.AzureDevOps_WorkItemNotFound, id));
         }
 
         var taskName = $"{workItem.Id} {workItem.Title}".Trim();
         host.SetTaskName(taskName);
         host.SetBookingElement(workItem.BookingElement);
-        host.ShowStatus($"✓ Applied \"{taskName}\""
-            + (workItem.BookingElement.Length > 0 ? $" ({workItem.BookingElement})" : ""),
+        var element = workItem.BookingElement.Length > 0 ? $" ({workItem.BookingElement})" : "";
+        host.ShowStatus(string.Format(Strings.AzureDevOps_Applied, taskName, element),
             TrackerStatusKind.Success);
 
         var result = ApplyResult.Successful(taskName, workItem.BookingElement);

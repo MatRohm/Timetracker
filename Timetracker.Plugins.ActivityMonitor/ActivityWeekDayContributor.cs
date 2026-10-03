@@ -1,4 +1,5 @@
 using Timetracker.Plugins.Contracts;
+using Timetracker.Plugins.ActivityMonitor.Localization;
 using Timetracker.Plugins.Contracts.Interfaces;
 
 namespace Timetracker.Plugins.ActivityMonitor;
@@ -39,11 +40,9 @@ public sealed class ActivityWeekDayContributor : IWeekDayQuery, IDayActivityQuer
             return "";
         }
 
-        var result = "PC " + HoursMinutes(activeSeconds) + " active";
-        if (idleSeconds > 0)
-        {
-            result += " · " + HoursMinutes(idleSeconds) + " idle";
-        }
+        var result = idleSeconds > 0
+            ? string.Format(Strings.ActivityMon_DaySummaryIdle, HoursMinutes(activeSeconds), HoursMinutes(idleSeconds))
+            : string.Format(Strings.ActivityMon_DaySummaryActive, HoursMinutes(activeSeconds));
 
         var text = result;
         return text;

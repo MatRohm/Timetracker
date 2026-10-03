@@ -3,6 +3,7 @@ using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Input;
 using Timetracker.Plugins.Contracts.ViewModels;
+using Timetracker.App.Localization;
 using Timetracker.App.ViewModels;
 
 namespace Timetracker.App.Views.Components;
@@ -36,7 +37,7 @@ public sealed class TaskInputField : UserControl
     {
         var label = new TextBlock
         {
-            Text = "Task name",
+            Text = Strings.TaskInput_Placeholder,
             Margin = new Avalonia.Thickness(0, 0, 0, 4),
         };
 

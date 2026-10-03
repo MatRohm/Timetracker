@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Timetracker.App.Interfaces;
+using Timetracker.App.Localization;
 using Timetracker.Plugins.Contracts.ViewModels.Mvvm;
 using Timetracker.Plugins.Contracts.Interfaces;
 
@@ -64,11 +65,11 @@ public sealed class OptionsViewModel : ObservableObject
                 await _command.SetValueAsync(row.Definition.Key, row.Value, cancellationToken);
                 row.AcceptValue();
             }
-            StatusText = "Options saved.";
+            StatusText = Strings.Options_Saved;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            StatusText = "Could not save the options: " + ex.Message;
+            StatusText = string.Format(Strings.Options_SaveFailed, ex.Message);
         }
     }
 

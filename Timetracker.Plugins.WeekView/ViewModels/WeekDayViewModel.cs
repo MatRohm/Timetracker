@@ -1,4 +1,5 @@
 using System.Globalization;
+using Timetracker.Plugins.WeekView.Localization;
 using System.Windows.Input;
 using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Contracts.ViewModels.Mvvm;
@@ -15,7 +16,7 @@ namespace Timetracker.Plugins.WeekView.ViewModels;
 public sealed class WeekDayViewModel : ObservableObject
 {
     /// <summary>Group name used for entries that carry no booking element.</summary>
-    public const string NoBookingElementLabel = "<None>";
+    public static readonly string NoBookingElementLabel = Strings.Week_NoBookingElement;
 
     /// <summary>Untracked time from which the day row warns (highlighted, "⚠").</summary>
     public static readonly TimeSpan UntrackedWarningThreshold = TimeSpan.FromMinutes(15);
@@ -144,8 +145,8 @@ public sealed class WeekDayViewModel : ObservableObject
 
     /// <summary>Tooltip for the round action.</summary>
     public string RoundingHint => CanRound
-        ? "Round each task's time on this day to the nearest half hour"
-        : "Every task on this day is already on a half hour";
+        ? Strings.Week_RoundingHintIdle
+        : Strings.Week_RoundingHintAlready;
 
     /// <summary>
     /// One confirmation line per rounded task, e.g.
@@ -178,8 +179,8 @@ public sealed class WeekDayViewModel : ObservableObject
 
     /// <summary>Tooltip for the distribute action.</summary>
     public string DistributionHint => CanDistribute
-        ? "Distribute the day's untracked time over its tasks"
-        : "Nothing to distribute: the day has no untracked time, or no task can absorb it";
+        ? Strings.Week_DistributionHint
+        : Strings.Week_DistributionHintNone;
 
     /// <summary>Replaces the day's distribution plan.</summary>
     public void SetDistribution(DistributionPlan distribution)

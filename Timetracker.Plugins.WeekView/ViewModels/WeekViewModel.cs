@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Timetracker.Plugins.WeekView.Localization;
 using System.Globalization;
 using System.Windows.Input;
 using Timetracker.Plugins.Contracts;
@@ -135,7 +136,7 @@ public sealed class WeekViewModel : ObservableObject
     {
         if (plan.Changes.Count == 0)
         {
-            ShowStatus("Nothing could be distributed.", WeekStatus.Info);
+            ShowStatus(Strings.Week_NothingToDistribute, WeekStatus.Info);
             return false;
         }
 
@@ -147,7 +148,7 @@ public sealed class WeekViewModel : ObservableObject
             {
                 assigned += task.Share;
             }
-            ShowStatus($"✓ Distributed {WeekTimeFormat.HoursMinutes(assigned)} over {plan.Tasks.Count} task(s) on {day.Header}.", WeekStatus.Success);
+            ShowStatus(string.Format(Strings.Week_Distributed, WeekTimeFormat.HoursMinutes(assigned), plan.Tasks.Count, day.Header), WeekStatus.Success);
         }
 
         return saved;
@@ -162,12 +163,12 @@ public sealed class WeekViewModel : ObservableObject
     public async Task<bool> RoundDayAsync(WeekDayViewModel day, Func<IReadOnlyList<string>, Task<bool>> confirm)
     {
         var plan = day.Rounding;
-        var skipped = day.RoundingSkippedLines.Select(s => "Skipped: " + s).ToList();
+        var skipped = day.RoundingSkippedLines.Select(s => Strings.Week_Skipped + s).ToList();
         if (plan.Changes.Count == 0)
         {
             if (skipped.Count > 0)
             {
-                ShowStatus("Nothing could be rounded. " + string.Join(" · ", skipped), WeekStatus.Info);
+                ShowStatus(Strings.Week_NothingToRound + string.Join(" · ", skipped), WeekStatus.Info);
             }
             return false;
         }
@@ -181,7 +182,7 @@ public sealed class WeekViewModel : ObservableObject
         if (saved)
         {
             var note = skipped.Count > 0 ? " " + string.Join(" · ", skipped) : "";
-            ShowStatus($"✓ Rounded {plan.Tasks.Count} task(s) on {day.Header} to half hours.{note}", WeekStatus.Success);
+            ShowStatus(string.Format(Strings.Week_Rounded, plan.Tasks.Count, day.Header, note), WeekStatus.Success);
         }
 
         return saved;
@@ -245,8 +246,8 @@ public sealed class WeekViewModel : ObservableObject
                     sessions, running, WeekDayViewModel.MinimumGapDuration));
         }
 
-        WeekTotalText = $"Σ {WeekTimeFormat.HoursMinutes(weekSessions.Sum(s => s.DurationSeconds))}";
-        WeekTitle = $"Week {ISOWeek.GetWeekOfYear(_weekStart.LocalDateTime):00} · {FormatRange(_weekStart)}";
+        WeekTotalText = string.Format(Strings.Week_TotalText, WeekTimeFormat.HoursMinutes(weekSessions.Sum(s => s.DurationSeconds)));
+        WeekTitle = string.Format(Strings.Week_HeaderTitle, ISOWeek.GetWeekOfYear(_weekStart.LocalDateTime).ToString("00"), FormatRange(_weekStart));
     }
 
     /// <summary>Collapses every day (and group) of the selected week.</summary>

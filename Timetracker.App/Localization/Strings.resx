@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Tracker_Start" xml:space="preserve">
+    <value>▶ Start</value>
+  </data>
+  <data name="Tracker_Stop" xml:space="preserve">
+    <value>■ Stop</value>
+  </data>
+  <data name="Tracker_Previous" xml:space="preserve">
+    <value>◀ Previous</value>
+  </data>
+  <data name="Tracker_Next" xml:space="preserve">
+    <value>Next ▶</value>
+  </data>
+  <data name="Tracker_EmptyTask" xml:space="preserve">
+    <value>Please enter a task name first.</value>
+  </data>
+  <data name="Tracker_InvalidTaskTitle" xml:space="preserve">
+    <value>Timetracker</value>
+  </data>
+  <data name="Tracker_InvalidTaskOk" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Tracker_TimerZero" xml:space="preserve">
+    <value>00:00:00</value>
+  </data>
+  <data name="App_Title" xml:space="preserve">
+    <value>Timetracker</value>
+  </data>
+  <data name="App_TabTracker" xml:space="preserve">
+    <value>Tracker</value>
+  </data>
+  <data name="App_TabOptions" xml:space="preserve">
+    <value>Options</value>
+  </data>
+  <data name="EditEntries_Title" xml:space="preserve">
+    <value>Edit entries – {0}</value>
+  </data>
+  <data name="EditEntries_Hint" xml:space="preserve">
+    <value>Adjust the start and end times; the duration is recalculated. Use ✕ to delete a single session.</value>
+  </data>
+  <data name="EditEntries_EndBeforeStart" xml:space="preserve">
+    <value>The end time must not be before the start time.</value>
+  </data>
+  <data name="EditEntries_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="EditEntries_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="EditEntries_Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="EditEntries_DeleteConfirm" xml:space="preserve">
+    <value>Delete the session {0} – {1} ({2})?</value>
+  </data>
+  <data name="EditEntries_DeletionToolTip" xml:space="preserve">
+    <value>Delete this session</value>
+  </data>
+  <data name="EditEntries_TaskHeader" xml:space="preserve">
+    <value>Task</value>
+  </data>
+  <data name="EditEntries_StartHeader" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="EditEntries_EndHeader" xml:space="preserve">
+    <value>End</value>
+  </data>
+  <data name="EditEntries_DurationHeader" xml:space="preserve">
+    <value>Duration</value>
+  </data>
+  <data name="Grid_CaptionTask" xml:space="preserve">
+    <value>Task</value>
+  </data>
+  <data name="Grid_CaptionBookingElement" xml:space="preserve">
+    <value>Booking element</value>
+  </data>
+  <data name="Grid_CaptionStarted" xml:space="preserve">
+    <value>Started</value>
+  </data>
+  <data name="Grid_CaptionEnded" xml:space="preserve">
+    <value>Ended</value>
+  </data>
+  <data name="Grid_CaptionDuration" xml:space="preserve">
+    <value>Duration</value>
+  </data>
+  <data name="Grid_EditToolTip" xml:space="preserve">
+    <value>Edit this item's entries</value>
+  </data>
+  <data name="Grid_StartToolTip" xml:space="preserve">
+    <value>Start timing this task</value>
+  </data>
+  <data name="Grid_FilterBy" xml:space="preserve">
+    <value>Filter by {0}</value>
+  </data>
+  <data name="TaskInput_Placeholder" xml:space="preserve">
+    <value>Task name</value>
+  </data>
+  <data name="Options_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Options_ExplorerToolTip" xml:space="preserve">
+    <value>Show in explorer</value>
+  </data>
+  <data name="Options_HintAutomationName" xml:space="preserve">
+    <value>Hint for {0}</value>
+  </data>
+  <data name="SingleInstance_Title" xml:space="preserve">
+    <value>Timetracker</value>
+  </data>
+  <data name="SingleInstance_Message" xml:space="preserve">
+    <value>Timetracker is already running.</value>
+  </data>
+  <data name="Tracker_EntriesAppended" xml:space="preserve">
+    <value>Entries are appended to {0}</value>
+  </data>
+  <data name="Tracker_Deleted" xml:space="preserve">
+    <value>✓ Deleted {0}</value>
+  </data>
+  <data name="Tracker_DeleteFailed" xml:space="preserve">
+    <value>✗ Delete failed: {0}</value>
+  </data>
+  <data name="Tracker_Updated" xml:space="preserve">
+    <value>✓ Updated "{0}"</value>
+  </data>
+  <data name="Tracker_UpdateFailed" xml:space="preserve">
+    <value>✗ Update failed: {0}</value>
+  </data>
+  <data name="Tracker_ErrorDeleteEntry" xml:space="preserve">
+    <value>Could not delete the entry:
+{0}</value>
+  </data>
+  <data name="Tracker_ErrorSaveChanges" xml:space="preserve">
+    <value>Could not save the changes:
+{0}</value>
+  </data>
+  <data name="Tracker_ErrorSaveChange" xml:space="preserve">
+    <value>Could not save the change:
+{0}</value>
+  </data>
+  <data name="Tracker_ErrorSaveEntry" xml:space="preserve">
+    <value>Could not save the entry:
+{0}</value>
+  </data>
+  <data name="Tracker_Saved" xml:space="preserve">
+    <value>✓ Saved {0} to {1}</value>
+  </data>
+  <data name="Tracker_SaveFailed" xml:space="preserve">
+    <value>✗ Save failed: {0}</value>
+  </data>
+  <data name="Tracker_TrackingSince" xml:space="preserve">
+    <value>Tracking "{0}" since {1:HH:mm:ss} …</value>
+  </data>
+  <data name="Tracker_WindowTitleRunning" xml:space="preserve">
+    <value>Timetracker – {0}</value>
+  </data>
+  <data name="Tracker_DeleteSummarySingle" xml:space="preserve">
+    <value>"{0}" (all {1} sessions)</value>
+  </data>
+  <data name="Tracker_DeleteSummaryMulti" xml:space="preserve">
+    <value>{0} tasks ({1} sessions)</value>
+  </data>
+  <data name="EditEntries_WithoutTask" xml:space="preserve">
+    <value>(without task)</value>
+  </data>
+  <data name="EditEntries_SessionSingle" xml:space="preserve">
+    <value>session</value>
+  </data>
+  <data name="EditEntries_SessionPlural" xml:space="preserve">
+    <value>sessions</value>
+  </data>
+  <data name="Status_Paging" xml:space="preserve">
+    <value>Page {0} of {1}</value>
+  </data>
+  <data name="Options_Saved" xml:space="preserve">
+    <value>Options saved.</value>
+  </data>
+  <data name="Options_SaveFailed" xml:space="preserve">
+    <value>Could not save the options: {0}</value>
+  </data>
+  <data name="Options_SectionGeneral" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="Options_TrackingFile" xml:space="preserve">
+    <value>Tracking file</value>
+  </data>
+  <data name="Options_OptionsFile" xml:space="preserve">
+    <value>Options file</value>
+  </data>
+  <data name="Options_LogFolder" xml:space="preserve">
+    <value>Log folder</value>
+  </data>
+  <data name="Options_TrackingFileHint" xml:space="preserve">
+    <value>The tracked sessions are stored in this JSON file.</value>
+  </data>
+  <data name="Options_OptionsFileHint" xml:space="preserve">
+    <value>The options are stored in this JSON file.</value>
+  </data>
+  <data name="Options_LogFolderHint" xml:space="preserve">
+    <value>Diagnostic log files are written to this folder.</value>
+  </data>
+</root>

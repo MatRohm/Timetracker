@@ -1,4 +1,5 @@
 using Timetracker.Plugins.Contracts;
+using Timetracker.Plugins.WeekView.Localization;
 using Timetracker.Plugins.Contracts.ViewModels.Mvvm;
 using Timetracker.Plugins.WeekView.Services;
 
@@ -17,7 +18,7 @@ public sealed class DistributeDayViewModel : ObservableObject
     /// <summary>The step by which the steppers move time between the rows.</summary>
     private static readonly TimeSpan Step = TimeSpan.FromMinutes(15);
 
-    private const string BlockedReason = "no free time next to its last session";
+    private static readonly string BlockedReason = Strings.Week_DistributeBlocked;
 
     private readonly IReadOnlyList<TrackedSession> _allSessions;
     private readonly TimeRange? _running;
@@ -40,7 +41,9 @@ public sealed class DistributeDayViewModel : ObservableObject
 
         _rows = [.. CreateRows(daySessions)];
         Remaining = missing;
-        MissingText = missing > TimeSpan.Zero ? $"{WeekTimeFormat.HoursMinutes(missing)} untracked" : "";
+        MissingText = missing > TimeSpan.Zero
+            ? string.Format(Strings.Week_DistributeUntracked, WeekTimeFormat.HoursMinutes(missing))
+            : "";
         RemainingText = RemainingTextFor(Remaining);
         Plan = DistributionPlan.Empty;
 
@@ -187,6 +190,6 @@ public sealed class DistributeDayViewModel : ObservableObject
         OnPropertyChanged(nameof(RemainingText));
     }
 
-    private static string RemainingTextFor(TimeSpan remaining) => $"left {WeekTimeFormat.HoursMinutes(remaining)}";
+    private static string RemainingTextFor(TimeSpan remaining) => string.Format(Strings.Week_DistributeLeft, WeekTimeFormat.HoursMinutes(remaining));
 }
 

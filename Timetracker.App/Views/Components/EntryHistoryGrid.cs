@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Threading;
 using Timetracker.Plugins.Contracts.Ui;
+using Timetracker.App.Localization;
 using Timetracker.App.ViewModels;
 
 namespace Timetracker.App.Views.Components;
@@ -75,7 +76,7 @@ public sealed class EntryHistoryGrid : UserControl
 
         _grid.Columns.Add(new DataGridTextColumn
         {
-            Header = BuildFilterHeader(nameof(EntryRow.Task), "Task"),
+            Header = BuildFilterHeader(nameof(EntryRow.Task), Strings.Grid_CaptionTask),
             Width = new DataGridLength(28, DataGridLengthUnitType.Star),
             SortMemberPath = nameof(EntryRow.Task),
             Binding = new Binding(nameof(EntryRow.Task)),
@@ -83,7 +84,7 @@ public sealed class EntryHistoryGrid : UserControl
         });
         _grid.Columns.Add(new DataGridTextColumn
         {
-            Header = BuildFilterHeader(nameof(EntryRow.BookingElement), "Booking element"),
+            Header = BuildFilterHeader(nameof(EntryRow.BookingElement), Strings.Grid_CaptionBookingElement),
             Width = new DataGridLength(28, DataGridLengthUnitType.Star),
             Binding = new Binding(nameof(EntryRow.BookingElement)),
             // Not sortable: the original app never sorted by booking element.
@@ -92,7 +93,7 @@ public sealed class EntryHistoryGrid : UserControl
         });
         _grid.Columns.Add(new DataGridTextColumn
         {
-            Header = BuildFilterHeader(nameof(EntryRow.StartText), "Started"),
+            Header = BuildFilterHeader(nameof(EntryRow.StartText), Strings.Grid_CaptionStarted),
             Width = new DataGridLength(18, DataGridLengthUnitType.Star),
             SortMemberPath = nameof(EntryRow.StartText),
             Binding = new Binding(nameof(EntryRow.StartText)),
@@ -100,7 +101,7 @@ public sealed class EntryHistoryGrid : UserControl
         });
         _grid.Columns.Add(new DataGridTextColumn
         {
-            Header = BuildFilterHeader(nameof(EntryRow.EndText), "Ended"),
+            Header = BuildFilterHeader(nameof(EntryRow.EndText), Strings.Grid_CaptionEnded),
             Width = new DataGridLength(18, DataGridLengthUnitType.Star),
             SortMemberPath = nameof(EntryRow.EndText),
             Binding = new Binding(nameof(EntryRow.EndText)),
@@ -108,7 +109,7 @@ public sealed class EntryHistoryGrid : UserControl
         });
         _grid.Columns.Add(new DataGridTextColumn
         {
-            Header = "Duration",
+            Header = Strings.Grid_CaptionDuration,
             Width = new DataGridLength(8, DataGridLengthUnitType.Star),
             MinWidth = 80,
             SortMemberPath = nameof(EntryRow.Duration),
@@ -166,7 +167,7 @@ public sealed class EntryHistoryGrid : UserControl
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
         };
-        ToolTip.SetTip(button, "Edit this item's entries");
+        ToolTip.SetTip(button, Strings.Grid_EditToolTip);
 
         button.Click += (_, _) =>
         {
@@ -194,7 +195,7 @@ public sealed class EntryHistoryGrid : UserControl
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
         };
-        ToolTip.SetTip(button, "Start timing this task");
+        ToolTip.SetTip(button, Strings.Grid_StartToolTip);
 
         button.Click += (_, _) =>
         {

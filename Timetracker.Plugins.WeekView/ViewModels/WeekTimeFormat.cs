@@ -1,4 +1,5 @@
 using Timetracker.Plugins.Contracts;
+using Timetracker.Plugins.WeekView.Localization;
 
 namespace Timetracker.Plugins.WeekView.ViewModels;
 
@@ -21,7 +22,7 @@ internal static class WeekTimeFormat
         var original = ClockRange(change.Original.Start, change.Original.End);
         var result = change.Updated is { } updated
             ? $"{original} → {ClockRange(updated.Start, updated.End)}"
-            : $"{original} removed";
+            : string.Format(Strings.Week_ChangeRemovedFormat, original);
         return result;
     }
 

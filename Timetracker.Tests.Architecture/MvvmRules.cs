@@ -49,10 +49,14 @@ public sealed class MvvmRules
         // Services are mostly consumed through their interfaces (ITrackerRepository,
         // IUiTimer, ...), so both are allowed; views stay off-limits. The pattern also
         // matches the root namespace itself, where the composition root lives.
+        // Localization is allowed for the same reason as Services: it is a leaf of
+        // resource lookups with no Avalonia, I/O or composition-root dependency, and
+        // both views and view models show user-visible text (decided 2026-10-03,
+        // timetracker-lsr).
         IArchRule rule = Types().That().ResideInNamespaceMatching(@"^Timetracker\.App\.ViewModels(\..*)?$")
             .Should().NotDependOnAny(
                 Types().That().ResideInNamespaceMatching(
-                    @"^Timetracker\.App(\.(?!(Models|ViewModels|Services|Interfaces)(\..*)?$).+)?$"))
+                    @"^Timetracker\.App(\.(?!(Models|ViewModels|Services|Interfaces|Localization)(\..*)?$).+)?$"))
             .Because("view models may only depend on Timetracker.App.Models, .Services and .Interfaces, "
                 + "never on the composition root (App, HookRegistry, Program)");
 
@@ -65,7 +69,7 @@ public sealed class MvvmRules
         IArchRule rule = Types().That().ResideInNamespaceMatching(@"^Timetracker\.App\.Views(\..*)?$")
             .Should().NotDependOnAny(
                 Types().That().ResideInNamespaceMatching(
-                    @"^Timetracker\.App(\.(?!(ViewModels|Views)(\..*)?$).+)?$"))
+                    @"^Timetracker\.App(\.(?!(ViewModels|Views|Localization)(\..*)?$).+)?$"))
             .Because("views may only depend on Timetracker.App.ViewModels, "
                 + "never on the composition root (App, HookRegistry, Program)");
 

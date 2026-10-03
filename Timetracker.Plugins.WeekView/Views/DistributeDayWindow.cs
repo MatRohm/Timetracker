@@ -1,4 +1,5 @@
 using Avalonia;
+using Timetracker.Plugins.WeekView.Localization;
 using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Layout;
@@ -21,7 +22,7 @@ public sealed class DistributeDayWindow : Window
     {
         ViewModel = viewModel;
 
-        Title = "Distribute untracked time";
+        Title = Strings.Week_DistributeTitle;
         Width = 560;
         SizeToContent = SizeToContent.Height;
         CanResize = false;
@@ -71,7 +72,7 @@ public sealed class DistributeDayWindow : Window
             Content = BuildRowGrid(),
         };
 
-        var distribute = new Button { Content = "Distribute", IsDefault = true };
+        var distribute = new Button { Content = Strings.DistributeDay_Apply, IsDefault = true };
         distribute.Bind(IsEnabledProperty, new Binding
         {
             Source = ViewModel,
@@ -83,7 +84,7 @@ public sealed class DistributeDayWindow : Window
             Close(true);
         };
 
-        var cancel = new Button { Content = "Cancel", IsCancel = true };
+        var cancel = new Button { Content = Strings.DistributeDay_Cancel, IsCancel = true };
         cancel.Click += (_, _) => Close(false);
 
         var actions = new StackPanel
@@ -115,8 +116,8 @@ public sealed class DistributeDayWindow : Window
             RowSpacing = 6,
         };
 
-        AddHeader(grid, 0, 0, "Task");
-        AddHeader(grid, 0, 1, "Now");
+        AddHeader(grid, 0, 0, Strings.DistributeDay_TaskHeader);
+        AddHeader(grid, 0, 1, Strings.DistributeDay_NowHeader);
         AddHeader(grid, 0, 2, "→");
 
         for (var i = 0; i < ViewModel.Rows.Count; i++)
@@ -172,7 +173,7 @@ public sealed class DistributeDayWindow : Window
             Source = item,
             Path = nameof(DistributeRowViewModel.ChangeText),
             Mode = BindingMode.OneWay,
-            FallbackValue = "The task's total once its assigned share is applied",
+            FallbackValue = Strings.DistributeDay_TotalFallback,
         });
         ToolTip.SetTip(target, tip);
 
@@ -186,7 +187,7 @@ public sealed class DistributeDayWindow : Window
             VerticalAlignment = VerticalAlignment.Center,
         };
         minus.Command = item.DecreaseCommand;
-        ToolTip.SetTip(minus, "Take 15 minutes back");
+        ToolTip.SetTip(minus, Strings.DistributeDay_MinusToolTip);
 
         var plus = new Button
         {
@@ -198,7 +199,7 @@ public sealed class DistributeDayWindow : Window
             VerticalAlignment = VerticalAlignment.Center,
         };
         plus.Command = item.IncreaseCommand;
-        ToolTip.SetTip(plus, "Add 15 minutes to this task");
+        ToolTip.SetTip(plus, Strings.DistributeDay_PlusToolTip);
 
         var steppers = new StackPanel
         {

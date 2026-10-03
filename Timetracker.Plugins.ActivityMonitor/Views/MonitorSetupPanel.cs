@@ -1,4 +1,5 @@
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
+using Timetracker.Plugins.ActivityMonitor.Localization;
 using Timetracker.Plugins.Contracts.Interfaces;
 using Avalonia.Controls;
 using Avalonia.Layout;
@@ -30,10 +31,10 @@ public sealed class MonitorSetupPanel : UserControl
     {
         _viewModel = new MonitorSetupViewModel(installer, statusHost);
 
-        _installButton.Content = "⏻ Install PC activity monitor";
+        _installButton.Content = Strings.ActivityMon_Install;
         _installButton.Click += (_, _) => _viewModel.Install();
 
-        _uninstallButton.Content = "⏻ Remove PC activity monitor";
+        _uninstallButton.Content = Strings.ActivityMon_Remove;
         _uninstallButton.Click += (_, _) => _viewModel.Uninstall();
 
         Content = new StackPanel

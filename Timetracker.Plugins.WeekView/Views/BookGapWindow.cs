@@ -1,4 +1,5 @@
 using Avalonia;
+using Timetracker.Plugins.WeekView.Localization;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
@@ -24,7 +25,7 @@ public sealed class BookGapWindow : Window
     {
         ViewModel = viewModel;
 
-        Title = "Book untracked time";
+        Title = Strings.BookGap_Title;
         Width = 460;
         SizeToContent = SizeToContent.Height;
         CanResize = false;
@@ -39,7 +40,7 @@ public sealed class BookGapWindow : Window
     {
         var hint = new TextBlock
         {
-            Text = "The PC was active here without a tracked session. Adjust the times if needed.",
+            Text = Strings.BookGap_Hint,
             Foreground = Brushes.Gray,
             TextWrapping = TextWrapping.Wrap,
         };
@@ -51,18 +52,18 @@ public sealed class BookGapWindow : Window
             ColumnSpacing = 8,
             RowSpacing = 6,
         };
-        AddRow(fields, 0, "Start", BoundTextBox(ViewModel.Times, nameof(SessionEditRow.StartText)));
-        AddRow(fields, 1, "End", BoundTextBox(ViewModel.Times, nameof(SessionEditRow.EndText)));
-        AddRow(fields, 2, "Duration", BoundText(ViewModel.Times, nameof(SessionEditRow.DurationText)));
-        AddRow(fields, 3, "Task", BoundTextBox(ViewModel, nameof(BookGapViewModel.TaskName)));
+        AddRow(fields, 0, Strings.BookGap_Start, BoundTextBox(ViewModel.Times, nameof(SessionEditRow.StartText)));
+        AddRow(fields, 1, Strings.BookGap_End, BoundTextBox(ViewModel.Times, nameof(SessionEditRow.EndText)));
+        AddRow(fields, 2, Strings.BookGap_Duration, BoundText(ViewModel.Times, nameof(SessionEditRow.DurationText)));
+        AddRow(fields, 3, Strings.BookGap_Task, BoundTextBox(ViewModel, nameof(BookGapViewModel.TaskName)));
         fields.Children.Add(BuildSuggestionList());
-        AddRow(fields, 5, "Booking element", BoundTextBox(ViewModel, nameof(BookGapViewModel.BookingElement)));
+        AddRow(fields, 5, Strings.BookGap_BookingElement, BoundTextBox(ViewModel, nameof(BookGapViewModel.BookingElement)));
 
-        var book = new Button { Content = "Book", IsDefault = true };
+        var book = new Button { Content = Strings.BookGap_Book, IsDefault = true };
         book.Bind(IsEnabledProperty, new Binding { Source = ViewModel, Path = nameof(BookGapViewModel.CanBook) });
         book.Click += (_, _) => Close(true);
 
-        var cancel = new Button { Content = "Cancel", IsCancel = true };
+        var cancel = new Button { Content = Strings.BookGap_Cancel, IsCancel = true };
         cancel.Click += (_, _) => Close(false);
 
         var actions = new StackPanel

@@ -1,3 +1,4 @@
+using Timetracker.App.Localization;
 using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Contracts.Interfaces;
 using Timetracker.Plugins.Contracts.Logging;
@@ -16,30 +17,30 @@ public sealed class GeneralOptionsContributor(string trackingFilePath, string op
     {
     }
 
-    public string Section => "General";
+    public string Section => Strings.Options_SectionGeneral;
 
     public IReadOnlyList<OptionDefinition> Options { get; } =
     [
         new(
             "General.TrackingFile",
-            "Tracking file",
+            Strings.Options_TrackingFile,
             OptionKind.Path,
             trackingFilePath,
             IsReadOnly: true,
-            HintText: "The tracked sessions are stored in this JSON file."),
+            HintText: Strings.Options_TrackingFileHint),
         new(
             "General.OptionsFile",
-            "Options file",
+            Strings.Options_OptionsFile,
             OptionKind.Path,
             optionsFilePath,
             IsReadOnly: true,
-            HintText: "The options are stored in this JSON file."),
+            HintText: Strings.Options_OptionsFileHint),
         new(
             "General.LogFolder",
-            "Log folder",
+            Strings.Options_LogFolder,
             OptionKind.Path,
             logDirectory,
             IsReadOnly: true,
-            HintText: "Diagnostic log files are written to this folder."),
+            HintText: Strings.Options_LogFolderHint),
     ];
 }

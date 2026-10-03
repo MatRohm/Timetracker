@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ActivityMon_Install" xml:space="preserve">
+    <value>⏻ Install PC activity monitor</value>
+  </data>
+  <data name="ActivityMon_Remove" xml:space="preserve">
+    <value>⏻ Remove PC activity monitor</value>
+  </data>
+  <data name="ActivityMon_InstallOk" xml:space="preserve">
+    <value>✓ The PC activity monitor will start automatically.</value>
+  </data>
+  <data name="ActivityMon_InstallFailed" xml:space="preserve">
+    <value>✗ Installation failed. Make sure "{0}" exists next to the app.</value>
+  </data>
+  <data name="ActivityMon_UninstallOk" xml:space="preserve">
+    <value>✓ The PC activity monitor autostart was removed.</value>
+  </data>
+  <data name="ActivityMon_UninstallFailed" xml:space="preserve">
+    <value>✗ Removing the autostart entry failed.</value>
+  </data>
+  <data name="ActivityMon_Installed" xml:space="preserve">
+    <value>Monitoring is installed (starts automatically at logon).</value>
+  </data>
+  <data name="ActivityMon_NotInstalled" xml:space="preserve">
+    <value>The monitor is not installed; PC activity is only recorded while it runs.</value>
+  </data>
+  <data name="ActivityMon_Section" xml:space="preserve">
+    <value>Activity monitor</value>
+  </data>
+  <data name="ActivityMon_IdleSpanLabel" xml:space="preserve">
+    <value>Idle span threshold (minutes)</value>
+  </data>
+  <data name="ActivityMon_IdleStopLabel" xml:space="preserve">
+    <value>Idle stop threshold (minutes)</value>
+  </data>
+  <data name="ActivityMon_ActivityFileLabel" xml:space="preserve">
+    <value>Activity file</value>
+  </data>
+  <data name="ActivityMon_StateFileLabel" xml:space="preserve">
+    <value>State file</value>
+  </data>
+  <data name="ActivityMon_IdleSpanHint" xml:space="preserve">
+    <value>Idle stretches shorter than this are not written to the activity log; raise it to ignore short breaks, lower it to log them</value>
+  </data>
+  <data name="ActivityMon_IdleStopHint" xml:space="preserve">
+    <value>A running session with no input for this long is stopped and back-dated to the last input, so the idle time is not billed to the task</value>
+  </data>
+  <data name="ActivityMon_ActivityFileHint" xml:space="preserve">
+    <value>The recorded active/idle spans are appended to this JSON file.</value>
+  </data>
+  <data name="ActivityMon_StateFileHint" xml:space="preserve">
+    <value>The monitor's last state is kept here so an open span is closed after a restart.</value>
+  </data>
+  <data name="ActivityMon_DaySummaryActive" xml:space="preserve">
+    <value>PC {0} active</value>
+  </data>
+  <data name="ActivityMon_DaySummaryIdle" xml:space="preserve">
+    <value>PC {0} active · {1} idle</value>
+  </data>
+</root>

@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using Timetracker.App.Models;
+using Timetracker.App.Localization;
 using Timetracker.Plugins.Contracts.ViewModels.Mvvm;
 
 namespace Timetracker.App.ViewModels;
@@ -101,7 +102,7 @@ public sealed class HistoryListViewModel : ObservableObject
     public bool HasMultiplePages => TotalPages > 1;
 
     /// <summary>Text for the pager label, e.g. "Page 2 of 5".</summary>
-    public string PageText => $"Page {CurrentPage} of {TotalPages}";
+    public string PageText => string.Format(Strings.Status_Paging, CurrentPage, TotalPages);
 
     /// <summary>True while any column filter is set; the view highlights active funnels.</summary>
     public bool IsFilterActive => _columnFilters.Count > 0;
