@@ -53,7 +53,49 @@ public sealed class OptionsTabViewRenderTests
         explorer.Shown.Should().Equal("C:/data/timetracker.json");
     }
 
-    private static OptionsTabView CreateView(out RecordingExplorer explorer)
+    [AvaloniaTest]
+    public void OptionsTabView_WhenAnOptionHasAHint_ShouldShowTheInfoIconAndTooltip()
+    {
+        var view = CreateView(out _, hint: "Some hint");
+        var window = new Window { Content = view };
+        window.Show();
+
+        var icons = view.GetLogicalDescendants().OfType<Viewbox>().ToList();
+        icons.Should().ContainSingle("only the hinted option shows an info icon");
+        icons[0].Child.Should().BeOfType<Avalonia.Controls.Shapes.Path>(
+            "the icon is a drawn (i), not text");
+        ToolTip.GetTip(icons[0]).Should().Be("Some hint");
+
+        var hintedLabel = view.GetLogicalDescendants().OfType<TextBlock>()
+            .Single(t => t.Text == "Organization URL");
+        hintedLabel.MinWidth.Should().Be(140, "the label keeps its column width");
+        var labelCell = (StackPanel)hintedLabel.Parent!;
+        labelCell.Children.Should().HaveCount(2, "the cell holds the label and the icon");
+    }
+
+    [AvaloniaTest]
+    public void OptionsTabView_WhenNoOptionHasAHint_ShouldRenderLabelsWithoutIcons()
+    {
+        var view = CreateView(out _);
+        var window = new Window { Content = view };
+        window.Show();
+
+        view.GetLogicalDescendants().OfType<Viewbox>().Should().BeEmpty(
+            "an option without a hint renders no icon");
+        var texts = view.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
+        texts.Should().Contain(["Tracking file", "Organization URL", "Personal access token"]);
+
+        var labelCells = view.GetLogicalDescendants().OfType<TextBlock>()
+            .Where(t => t.Text is "Tracking file" or "Organization URL" or "Personal access token");
+        labelCells.Should().OnlyContain(t => t.MinWidth == 140);
+        var grid = view.GetLogicalDescendants().OfType<Grid>()
+            .First(g => g.Children.OfType<TextBlock>().Any(t => t.Text == "Organization URL"));
+        grid.ColumnDefinitions.Select(c => c.Width).Should().Equal(
+            [GridLength.Auto, new GridLength(1, GridUnitType.Star), GridLength.Auto],
+            "the label cell keeps the Auto,*,Auto layout");
+    }
+
+    private static OptionsTabView CreateView(out RecordingExplorer explorer, string? hint = null)
     {
         explorer = new RecordingExplorer();
         var viewModel = new OptionsViewModel(
@@ -65,7 +107,7 @@ public sealed class OptionsTabViewRenderTests
                         "C:/data/timetracker.json", IsReadOnly: true)),
                 new Contributor("Azure DevOps",
                     new OptionDefinition("AzureDevOps.Url", "Organization URL", OptionKind.Text,
-                        "https://dev.azure.com/my-org"),
+                        "https://dev.azure.com/my-org", HintText: hint ?? ""),
                     new OptionDefinition("AzureDevOps.Pat", "Personal access token", OptionKind.Secret, "token")),
             ],
             explorer);

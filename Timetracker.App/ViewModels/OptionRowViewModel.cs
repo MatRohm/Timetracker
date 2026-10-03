@@ -39,6 +39,10 @@ public sealed class OptionRowViewModel : ObservableObject
 
     public bool IsSecret => Definition.Kind == OptionKind.Secret;
 
+    public string HintText => Definition.HintText;
+
+    public bool HasHint => Definition.HintText.Length > 0;
+
     /// <summary>The edited value; read-only options ignore changes.</summary>
     public string Value
     {

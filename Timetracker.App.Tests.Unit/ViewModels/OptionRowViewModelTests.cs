@@ -44,4 +44,32 @@ public sealed class OptionRowViewModelTests
         row.ShowInExplorerCommand.CanExecute(null).Should().BeFalse();
         row.IsSecret.Should().BeTrue();
     }
+
+    [Test]
+    public void HasHint_WhenDefinitionHasText_ShouldBeTrue()
+    {
+        var definition = new OptionDefinition("AzureDevOps.Url", "Organization URL", OptionKind.Text, HintText: "e.g. https://dev.azure.com/your-org");
+        var row = new OptionRowViewModel(definition, null, A.Fake<IFileExplorer>());
+
+        row.HasHint.Should().BeTrue();
+    }
+
+    [Test]
+    public void HasHint_WhenDefinitionHasNoText_ShouldBeFalse()
+    {
+        var definition = new OptionDefinition("AzureDevOps.Project", "Project", OptionKind.Text);
+        var row = new OptionRowViewModel(definition, null, A.Fake<IFileExplorer>());
+
+        row.HasHint.Should().BeFalse();
+        row.HintText.Should().BeEmpty();
+    }
+
+    [Test]
+    public void HintText_WhenDefinitionHasText_ShouldExposeIt()
+    {
+        var definition = new OptionDefinition("AzureDevOps.Url", "Organization URL", OptionKind.Text, HintText: "e.g. https://dev.azure.com/your-org");
+        var row = new OptionRowViewModel(definition, null, A.Fake<IFileExplorer>());
+
+        row.HintText.Should().Be("e.g. https://dev.azure.com/your-org");
+    }
 }

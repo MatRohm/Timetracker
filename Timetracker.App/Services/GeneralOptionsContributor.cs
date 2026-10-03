@@ -20,8 +20,26 @@ public sealed class GeneralOptionsContributor(string trackingFilePath, string op
 
     public IReadOnlyList<OptionDefinition> Options { get; } =
     [
-        new("General.TrackingFile", "Tracking file", OptionKind.Path, trackingFilePath, IsReadOnly: true),
-        new("General.OptionsFile", "Options file", OptionKind.Path, optionsFilePath, IsReadOnly: true),
-        new("General.LogFolder", "Log folder", OptionKind.Path, logDirectory, IsReadOnly: true),
+        new(
+            "General.TrackingFile",
+            "Tracking file",
+            OptionKind.Path,
+            trackingFilePath,
+            IsReadOnly: true,
+            HintText: "The tracked sessions are stored in this JSON file."),
+        new(
+            "General.OptionsFile",
+            "Options file",
+            OptionKind.Path,
+            optionsFilePath,
+            IsReadOnly: true,
+            HintText: "The options are stored in this JSON file."),
+        new(
+            "General.LogFolder",
+            "Log folder",
+            OptionKind.Path,
+            logDirectory,
+            IsReadOnly: true,
+            HintText: "Diagnostic log files are written to this folder."),
     ];
 }
