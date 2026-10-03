@@ -13,6 +13,10 @@
 .githooks/* text eol=lf
 .beads/hooks/* text eol=lf
 
+# Executable helpers with a shebang keep LF for the same reason: a CRLF shebang
+# breaks direct execution on Linux.
+*.py text eol=lf executable
+
 # Binary assets are never normalized.
 *.ico binary
 *.png binary
