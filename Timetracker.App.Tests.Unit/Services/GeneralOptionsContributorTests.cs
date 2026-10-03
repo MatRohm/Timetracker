@@ -23,6 +23,22 @@ public sealed class GeneralOptionsContributorTests
     }
 
     [Test]
+    public void Options_WhenCreated_ShouldExplainEveryPath()
+    {
+        var contributor = new GeneralOptionsContributor("C:/data/timetracker.json", "C:/data/options.json", "C:/logs");
+
+        var options = contributor.Options;
+
+        options.Should().OnlyContain(o => o.HintText.Length > 0);
+        options.Should().Contain(o => o.Key == "General.TrackingFile"
+            && o.HintText == "The tracked sessions are stored in this JSON file.");
+        options.Should().Contain(o => o.Key == "General.OptionsFile"
+            && o.HintText == "The options are stored in this JSON file.");
+        options.Should().Contain(o => o.Key == "General.LogFolder"
+            && o.HintText == "Diagnostic log files are written to this folder.");
+    }
+
+    [Test]
     public void Section_WhenRead_ShouldBeGeneral()
     {
         var contributor = new GeneralOptionsContributor("a", "b", "c");

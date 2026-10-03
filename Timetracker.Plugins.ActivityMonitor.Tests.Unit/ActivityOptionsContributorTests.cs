@@ -40,4 +40,23 @@ public sealed class ActivityOptionsContributorTests
             !o.IsReadOnly &&
             o.DefaultValue == "30");
     }
+
+    [Test]
+    public void Options_WhenCreated_ShouldCarryAHintForEveryOption()
+    {
+        var logPath = TempPath($"options-{Guid.NewGuid():N}.json");
+        var contributor = new ActivityOptionsContributor(new ActivityLog(logPath));
+
+        var options = contributor.Options;
+
+        options.Should().OnlyContain(o => o.HintText.Length > 0);
+        options.Should().Contain(o => o.Key == "ActivityMonitor.IdleSpanThreshold"
+            && o.HintText == "Idle stretches shorter than this are not written to the activity log; raise it to ignore short breaks, lower it to log them");
+        options.Should().Contain(o => o.Key == "ActivityMonitor.IdleStopThreshold"
+            && o.HintText == "A running session with no input for this long is stopped and back-dated to the last input, so the idle time is not billed to the task");
+        options.Should().Contain(o => o.Key == "ActivityMonitor.ActivityFile"
+            && o.HintText == "The recorded active/idle spans are appended to this JSON file.");
+        options.Should().Contain(o => o.Key == "ActivityMonitor.StateFile"
+            && o.HintText == "The monitor's last state is kept here so an open span is closed after a restart.");
+    }
 }

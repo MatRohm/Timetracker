@@ -22,9 +22,11 @@ public enum OptionKind
 /// option it is the value itself, which is never stored.
 /// </param>
 /// <param name="IsReadOnly">True for information such as a file location the user cannot change.</param>
+/// <param name="HintText">Optional hint shown as an (i) tooltip next to the label; empty means no hint.</param>
 public sealed record OptionDefinition(
     string Key,
     string Label,
     OptionKind Kind,
     string DefaultValue = "",
-    bool IsReadOnly = false);
+    bool IsReadOnly = false,
+    string HintText = "");

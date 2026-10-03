@@ -5,6 +5,7 @@ using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Timetracker.App.ViewModels;
+using Timetracker.Plugins.Contracts.Ui;
 
 namespace Timetracker.App.Views;
 
@@ -79,8 +80,17 @@ public sealed class OptionsTabView : UserControl
                 VerticalAlignment = VerticalAlignment.Center,
                 MinWidth = 140,
             };
-            Grid.SetRow(label, i);
-            grid.Children.Add(label);
+            Control labelContent = row.HasHint
+                ? new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 4,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Children = { label, BuildHintIcon(row.HintText, row.Label) },
+                }
+                : label;
+            Grid.SetRow(labelContent, i);
+            grid.Children.Add(labelContent);
 
             var valueBox = new TextBox
             {
@@ -134,4 +144,31 @@ public sealed class OptionsTabView : UserControl
         Height = 16,
         VerticalAlignment = VerticalAlignment.Center,
     };
+
+    /// <summary>
+    /// A small flat (i) symbol carrying the option's hint as its tooltip; drawn so it
+    /// needs no icon font. A solid disc with the dot and stem knocked out (even-odd
+    /// fill): a bare dot without the stem reads as a radio button, not an (i).
+    /// </summary>
+    private static Control BuildHintIcon(string hintText, string labelText)
+    {
+        var icon = new Viewbox
+        {
+            Width = 16,
+            Height = 16,
+            VerticalAlignment = VerticalAlignment.Center,
+            Child = new Avalonia.Controls.Shapes.Path
+            {
+                Data = Geometry.Parse(
+                    "M8,1.5 A6.5,6.5 0 1 1 8,14.5 A6.5,6.5 0 1 1 8,1.5 Z "
+                    + "M8,4.9 A1.05,1.05 0 1 1 8,7.0 A1.05,1.05 0 1 1 8,4.9 Z "
+                    + "M7.15,7.6 L8.85,7.6 L8.85,11.4 L7.15,11.4 Z"),
+                Fill = ViewBrushes.Info,
+            },
+        };
+        ToolTip.SetTip(icon, hintText);
+        AutomationProperties.SetName(icon, $"Hint for {labelText}");
+        var result = icon;
+        return result;
+    }
 }
