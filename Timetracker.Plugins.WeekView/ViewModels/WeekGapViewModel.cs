@@ -1,4 +1,5 @@
 using Timetracker.Plugins.Contracts;
+using Timetracker.Plugins.WeekView.Localization;
 
 namespace Timetracker.Plugins.WeekView.ViewModels;
 
@@ -23,7 +24,7 @@ public sealed class WeekGapViewModel
     public string DurationText => WeekTimeFormat.HoursMinutes(Range.Duration.TotalSeconds);
 
     /// <summary>Row caption, e.g. "⚠ 10:15–11:05 untracked (0:50)".</summary>
-    public string Text => $"⚠ {TimeText} untracked ({DurationText})";
+    public string Text => string.Format(Strings.Week_GapWarning, TimeText, DurationText);
 
     private static string Clock(DateTimeOffset start, DateTimeOffset end) => WeekTimeFormat.ClockRange(start, end);
 }

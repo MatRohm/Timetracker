@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Tab_WeekView" xml:space="preserve">
+    <value>Week view</value>
+  </data>
+  <data name="Week_PreviousWeek" xml:space="preserve">
+    <value>◀ Previous week</value>
+  </data>
+  <data name="Week_NextWeek" xml:space="preserve">
+    <value>Next week ▶</value>
+  </data>
+  <data name="Week_CurrentWeek" xml:space="preserve">
+    <value>● Current week</value>
+  </data>
+  <data name="Week_Book" xml:space="preserve">
+    <value>Book…</value>
+  </data>
+  <data name="Week_BookToolTip" xml:space="preserve">
+    <value>Book this untracked time as a session</value>
+  </data>
+  <data name="Week_Round" xml:space="preserve">
+    <value>Round ½h</value>
+  </data>
+  <data name="Week_RoundConfirm" xml:space="preserve">
+    <value>Round the tasks of {0} to half hours?</value>
+  </data>
+  <data name="Week_Distribute" xml:space="preserve">
+    <value>Distribute</value>
+  </data>
+  <data name="Week_DistributeTitle" xml:space="preserve">
+    <value>Distribute untracked time</value>
+  </data>
+  <data name="Week_RoundingHintIdle" xml:space="preserve">
+    <value>Round each task's time on this day to the nearest half hour</value>
+  </data>
+  <data name="Week_RoundingHintAlready" xml:space="preserve">
+    <value>Every task on this day is already on a half hour</value>
+  </data>
+  <data name="Week_DistributionHint" xml:space="preserve">
+    <value>Distribute the day's untracked time over its tasks</value>
+  </data>
+  <data name="Week_DistributionHintNone" xml:space="preserve">
+    <value>Nothing to distribute: the day has no untracked time, or no task can absorb it</value>
+  </data>
+  <data name="Week_CopyElementTasks" xml:space="preserve">
+    <value>Copy this element's tasks</value>
+  </data>
+  <data name="Week_CopyTask" xml:space="preserve">
+    <value>Copy this task</value>
+  </data>
+  <data name="Week_ClipboardError" xml:space="preserve">
+    <value>Could not access the clipboard.</value>
+  </data>
+  <data name="Week_Copied" xml:space="preserve">
+    <value>Copied the tracked tasks.</value>
+  </data>
+  <data name="Week_CopyFailed" xml:space="preserve">
+    <value>Could not copy: {0}</value>
+  </data>
+  <data name="Week_Skipped" xml:space="preserve">
+    <value>Skipped: </value>
+  </data>
+  <data name="Week_NothingToDistribute" xml:space="preserve">
+    <value>Nothing could be distributed.</value>
+  </data>
+  <data name="Week_NothingToRound" xml:space="preserve">
+    <value>Nothing could be rounded. </value>
+  </data>
+  <data name="Week_Distributed" xml:space="preserve">
+    <value>✓ Distributed {0} over {1} task(s) on {2}.</value>
+  </data>
+  <data name="Week_Rounded" xml:space="preserve">
+    <value>✓ Rounded {0} task(s) on {1} to half hours.{2}</value>
+  </data>
+  <data name="Week_TotalText" xml:space="preserve">
+    <value>Σ {0}</value>
+  </data>
+  <data name="Week_HeaderTitle" xml:space="preserve">
+    <value>Week {0} · {1}</value>
+  </data>
+  <data name="Week_UntrackedToolTip" xml:space="preserve">
+    <value>PC active time that no tracked session covers</value>
+  </data>
+  <data name="DistributeDay_Apply" xml:space="preserve">
+    <value>Distribute</value>
+  </data>
+  <data name="DistributeDay_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="DistributeDay_TaskHeader" xml:space="preserve">
+    <value>Task</value>
+  </data>
+  <data name="DistributeDay_NowHeader" xml:space="preserve">
+    <value>Now</value>
+  </data>
+  <data name="DistributeDay_TotalFallback" xml:space="preserve">
+    <value>The task's total once its assigned share is applied</value>
+  </data>
+  <data name="DistributeDay_MinusToolTip" xml:space="preserve">
+    <value>Take 15 minutes back</value>
+  </data>
+  <data name="DistributeDay_PlusToolTip" xml:space="preserve">
+    <value>Add 15 minutes to this task</value>
+  </data>
+  <data name="Week_ChangeRemovedFormat" xml:space="preserve">
+    <value>{0} removed</value>
+  </data>
+  <data name="Week_NoBookingElement" xml:space="preserve">
+    <value>&lt;None&gt;</value>
+  </data>
+  <data name="Week_GapWarning" xml:space="preserve">
+    <value>⚠ {0} untracked ({1})</value>
+  </data>
+  <data name="Week_DistributeBlocked" xml:space="preserve">
+    <value>no free time next to its last session</value>
+  </data>
+  <data name="Week_DistributeUntracked" xml:space="preserve">
+    <value>{0} untracked</value>
+  </data>
+  <data name="Week_DistributeLeft" xml:space="preserve">
+    <value>left {0}</value>
+  </data>
+  <data name="BookGap_Title" xml:space="preserve">
+    <value>Book untracked time</value>
+  </data>
+  <data name="BookGap_Hint" xml:space="preserve">
+    <value>The PC was active here without a tracked session. Adjust the times if needed.</value>
+  </data>
+  <data name="BookGap_Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="BookGap_End" xml:space="preserve">
+    <value>End</value>
+  </data>
+  <data name="BookGap_Duration" xml:space="preserve">
+    <value>Duration</value>
+  </data>
+  <data name="BookGap_Task" xml:space="preserve">
+    <value>Task</value>
+  </data>
+  <data name="BookGap_BookingElement" xml:space="preserve">
+    <value>Booking element</value>
+  </data>
+  <data name="BookGap_Book" xml:space="preserve">
+    <value>Book</value>
+  </data>
+  <data name="BookGap_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Week_NodeCaption" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
+</root>

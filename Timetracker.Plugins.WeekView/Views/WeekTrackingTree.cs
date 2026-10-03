@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using Timetracker.Plugins.WeekView.Localization;
 using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
@@ -136,12 +137,12 @@ public sealed class WeekTrackingTree : UserControl
 
         var book = new Button
         {
-            Content = "Book…",
+            Content = Strings.Week_Book,
             FontSize = 11,
             Padding = new Thickness(6, 0),
             VerticalAlignment = VerticalAlignment.Center,
         };
-        ToolTip.SetTip(book, "Book this untracked time as a session");
+        ToolTip.SetTip(book, Strings.Week_BookToolTip);
         book.Click += async (_, _) => await BookAsync(gap);
         row.Children.Add(book);
 
@@ -216,7 +217,7 @@ public sealed class WeekTrackingTree : UserControl
                 FontWeight = day.IsUntrackedWarning ? FontWeight.Bold : FontWeight.Normal,
                 VerticalAlignment = VerticalAlignment.Center,
             };
-            ToolTip.SetTip(untracked, "PC active time that no tracked session covers");
+            ToolTip.SetTip(untracked, Strings.Week_UntrackedToolTip);
             row.Children.Add(untracked);
         }
 
@@ -224,7 +225,7 @@ public sealed class WeekTrackingTree : UserControl
         {
             var round = new Button
             {
-                Content = "Round ½h",
+                Content = Strings.Week_Round,
                 FontSize = 11,
                 Padding = new Thickness(6, 0),
                 VerticalAlignment = VerticalAlignment.Center,
@@ -235,12 +236,12 @@ public sealed class WeekTrackingTree : UserControl
             round.Click += async (_, _) => await _week.RoundDayAsync(
                 day,
                 changes => Confirmations.ConfirmChangesAsync(
-                    this, $"Round the tasks of {day.Header} to half hours?", changes));
+                    this, string.Format(Strings.Week_RoundConfirm, day.Header), changes));
             row.Children.Add(round);
 
             var distribute = new Button
             {
-                Content = "Distribute",
+                Content = Strings.Week_Distribute,
                 FontSize = 11,
                 Padding = new Thickness(6, 0),
                 VerticalAlignment = VerticalAlignment.Center,
@@ -286,11 +287,11 @@ public sealed class WeekTrackingTree : UserControl
         row.Children.Add(BuildExpander(group.IsExpanded, group.ToggleCommand));
         row.Children.Add(new TextBlock
         {
-            Text = $"{group.Name} ({group.TotalText})",
+            Text = string.Format(Strings.Week_NodeCaption, group.Name, group.TotalText),
             TextWrapping = TextWrapping.Wrap,
             VerticalAlignment = VerticalAlignment.Center,
         });
-        row.Children.Add(BuildCopyButton(group.CopyText, "Copy this element's tasks"));
+        row.Children.Add(BuildCopyButton(group.CopyText, Strings.Week_CopyElementTasks));
 
         return row;
     }
@@ -307,11 +308,11 @@ public sealed class WeekTrackingTree : UserControl
 
         row.Children.Add(new TextBlock
         {
-            Text = $"{entry.Task} ({entry.TotalText})",
+            Text = string.Format(Strings.Week_NodeCaption, entry.Task, entry.TotalText),
             TextWrapping = TextWrapping.Wrap,
             VerticalAlignment = VerticalAlignment.Center,
         });
-        row.Children.Add(BuildCopyButton(entry.CopyText, "Copy this task"));
+        row.Children.Add(BuildCopyButton(entry.CopyText, Strings.Week_CopyTask));
 
         return row;
     }
@@ -350,18 +351,18 @@ public sealed class WeekTrackingTree : UserControl
     {
         if (TopLevel.GetTopLevel(this)?.Clipboard is not { } clipboard)
         {
-            _week.ShowStatus("Could not access the clipboard.", WeekStatus.Error);
+            _week.ShowStatus(Strings.Week_ClipboardError, WeekStatus.Error);
             return;
         }
 
         try
         {
             await clipboard.SetTextAsync(copyText);
-            _week.ShowStatus("Copied the tracked tasks.", WeekStatus.Success);
+            _week.ShowStatus(Strings.Week_Copied, WeekStatus.Success);
         }
         catch (Exception ex)
         {
-            _week.ShowStatus("Could not copy: " + ex.Message, WeekStatus.Error);
+            _week.ShowStatus(string.Format(Strings.Week_CopyFailed, ex.Message), WeekStatus.Error);
         }
     }
 }

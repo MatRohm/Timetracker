@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Timetracker.App.Models;
+using Timetracker.App.Localization;
 using Timetracker.Plugins.Contracts.ViewModels;
 using Timetracker.Plugins.Contracts.ViewModels.Mvvm;
 
@@ -19,7 +20,7 @@ public sealed class EditEntriesViewModel : ObservableObject
 
     public EditEntriesViewModel(EntryRow item)
     {
-        TaskName = string.IsNullOrWhiteSpace(item.Task) ? "(without task)" : item.Task;
+        TaskName = string.IsNullOrWhiteSpace(item.Task) ? Strings.EditEntries_WithoutTask : item.Task;
 
         // Chronological, so the list reads like a timeline. The row stages the
         // times; the underlying entry is written back on save.
@@ -57,7 +58,7 @@ public sealed class EditEntriesViewModel : ObservableObject
         {
             var count = Sessions.Count;
             var total = TimeSpan.FromSeconds(Sessions.Sum(s => s.DurationSeconds));
-            var noun = count == 1 ? "session" : "sessions";
+            var noun = count == 1 ? Strings.EditEntries_SessionSingle : Strings.EditEntries_SessionPlural;
             return $"{count} {noun} · {total:hh\\:mm\\:ss}";
         }
     }

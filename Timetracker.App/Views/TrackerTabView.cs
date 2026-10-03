@@ -5,6 +5,7 @@ using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Timetracker.Plugins.Contracts.Ui;
+using Timetracker.App.Localization;
 using Timetracker.App.ViewModels;
 using Timetracker.App.Views.Components;
 
@@ -57,8 +58,8 @@ public sealed class TrackerTabView : UserControl
             Margin = new Thickness(0, 0, 0, 4),
         };
 
-        _startButton.Content = "▶ Start";
-        _stopButton.Content = "■ Stop";
+        _startButton.Content = Strings.Tracker_Start;
+        _stopButton.Content = Strings.Tracker_Stop;
         buttonRow.Children.Add(_startButton);
         buttonRow.Children.Add(_stopButton);
 
@@ -68,7 +69,7 @@ public sealed class TrackerTabView : UserControl
             buttonRow.Children.Add(control);
         }
 
-        _elapsedLabel.Text = "00:00:00";
+        _elapsedLabel.Text = Strings.Tracker_TimerZero;
         _elapsedLabel.FontFamily = new FontFamily("monospace");
         _elapsedLabel.FontSize = 20;
         _elapsedLabel.FontWeight = FontWeight.Bold;
@@ -87,8 +88,8 @@ public sealed class TrackerTabView : UserControl
         _statusLabel.Foreground = ViewBrushes.Info;
         _statusLabel.Margin = new Thickness(0, 2, 0, 4);
 
-        _previousPageButton.Content = "◀ Previous";
-        _nextPageButton.Content = "Next ▶";
+        _previousPageButton.Content = Strings.Tracker_Previous;
+        _nextPageButton.Content = Strings.Tracker_Next;
         _pageLabel.VerticalAlignment = VerticalAlignment.Center;
         _pageLabel.Margin = new Thickness(8, 0, 8, 0);
 
@@ -175,13 +176,13 @@ public sealed class TrackerTabView : UserControl
 
         var dialog = new Window
         {
-            Title = "Timetracker",
+            Title = Strings.Tracker_InvalidTaskTitle,
             Width = 300,
             Height = 140,
             CanResize = false,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
         };
-        var ok = new Button { Content = "OK", IsDefault = true };
+        var ok = new Button { Content = Strings.Tracker_InvalidTaskOk, IsDefault = true };
         ok.Click += (_, _) => dialog.Close();
         dialog.Content = new StackPanel
         {
@@ -189,7 +190,7 @@ public sealed class TrackerTabView : UserControl
             Spacing = 12,
             Children =
             {
-                new TextBlock { Text = "Please enter a task name first." },
+                new TextBlock { Text = Strings.Tracker_EmptyTask },
                 ok,
             },
         };

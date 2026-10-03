@@ -6,6 +6,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Timetracker.Plugins.Contracts.Ui;
 using Timetracker.Plugins.Contracts.ViewModels;
+using Timetracker.App.Localization;
 using Timetracker.App.ViewModels;
 
 namespace Timetracker.App.Views;
@@ -34,7 +35,7 @@ public sealed class EditEntriesWindow : Window
     {
         _viewModel = new EditEntriesViewModel(item);
 
-        Title = "Edit entries – " + _viewModel.TaskName;
+        Title = string.Format(Strings.EditEntries_Title, _viewModel.TaskName);
         Width = 880;
         Height = 460;
         MinWidth = 720;
@@ -58,8 +59,7 @@ public sealed class EditEntriesWindow : Window
 
         var hint = new TextBlock
         {
-            Text = "Adjust the start and end times; the duration is recalculated. "
-                + "Use ✕ to delete a single session.",
+            Text = Strings.EditEntries_Hint,
             Foreground = Brushes.Gray,
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 0, 0, 8),
@@ -92,7 +92,7 @@ public sealed class EditEntriesWindow : Window
         {
             Foreground = ErrorBrush,
             VerticalAlignment = VerticalAlignment.Center,
-            Text = "The end time must not be before the start time.",
+            Text = Strings.EditEntries_EndBeforeStart,
         };
         error.Bind(TextBlock.IsVisibleProperty, new Binding
         {
@@ -100,7 +100,7 @@ public sealed class EditEntriesWindow : Window
             Path = nameof(EditEntriesViewModel.HasErrors),
         });
 
-        var saveButton = new Button { Content = "Save", IsDefault = true };
+        var saveButton = new Button { Content = Strings.EditEntries_Save, IsDefault = true };
         saveButton.Bind(Button.IsEnabledProperty, new Binding
         {
             Source = _viewModel,
@@ -108,7 +108,7 @@ public sealed class EditEntriesWindow : Window
         });
         saveButton.Click += (_, _) => Save();
 
-        var cancelButton = new Button { Content = "Cancel", IsCancel = true };
+        var cancelButton = new Button { Content = Strings.EditEntries_Cancel, IsCancel = true };
         cancelButton.Click += (_, _) => Close();
 
         var actions = new StackPanel
@@ -151,25 +151,25 @@ public sealed class EditEntriesWindow : Window
 
         grid.Columns.Add(new DataGridTextColumn
         {
-            Header = "Task",
+            Header = Strings.EditEntries_TaskHeader,
             Width = new DataGridLength(1.3, DataGridLengthUnitType.Star),
             Binding = new Binding(nameof(SessionEditRow.Task)),
         });
         grid.Columns.Add(new DataGridTemplateColumn
         {
-            Header = "Start",
+            Header = Strings.EditEntries_StartHeader,
             Width = new DataGridLength(2.2, DataGridLengthUnitType.Star),
             CellTemplate = BuildStampTemplate(nameof(SessionEditRow.StartText)),
         });
         grid.Columns.Add(new DataGridTemplateColumn
         {
-            Header = "End",
+            Header = Strings.EditEntries_EndHeader,
             Width = new DataGridLength(2.2, DataGridLengthUnitType.Star),
             CellTemplate = BuildStampTemplate(nameof(SessionEditRow.EndText)),
         });
         grid.Columns.Add(new DataGridTextColumn
         {
-            Header = "Duration",
+            Header = Strings.EditEntries_DurationHeader,
             Width = new DataGridLength(1.1, DataGridLengthUnitType.Star),
             Binding = new Binding(nameof(SessionEditRow.DurationText)),
         });
@@ -212,7 +212,7 @@ public sealed class EditEntriesWindow : Window
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
         };
-        ToolTip.SetTip(button, "Delete this session");
+        ToolTip.SetTip(button, Strings.EditEntries_DeletionToolTip);
 
         // The row is read from the button's DataContext at click time: the grid
         // recycles cells, so a captured row would go stale after a re-sort.
@@ -249,8 +249,8 @@ public sealed class EditEntriesWindow : Window
 
     private async Task DeleteAsync(SessionEditRow row)
     {
-        var message = $"Delete the session {row.StartText} – {row.EndText} ({row.DurationText})?";
-        var confirmed = await Confirmations.ConfirmAsync(this, message, acceptLabel: "Delete");
+        var message = string.Format(Strings.EditEntries_DeleteConfirm, row.StartText, row.EndText, row.DurationText);
+        var confirmed = await Confirmations.ConfirmAsync(this, message, acceptLabel: Strings.EditEntries_Delete);
         if (confirmed)
         {
             _viewModel.RemoveSession(row);

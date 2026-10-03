@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Timetracker.Plugins.WeekView.Localization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
@@ -55,9 +56,9 @@ public sealed class WeekTabView : UserControl
         Grid.SetColumn(_totalLabel, 1);
         headerRow.Children.Add(_totalLabel);
 
-        _prevButton.Content = "◀ Previous week";
-        _nextButton.Content = "Next week ▶";
-        _currentButton.Content = "● Current week";
+        _prevButton.Content = Strings.Week_PreviousWeek;
+        _nextButton.Content = Strings.Week_NextWeek;
+        _currentButton.Content = Strings.Week_CurrentWeek;
 
         var buttonRow = new StackPanel
         {

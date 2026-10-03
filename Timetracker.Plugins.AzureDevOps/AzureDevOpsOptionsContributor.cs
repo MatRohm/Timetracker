@@ -1,3 +1,4 @@
+using Timetracker.Plugins.AzureDevOps.Localization;
 using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Contracts.Interfaces;
 
@@ -9,25 +10,25 @@ namespace Timetracker.Plugins.AzureDevOps;
 /// </summary>
 public sealed class AzureDevOpsOptionsContributor : IOptionDefinitionQuery
 {
-    public string Section => "Azure DevOps";
+    public string Section => Strings.AzureDevOps_Section;
 
     public IReadOnlyList<OptionDefinition> Options { get; } =
     [
         new(
             AzureDevOpsSettings.UrlKey,
-            "Organization URL",
+            Strings.AzureDevOps_UrlLabel,
             OptionKind.Text,
-            HintText: "e.g. https://dev.azure.com/your-org"),
-        new(AzureDevOpsSettings.ProjectKey, "Project", OptionKind.Text),
+            HintText: Strings.AzureDevOps_UrlHint),
+        new(AzureDevOpsSettings.ProjectKey, Strings.AzureDevOps_ProjectLabel, OptionKind.Text),
         new(
             AzureDevOpsSettings.PatKey,
-            "Personal access token",
+            Strings.AzureDevOps_PatLabel,
             OptionKind.Secret,
-            HintText: "Azure DevOps personal access token; used as Basic password, user name stays empty"),
+            HintText: Strings.AzureDevOps_PatHint),
         new(
             AzureDevOpsSettings.BookingElementFieldKey,
-            "Booking element field",
+            Strings.AzureDevOps_BookingElementFieldLabel,
             OptionKind.Text,
-            HintText: "Reference name of the custom field holding the booking element"),
+            HintText: Strings.AzureDevOps_BookingElementFieldHint),
     ];
 }

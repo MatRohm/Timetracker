@@ -1,4 +1,5 @@
 using Timetracker.App.Interfaces;
+using Timetracker.App.Localization;
 using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Contracts.Interfaces;
 using Avalonia;
@@ -139,14 +140,14 @@ public sealed class App : Application
     {
         var window = new Window
         {
-            Title = "Timetracker",
+            Title = Strings.SingleInstance_Title,
             Width = 360,
             Height = 130,
             CanResize = false,
             WindowStartupLocation = WindowStartupLocation.CenterScreen,
             Content = new Avalonia.Controls.TextBlock
             {
-                Text = "Timetracker is already running.",
+                Text = Strings.SingleInstance_Message,
                 Margin = new Avalonia.Thickness(16),
                 VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
             },

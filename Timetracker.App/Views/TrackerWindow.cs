@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Platform;
+using Timetracker.App.Localization;
 using Timetracker.App.ViewModels;
 
 namespace Timetracker.App.Views;
@@ -22,7 +23,7 @@ public sealed class TrackerWindow : Window
     {
         _vm = viewModel;
 
-        Title = "Timetracker";
+        Title = Strings.App_Title;
         Width = 900;
         Height = 620;
         MinWidth = 760;
@@ -33,12 +34,12 @@ public sealed class TrackerWindow : Window
         _trackerView = new TrackerTabView(_vm, trackerContributors);
 
         var tabs = new TabControl();
-        tabs.Items.Add(new TabItem { Header = "Tracker", Content = _trackerView });
+        tabs.Items.Add(new TabItem { Header = Strings.App_TabTracker, Content = _trackerView });
         foreach (var tab in pluginTabs)
         {
             tabs.Items.Add(tab);
         }
-        tabs.Items.Add(new TabItem { Header = "Options", Content = new OptionsTabView(options) });
+        tabs.Items.Add(new TabItem { Header = Strings.App_TabOptions, Content = new OptionsTabView(options) });
 
         Content = tabs;
 

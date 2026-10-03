@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Timetracker.App.Localization;
 using Timetracker.App.ViewModels;
 using Timetracker.Plugins.Contracts.Ui;
 
@@ -30,7 +31,7 @@ public sealed class OptionsTabView : UserControl
 
         var saveButton = new Button
         {
-            Content = "Save",
+            Content = Strings.Options_Save,
             Command = _options.SaveCommand,
         };
         var statusLabel = new TextBlock { VerticalAlignment = VerticalAlignment.Center };
@@ -115,8 +116,8 @@ public sealed class OptionsTabView : UserControl
                     Command = row.ShowInExplorerCommand,
                     Name = "ShowInExplorerButton",
                 };
-                ToolTip.SetTip(explorerButton, "Show in explorer");
-                AutomationProperties.SetName(explorerButton, "Show in explorer");
+                ToolTip.SetTip(explorerButton, Strings.Options_ExplorerToolTip);
+                AutomationProperties.SetName(explorerButton, Strings.Options_ExplorerToolTip);
                 Grid.SetRow(explorerButton, i);
                 Grid.SetColumn(explorerButton, 2);
                 grid.Children.Add(explorerButton);
@@ -167,7 +168,7 @@ public sealed class OptionsTabView : UserControl
             },
         };
         ToolTip.SetTip(icon, hintText);
-        AutomationProperties.SetName(icon, $"Hint for {labelText}");
+        AutomationProperties.SetName(icon, string.Format(Strings.Options_HintAutomationName, labelText));
         var result = icon;
         return result;
     }

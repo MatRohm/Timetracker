@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Timetracker.Plugins.Contracts.Localization;
 
 namespace Timetracker.Plugins.Contracts.Ui;
 
@@ -17,8 +18,8 @@ public static class Confirmations
     /// </summary>
     public static async Task<bool> ConfirmDeleteAsync(Control ownerControl, string summary)
     {
-        var message = $"Delete {summary}?\n\nThis removes the sessions from the JSON file and cannot be undone.";
-        return await ConfirmAsync(ownerControl, message, acceptLabel: "Yes", cancelLabel: "No");
+        var message = string.Format(Strings.Confirm_Delete, summary);
+        return await ConfirmAsync(ownerControl, message, acceptLabel: Strings.Confirm_Yes, cancelLabel: Strings.Confirm_No);
     }
 
     /// <summary>
@@ -29,6 +30,7 @@ public static class Confirmations
         Control ownerControl,
         string message,
         string acceptLabel,
+        // Default parameter values cannot be resources; callers pass Strings.Confirm_Cancel.
         string cancelLabel = "Cancel")
     {
         if (TopLevel.GetTopLevel(ownerControl) is not Window owner)
@@ -38,7 +40,7 @@ public static class Confirmations
 
         var dialog = new Window
         {
-            Title = "Timetracker",
+            Title = Strings.Confirm_Title,
             Width = 400,
             Height = 180,
             CanResize = false,
@@ -90,7 +92,7 @@ public static class Confirmations
 
         var dialog = new Window
         {
-            Title = "Timetracker",
+            Title = Strings.Confirm_Title,
             Width = 440,
             SizeToContent = SizeToContent.Height,
             CanResize = false,
@@ -103,9 +105,9 @@ public static class Confirmations
             lines.Children.Add(new TextBlock { Text = "• " + change, TextWrapping = TextWrapping.Wrap });
         }
 
-        var apply = new Button { Content = "Apply", IsDefault = true };
+        var apply = new Button { Content = Strings.Confirm_Apply, IsDefault = true };
         apply.Click += (_, _) => dialog.Close(true);
-        var cancel = new Button { Content = "Cancel", IsCancel = true };
+        var cancel = new Button { Content = Strings.Confirm_Cancel, IsCancel = true };
         cancel.Click += (_, _) => dialog.Close(false);
 
         dialog.Content = new StackPanel
@@ -118,7 +120,7 @@ public static class Confirmations
                 lines,
                 new TextBlock
                 {
-                    Text = "The sessions are rewritten in the JSON file.",
+                    Text = Strings.Confirm_Rewritten,
                     Foreground = Brushes.Gray,
                     TextWrapping = TextWrapping.Wrap,
                 },

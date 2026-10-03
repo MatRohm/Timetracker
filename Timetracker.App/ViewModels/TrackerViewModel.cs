@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Windows.Input;
 using Microsoft.Extensions.Logging;
 using Timetracker.App.Interfaces;
+using Timetracker.App.Localization;
 using Timetracker.App.Models;
 using Timetracker.App.Services;
 using Timetracker.Plugins.Contracts.ViewModels;
@@ -31,10 +32,10 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     private bool _isRunning;
     private string _taskName = "";
     private string _previewBookingElement = "";
-    private string _elapsedTimeText = "00:00:00";
+    private string _elapsedTimeText = Strings.Tracker_TimerZero;
     private string _statusText = "";
     private TrackerStatus _status = TrackerStatus.Info;
-    private string _title = "Timetracker";
+    private string _title = Strings.App_Title;
 
     private List<TrackerEntry> _sessions = [];
 
@@ -76,7 +77,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         _startCommand = new RelayCommand(Start, () => !IsRunning);
         _stopCommand = new AsyncRelayCommand(StopAsync, () => IsRunning);
 
-        StatusText = "Entries are appended to " + _repository.FilePath;
+        StatusText = string.Format(Strings.Tracker_EntriesAppended, _repository.FilePath);
 
         // Load the history in the background; Avalonia posts the continuation back
         // to the UI thread, so the entries populate as soon as the read completes.
@@ -214,8 +215,8 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// </summary>
     public static string BuildDeleteSummary(IReadOnlyList<EntryRow> rows) =>
         rows.Count == 1
-            ? $"\"{rows[0].Task}\" (all {rows[0].Sessions.Count} sessions)"
-            : $"{rows.Count} tasks ({rows.Sum(r => r.Sessions.Count)} sessions)";
+            ? string.Format(Strings.Tracker_DeleteSummarySingle, rows[0].Task, rows[0].Sessions.Count)
+            : string.Format(Strings.Tracker_DeleteSummaryMulti, rows.Count, rows.Sum(r => r.Sessions.Count));
 
     /// <summary>Saves the running entry (if any); called by the view when the app is closing.</summary>
     public async Task SaveRunningEntryOnCloseAsync()
@@ -305,7 +306,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
 
             case EntryEditStatus.Saved:
                 Status = TrackerStatus.Success;
-                StatusText = $"✓ Deleted {summary}";
+                StatusText = string.Format(Strings.Tracker_Deleted, summary);
                 await RefreshEntriesAsync();
                 return true;
 
@@ -315,8 +316,8 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
                 await RefreshEntriesAsync();
 
                 Status = TrackerStatus.Error;
-                StatusText = "✗ Delete failed: " + result.Error!.Message;
-                ErrorOccurred?.Invoke("Could not delete the entry:\n" + result.Error.Message);
+                StatusText = string.Format(Strings.Tracker_DeleteFailed, result.Error!.Message);
+                ErrorOccurred?.Invoke(string.Format(Strings.Tracker_ErrorDeleteEntry, result.Error.Message));
                 return false;
         }
     }
@@ -334,7 +335,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         if (result.Status == EntryEditStatus.Saved)
         {
             Status = TrackerStatus.Success;
-            StatusText = $"✓ Updated \"{result.Summary}\"";
+            StatusText = string.Format(Strings.Tracker_Updated, result.Summary);
             await RefreshEntriesAsync();
             _history.RevealTask(result.Summary);
             return true;
@@ -344,8 +345,8 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         await RefreshEntriesAsync();
 
         Status = TrackerStatus.Error;
-        StatusText = "✗ Update failed: " + result.Error!.Message;
-        ErrorOccurred?.Invoke("Could not save the changes:\n" + result.Error.Message);
+        StatusText = string.Format(Strings.Tracker_UpdateFailed, result.Error!.Message);
+        ErrorOccurred?.Invoke(string.Format(Strings.Tracker_ErrorSaveChanges, result.Error.Message));
         return false;
     }
 
@@ -394,7 +395,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
             case EntryEditStatus.Saved:
                 row.CommitText(task, bookingElement);
                 Status = TrackerStatus.Success;
-                StatusText = $"✓ Updated \"{result.Summary}\"";
+                StatusText = string.Format(Strings.Tracker_Updated, result.Summary);
                 await RefreshEntriesAsync();
                 _history.RevealTask(result.Summary);
                 return true;
@@ -404,8 +405,8 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
                 await RefreshEntriesAsync();
 
                 Status = TrackerStatus.Error;
-                StatusText = "✗ Update failed: " + result.Error!.Message;
-                ErrorOccurred?.Invoke("Could not save the change:\n" + result.Error.Message);
+                StatusText = string.Format(Strings.Tracker_UpdateFailed, result.Error!.Message);
+                ErrorOccurred?.Invoke(string.Format(Strings.Tracker_ErrorSaveChange, result.Error.Message));
                 return false;
         }
     }
@@ -428,10 +429,10 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         _timer.Start();
         IsRunning = true;
 
-        ElapsedTimeText = "00:00:00";
+        ElapsedTimeText = Strings.Tracker_TimerZero;
         Status = TrackerStatus.Info;
-        StatusText = $"Tracking \"{task}\" since {_startedAt:HH:mm:ss} …";
-        Title = "Timetracker – " + task;
+        StatusText = string.Format(Strings.Tracker_TrackingSince, task, _startedAt);
+        Title = string.Format(Strings.Tracker_WindowTitleRunning, task);
 
         // The preview is consumed with the next save (see BuildEntry).
         RefreshCommands();
@@ -450,7 +451,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         _timer.Stop();
         _watch.Stop();
         IsRunning = false;
-        Title = "Timetracker";
+        Title = Strings.App_Title;
 
         await SaveAsync(BuildEntry(endedAt, elapsed));
 
@@ -482,7 +483,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
             await _repository.AddAsync(entry);
 
             Status = TrackerStatus.Success;
-            StatusText = $"✓ Saved {entry.Duration} to {_repository.FilePath}";
+            StatusText = string.Format(Strings.Tracker_Saved, entry.Duration, _repository.FilePath);
 
             await RefreshEntriesAsync();
             _history.RevealTask(entry.Task);
@@ -491,8 +492,8 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         {
             _logger.LogError(ex, "Could not save the entry of {Task}", entry.Task);
             Status = TrackerStatus.Error;
-            StatusText = "✗ Save failed: " + ex.Message;
-            ErrorOccurred?.Invoke("Could not save the entry:\n" + ex.Message);
+            StatusText = string.Format(Strings.Tracker_SaveFailed, ex.Message);
+            ErrorOccurred?.Invoke(string.Format(Strings.Tracker_ErrorSaveEntry, ex.Message));
         }
     }
 

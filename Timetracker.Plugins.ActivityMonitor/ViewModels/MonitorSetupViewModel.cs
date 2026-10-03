@@ -1,4 +1,5 @@
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
+using Timetracker.Plugins.ActivityMonitor.Localization;
 using Timetracker.Plugins.Contracts.Interfaces;
 using System.ComponentModel;
 using Timetracker.Plugins.Contracts;
@@ -37,9 +38,8 @@ public sealed class MonitorSetupViewModel : INotifyPropertyChanged
     {
         var success = _installer.Install();
         _statusHost.ShowStatus(success
-            ? "✓ The PC activity monitor will start automatically."
-            : "✗ Installation failed. Make sure \"" + _installer.MonitorExePath
-                + "\" exists next to the app.",
+            ? Strings.ActivityMon_InstallOk
+            : string.Format(Strings.ActivityMon_InstallFailed, _installer.MonitorExePath),
             success ? WeekStatusKind.Success : WeekStatusKind.Error);
         RefreshState();
     }
@@ -49,8 +49,8 @@ public sealed class MonitorSetupViewModel : INotifyPropertyChanged
     {
         var success = _installer.Uninstall();
         _statusHost.ShowStatus(success
-            ? "✓ The PC activity monitor autostart was removed."
-            : "✗ Removing the autostart entry failed.",
+            ? Strings.ActivityMon_UninstallOk
+            : Strings.ActivityMon_UninstallFailed,
             success ? WeekStatusKind.Success : WeekStatusKind.Error);
         RefreshState();
     }
@@ -58,8 +58,8 @@ public sealed class MonitorSetupViewModel : INotifyPropertyChanged
     /// <summary>Shows the current monitor state in the shared status line.</summary>
     public void ReportState() =>
         _statusHost.ShowStatus(_installer.IsInstalled
-            ? "Monitoring is installed (starts automatically at logon)."
-            : "The monitor is not installed; PC activity is only recorded while it runs.",
+            ? Strings.ActivityMon_Installed
+            : Strings.ActivityMon_NotInstalled,
             _installer.IsInstalled ? WeekStatusKind.Success : WeekStatusKind.Info);
 
     private void RefreshState()

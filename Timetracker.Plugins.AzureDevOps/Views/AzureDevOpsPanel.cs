@@ -1,3 +1,4 @@
+using Timetracker.Plugins.AzureDevOps.Localization;
 using Timetracker.Plugins.Contracts.Interfaces;
 using Avalonia;
 using Avalonia.Controls;
@@ -33,11 +34,10 @@ public sealed class AzureDevOpsPanel : UserControl
         _service = service;
         _host = host;
 
-        _importButton.Content = "Azure DevOps import";
+        _importButton.Content = Strings.AzureDevOps_PanelTitle;
         _importButton.Click += async (_, _) => await ShowImportPopupAsync();
         ToolTip.SetTip(_importButton,
-            "Fetches issue number, title and AZE-Element into the fields. "
-            + "The connection is set in the Options tab.");
+            Strings.AzureDevOps_ImportToolTip);
 
         var icon = LoadBitmap("Timetracker.Plugins.AzureDevOps.azure-favicon.png", 16);
         if (icon is not null)
@@ -51,7 +51,7 @@ public sealed class AzureDevOpsPanel : UserControl
                     new Image { Source = icon, Width = 16, Height = 16 },
                     new TextBlock
                     {
-                        Text = "Azure DevOps import",
+                        Text = Strings.AzureDevOps_PanelTitle,
                         VerticalAlignment = VerticalAlignment.Center,
                     },
                 },
@@ -117,7 +117,7 @@ public sealed class AzureDevOpsPanel : UserControl
             var result = await _service.ApplyIssueAsync(issueNumber, _host);
             if (!result.Success)
             {
-                _host.ShowStatus("✗ " + result.Error, TrackerStatusKind.Error);
+                _host.ShowStatus(string.Format(Strings.AzureDevOps_StatusErrorPrefix, result.Error), TrackerStatusKind.Error);
             }
         }
         finally
@@ -138,7 +138,7 @@ public sealed class AzureDevOpsPanel : UserControl
 
         public ImportWindow(Bitmap? icon)
         {
-            Title = "Azure DevOps import";
+            Title = Strings.AzureDevOps_WindowTitle;
             Width = 320;
             Height = 180;
             CanResize = false;
@@ -148,12 +148,12 @@ public sealed class AzureDevOpsPanel : UserControl
                 Icon = new WindowIcon(icon);
             }
 
-            _issueBox.Watermark = "Issue number";
+            _issueBox.Watermark = Strings.AzureDevOps_Watermark;
 
-            var applyButton = new Button { Content = "Import" };
+            var applyButton = new Button { Content = Strings.AzureDevOps_Import };
             applyButton.Click += (_, _) => Submit();
 
-            var cancelButton = new Button { Content = "Cancel" };
+            var cancelButton = new Button { Content = Strings.AzureDevOps_Cancel };
             cancelButton.Click += (_, _) => Close(null);
 
             _errorText.Foreground = Brushes.Firebrick;
@@ -164,7 +164,7 @@ public sealed class AzureDevOpsPanel : UserControl
                 Spacing = 8,
                 Children =
                 {
-                    new TextBlock { Text = "Issue number:" },
+                    new TextBlock { Text = Strings.AzureDevOps_IssueLabel },
                     _issueBox,
                     _errorText,
                     new StackPanel
@@ -202,7 +202,7 @@ public sealed class AzureDevOpsPanel : UserControl
             var text = _issueBox.Text?.Trim() ?? "";
             if (text.Length == 0 || !int.TryParse(text, out var id) || id <= 0)
             {
-                _errorText.Text = "Please enter a numeric issue number.";
+                _errorText.Text = Strings.AzureDevOps_NumericRequired;
                 return;
             }
             Close(text);

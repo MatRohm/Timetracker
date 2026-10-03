@@ -1,3 +1,4 @@
+using Timetracker.Plugins.ActivityMonitor.Localization;
 using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Contracts.Interfaces;
 
@@ -10,35 +11,35 @@ namespace Timetracker.Plugins.ActivityMonitor;
 /// </summary>
 public sealed class ActivityOptionsContributor(ActivityLog log) : IOptionDefinitionQuery
 {
-    public string Section => "Activity monitor";
+    public string Section => Strings.ActivityMon_Section;
 
     public IReadOnlyList<OptionDefinition> Options { get; } =
     [
         new(
             IdleOptions.IdleSpanThresholdKey,
-            "Idle span threshold (minutes)",
+            Strings.ActivityMon_IdleSpanLabel,
             OptionKind.Text,
             "60",
-            HintText: "Idle stretches shorter than this are not written to the activity log; raise it to ignore short breaks, lower it to log them"),
+            HintText: Strings.ActivityMon_IdleSpanHint),
         new(
             IdleOptions.IdleStopThresholdKey,
-            "Idle stop threshold (minutes)",
+            Strings.ActivityMon_IdleStopLabel,
             OptionKind.Text,
             "30",
-            HintText: "A running session with no input for this long is stopped and back-dated to the last input, so the idle time is not billed to the task"),
+            HintText: Strings.ActivityMon_IdleStopHint),
         new(
             "ActivityMonitor.ActivityFile",
-            "Activity file",
+            Strings.ActivityMon_ActivityFileLabel,
             OptionKind.Path,
             log.FilePath,
             IsReadOnly: true,
-            HintText: "The recorded active/idle spans are appended to this JSON file."),
+            HintText: Strings.ActivityMon_ActivityFileHint),
         new(
             "ActivityMonitor.StateFile",
-            "State file",
+            Strings.ActivityMon_StateFileLabel,
             OptionKind.Path,
             ActivityTracker.StateFilePath,
             IsReadOnly: true,
-            HintText: "The monitor's last state is kept here so an open span is closed after a restart."),
+            HintText: Strings.ActivityMon_StateFileHint),
     ];
 }
