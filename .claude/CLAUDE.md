@@ -53,23 +53,34 @@ This repository contains a .NET/C# application.
   `return Compute();`. Trivial returns (`return;`, constants, direct
   field/property reads, expression-bodied members) are exempt.
 
+## Memory
+
+When a session produces a fact worth keeping across sessions — a persistent,
+non-obvious configuration fact, a workflow decision, a rule the boss stated —
+retain it:
+
+- New persistent facts: add if they will still be relevant in a week; one-off
+  session details stay out.
+- Facts that revoke or supersede an older fact: add the new fact and state
+  which older fact it replaces, so the stale memory can be dropped.
+
 ## Architecture
 
-The solution follows these dependency rules:
+The app follows a **Micro-Kernel Architecture**:
 
-Domain
-    ↑
-Application
-    ↑
-Infrastructure / API
-
-- Domain must not reference Infrastructure.
-- Domain must not depend on database, HTTP, or UI concerns.
-- Application contains use cases and orchestration.
-- Infrastructure implements external concerns such as persistence.
-- API/controllers/endpoints should contain minimal business logic.
-
-Before modifying architecture, inspect existing projects and dependencies.
+- `Timetracker.App` is the kernel: persistence, session handling, the UI
+  shell.
+- Feature areas are plugins that extend the kernel through the contract
+  interfaces in `Timetracker.Plugins.Contracts` (hooks the kernel calls:
+  `IUiQuery`, `IWeekDayQuery`, `IDayActivityQuery`, `ITabQuery`, `IAppCommand`,
+  `IOptionDefinitionQuery`; hosts plugins call back into:
+  `ITrackerSessionQuery/Command`, `ITrackedSessionsQuery/Command`,
+  `IOptionQuery/Command`, `IUiTimer`, `IFileExplorer`).
+- The kernel references plugins by contract only — never their concrete
+  types. Plugins may reference only `Timetracker.Plugins.Contracts`.
+- Plugins register themselves in `Timetracker.App/HookRegistry.cs`; the kernel
+  discovers them at runtime via `GetServices<...>`.
+- Before modifying architecture, inspect existing projects and dependencies.
 
 ## Testing
 

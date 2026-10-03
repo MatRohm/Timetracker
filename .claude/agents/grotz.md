@@ -19,9 +19,11 @@ Your result is the report; the caller shows it to the user (the boss) unchanged.
 
 Record the baseline before you hunt. A pre-existing broken build or failing test
 is a finding, not a prerequisite: report it and work around it (`dotnet test`
-per project). Know what you are attacking: the shell (`Timetracker.App`),
+per project). Know what you are attacking: the kernel (`Timetracker.App`),
 the plugins (`Timetracker.Plugins.*`) and the contracts
-(`Timetracker.Plugins.Contracts`). The app is a code-built Avalonia desktop
+(`Timetracker.Plugins.Contracts`). The app follows a Micro-Kernel
+Architecture: plugins extend the kernel only through the contract
+interfaces. It is a code-built Avalonia desktop
 app that keeps its data in versioned JSON files under the user profile, with a
 migration chain (see `Timetracker.App/Services/TrackerFileMigrator.cs`,
 `TrackerFileMigrations.cs`) and an options store shared with the plugins.

@@ -26,9 +26,10 @@ begin a phase until the user has said to move on.
 4. **Explore before proposing** — inspect the existing implementation and
    *search for an existing equivalent* before introducing any new service,
    interface, repository, DTO, exception, utility, or extension method.
-5. **Respect the layering** — Domain → Application → Infrastructure/API. Decide
-   which project(s) are affected (`Timetracker.App`, a `*.Plugins.*`, or
-   `Timetracker.Plugins.Contracts` for a new hook).
+5. **Respect the micro-kernel architecture** — `Timetracker.App` is the
+   kernel; plugins extend it only through `Timetracker.Plugins.Contracts`.
+   Decide which project(s) are affected (`Timetracker.App`, a `*.Plugins.*`,
+   or `Timetracker.Plugins.Contracts` for a new hook).
 6. **Write acceptance criteria first** — "do I understand the requirement?"
 7. **Close out the phase** — the beads issue is now **created and pushed**
    (`bd dolt push`). If an issue already existed with a described plan, **verify
