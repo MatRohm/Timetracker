@@ -20,6 +20,12 @@ public class ActivityTracker
     /// <summary>How often a routine polling entry is written to the monitor log.</summary>
     public static readonly TimeSpan PollLogInterval = TimeSpan.FromMinutes(5);
 
+    /// <summary>
+    /// A wall-clock gap larger than this between two polls means the machine slept
+    /// (the poll interval is 5 s, so one minute is unambiguous, with stall margin).
+    /// </summary>
+    public static readonly TimeSpan SleepGapThreshold = TimeSpan.FromMinutes(1);
+
     private readonly ActivityLog _log;
     private readonly IIdleTimeProvider _idleTime;
     private readonly ILogger<ActivityTracker> _logger;
@@ -30,6 +36,9 @@ public class ActivityTracker
 
     /// <summary>Moment of the last polling log entry; throttles it to <see cref="PollLogInterval"/>.</summary>
     private DateTimeOffset _lastPollLog;
+
+    /// <summary>Wall-clock moment of the previous poll; a large gap means the machine slept.</summary>
+    private DateTimeOffset _lastPollMoment;
 
     private string _state = "active";
     private DateTimeOffset _stateStart;
@@ -104,6 +113,7 @@ public class ActivityTracker
         _state = "active";
         _stateStart = now;
         _lastPollLog = now;
+        _lastPollMoment = now;
         SaveState(_state, _stateStart);
 
         _logger.LogInformation(
@@ -116,6 +126,12 @@ public class ActivityTracker
     public void Poll()
     {
         var now = _now();
+        if (now - _lastPollMoment > SleepGapThreshold)
+        {
+            CloseSleepGap(now);
+        }
+
+        _lastPollMoment = now;
         var idle = _idleTime.CurrentIdleTime;
         PollWithIdle(idle);
 
@@ -150,6 +166,25 @@ public class ActivityTracker
         _state = newState;
         _stateStart = newStateStart;
         SaveState(_state, _stateStart);
+    }
+
+    /// <summary>
+    /// Handles a wall-clock jump larger than <see cref="SleepGapThreshold"/>: the
+    /// machine was asleep/off during the gap, so nobody was active. Ends the open
+    /// span at the last observed moment and resumes a fresh active span on wake.
+    /// </summary>
+    private void CloseSleepGap(DateTimeOffset wake)
+    {
+        var stoppedState = _state;
+        var endedAt = _lastPollMoment;
+        CloseSpan(stoppedState, _stateStart, endedAt);
+        _state = "active";
+        _stateStart = wake;
+        SaveState(_state, _stateStart);
+
+        _logger.LogInformation(
+            "Slept {Duration:hh\\:mm\\:ss}; closed \"{Span}\" span at {End:O}.",
+            wake - endedAt, stoppedState, endedAt);
     }
 
     /// <summary>

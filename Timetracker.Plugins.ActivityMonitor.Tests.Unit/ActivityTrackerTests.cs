@@ -227,6 +227,61 @@ public sealed class ActivityTrackerTests
             "the log names the span that was open, not the state it moved to");
     }
 
+    [Test]
+    public void Poll_WhenGapBelowThreshold_ShouldNotSplitTheOpenSpan()
+    {
+        var path = TempPath("log-sleep-short-gap.json");
+        File.Delete(path);
+        var log = new ActivityLog(path);
+        var tracker = new TrackerForTests(log, () => At(9, 0, 0), path + ".state.json");
+
+        tracker.Start();
+        tracker.PollAt(At(9, 0, 30)); // 30s later: below the one-minute threshold
+
+        log.GetAll().Should().BeEmpty("a short wall-clock gap is not a sleep");
+    }
+
+    [Test]
+    public void Poll_WhenWallClockJumpsPastThreshold_ShouldCloseTheSpanAtTheLastPollMoment()
+    {
+        var path = TempPath("log-sleep-long-gap.json");
+        File.Delete(path);
+        var log = new ActivityLog(path);
+        var tracker = new TrackerForTests(log, () => At(9, 0, 0), path + ".state.json");
+
+        tracker.Start();
+        tracker.PollAt(At(9, 0, 5)); // normal poll, no gap
+        tracker.PollAt(At(11, 0, 0)); // ~2h later: the machine slept
+
+        var spans = log.GetAll();
+        spans.Should().ContainSingle("the sleep gap itself records nothing");
+        spans[0].Kind.Should().Be("active");
+        spans[0].Start.Should().Be(At(9, 0, 0));
+        spans[0].End.Should().Be(At(9, 0, 5),
+            "the span ends at the last observed moment, not across the sleep");
+    }
+
+    [Test]
+    public void Poll_WhenWallClockJumpsPastThreshold_ShouldResumeActiveAtTheNewMoment()
+    {
+        var path = TempPath("log-sleep-resume.json");
+        File.Delete(path);
+        var log = new ActivityLog(path);
+        var tracker = new TrackerForTests(log, () => At(9, 0, 0), path + ".state.json");
+
+        tracker.Start();
+        tracker.PollAt(At(9, 0, 5));
+        tracker.PollAt(At(11, 0, 0)); // sleep detected: resume a fresh active span
+        tracker.PollAt(At(11, 0, 30)); // normal poll after wake
+        tracker.Stop(); // closes the resumed span at 11:00:30
+
+        var spans = log.GetAll();
+        spans.Should().HaveCount(2);
+        spans[1].Kind.Should().Be("active");
+        spans[1].Start.Should().Be(At(11, 0, 0), "a fresh active span starts on wake");
+        spans[1].End.Should().Be(At(11, 0, 30));
+    }
+
     private static (TrackerForTests Tracker, FakeLogger<ActivityTracker> Logger) TrackerWithLog(string name)
     {
         var logger = new FakeLogger<ActivityTracker>();
