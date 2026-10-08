@@ -2,15 +2,18 @@
 #
 # commit-msg hook: enforce the repository's commit message rules.
 #
-# Two rules, both checked against the subject (the first line):
+# Three rules, all checked against the message (rule 1 on the subject / first
+# line, rules 2 and 3 on the whole message):
 #
-#   1. Conventional Commits 1.0.0 - the subject reads
+#   1. The subject reads
 #
 #          <type>[(scope)][!]: <description>
 #
-#      where <type> is one of the allowed types below, the scope is optional and
-#      non-empty, the description is non-empty, and an optional breaking-change
-#      marker (!) may appear after the type/scope.
+#      where <type> is one of the three allowed types below - feat (new
+#      feature), fix (bug fix), technical (tests, refactoring, tooling and
+#      other purely technical work) - the scope is optional and non-empty, the
+#      description is non-empty, and an optional breaking-change marker (!) may
+#      appear after the type/scope.
 #
 #   2. The subject ends with the tracked issue's id, e.g.
 #
@@ -18,10 +21,29 @@
 #
 #      The id may be bare or wrapped in one closing bracket/paren.
 #
+#   3. A breaking change is marked with `!` AND documented in a
+#      `BREAKING CHANGE:` footer - the two must appear together, so `!` in the
+#      subject cannot be cosmetic. A change is breaking when something already
+#      built, stored or configured against the previous version stops working:
+#
+#        - plugin contract (Timetracker.Plugins.Contracts): a hook/host
+#          interface removed or renamed, an interface member added without a
+#          default implementation, a member's signature/nullability/threading
+#          contract changed, or an enum's meaning remapped;
+#        - on-disk data (timetracker.json, timetracker-options.json, …): a
+#          persisted field renamed/removed so old files lose it without a
+#          migration, a stored value's meaning/unit/shape changed, or a file
+#          moved so existing data is not found;
+#        - options / integration surface: an option key renamed so saved values
+#          are ignored, or a project/field mapping changed so results move.
+#
+#      Adding a new optional hook, an interface member with a default, a new
+#      option, or a new persisted field with a default is NOT breaking.
+#
 # Git-generated merge and revert messages are exempt, and an emergency bypass is
 # available with `git commit --no-verify`.
 #
-# See https://www.conventionalcommits.org/en/v1.0.0/ and README.md ("Git hooks").
+# See README.md ("Contributing") for the three commit types and the setup.
 
 set -eu
 
@@ -30,8 +52,10 @@ message_file=$1
 # Issue prefix used by bd for this repository (`issue_prefix` in `.beads/`).
 issue_prefix='timetracker'
 
-# Allowed Conventional Commits types.
-types='build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test'
+# Allowed commit types. Deliberately a closed set of three: a new feature
+# (feat), a bug fix (fix), and everything purely technical - tests,
+# refactoring, tooling, docs (technical).
+types='feat|fix|technical'
 
 # Comment lines (#...) and leading blank lines are ignored by Git; drop them
 # before reading the subject so `git commit -m` and editor commits behave alike.
@@ -54,18 +78,21 @@ esac
 if ! printf '%s' "$subject" |
     grep -Eq "^($types)(\([^()]+\))?!?: .+$"; then
     cat >&2 <<EOF
-✗ Commit message does not follow Conventional Commits.
+✗ Commit message does not use an allowed type.
 
   Got:      $subject
   Expected: <type>[optional scope][!]: <description>
 
-  Allowed types: $(printf '%s' "$types" | tr '|' ' ')
+  Allowed types:
+    feat      - a new feature
+    fix       - a bug fix
+    technical - tests, refactoring, tooling and other purely technical work
   Examples:
     feat: add a per-item editor for tracking entries (timetracker-12)
     fix(activity-monitor): stop writing a duplicate span (timetracker-7)
+    technical: restrict the commit hook to three types (timetracker-9z)
 
-  See README.md ("Git hooks") and
-  https://www.conventionalcommits.org/en/v1.0.0/
+  See README.md ("Contributing") for the convention
   (use "git commit --no-verify" to bypass in an emergency)
 
 EOF
@@ -87,6 +114,60 @@ if ! printf '%s' "$subject" |
   Find the id with 'bd ready' / 'bd list' (create one with 'bd create').
   The id must be at the end of the subject; use "git commit --no-verify" only
   in an emergency.
+
+EOF
+    exit 1
+fi
+
+# Rule 3: a breaking change is marked with `!` in the subject AND documented in
+# a `BREAKING CHANGE:` footer (either spelling, at the start of a line). The two
+# must appear together, so `!` cannot be cosmetic and a footer cannot be
+# orphaned. Comment lines (#...) are dropped so a commented template cannot
+# satisfy the check.
+if printf '%s' "$subject" | grep -Eq "^($types)(\([^()]+\))?!:"; then
+    subject_has_bang=1
+else
+    subject_has_bang=0
+fi
+
+if sed -e '/^#/d' "$message_file" | grep -Eq '^BREAKING[ -]CHANGE:'; then
+    body_has_footer=1
+else
+    body_has_footer=0
+fi
+
+if [ "$subject_has_bang" -eq 1 ] && [ "$body_has_footer" -eq 0 ]; then
+    cat >&2 <<EOF
+✗ The subject marks a breaking change ("!") but has no "BREAKING CHANGE:" footer.
+
+  Got:      $subject
+  Expected: a "BREAKING CHANGE:" footer describing what breaks, e.g.
+
+                fix!: rename the option key to booking-element ($issue_prefix-9z)
+
+                BREAKING CHANGE: existing option files keep the old key; the
+                value is ignored until re-entered.
+
+  A change is breaking when something already built, stored or configured
+  against the previous version stops working - the plugin contracts, the JSON
+  files, the options or the integration mapping. See README.md ("Contributing").
+
+EOF
+    exit 1
+fi
+
+if [ "$subject_has_bang" -eq 0 ] && [ "$body_has_footer" -eq 1 ]; then
+    cat >&2 <<EOF
+✗ The message has a "BREAKING CHANGE:" footer but the subject is missing the "!" marker.
+
+  Got:      $subject
+  Expected: the subject to carry "!" after the type or scope, e.g.
+
+                fix!: rename the option key to booking-element ($issue_prefix-9z)
+
+                BREAKING CHANGE: existing option files keep the old key.
+
+  Keep the marker and the footer together. See README.md ("Contributing").
 
 EOF
     exit 1

@@ -18,7 +18,7 @@ See: SKILL.md Step 2 (Draft the issue) for where this template goes.
 ```markdown
 # <Feature name>
 
-Title: `feat: <commit-message-form title> (<issue-id>)`
+Title: `<feat|fix|technical>: <commit-message-form title> (<issue-id>)`
 
 ## Context
 
@@ -87,6 +87,11 @@ Verification: dotnet build, dotnet test, dotnet format --verify-no-changes.
 - **"Read at edit time" pointers named explicitly**: what to read, at which
   anchor.
 - **Non-goals and assumptions listed**: what could break, what happens then.
-- Title line inside the design uses git-convention form
-  (`feat: … (<issue-id>)`) because it feeds the commit message; the beads
-  issue title itself stays unprefixed title case.
+- Title line inside the design uses git-convention form with one of the three
+  types (`feat: …`, `fix: …`, `technical: …`) because it feeds the commit
+  message; the beads issue title itself stays unprefixed title case.
+- **If the plan breaks something** (a plugin contract, a stored file, an option
+  key or an integration mapping - see README.md "Breaking changes"), write the
+  design title with `!` (`fix!: … (<issue-id>)`) and state the break in the
+  plan plus the exact `BREAKING CHANGE:` footer the commit must carry. The
+  `commit-msg` hook requires the `!` marker and the footer together.

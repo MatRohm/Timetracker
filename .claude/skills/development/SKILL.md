@@ -58,8 +58,14 @@ begin a phase until the user has said to move on.
    `IWeekDayQuery` / `IAppCommand`; register in `HookRegistry.cs`.
 7. **Keep changes minimal** — smallest change; no new NuGet packages; no public
    API changes; no unrelated files.
-8. **Commit as you go** — Conventional Commits type + subject ending in the
-   issue id (`feat: … (timetracker-66k)`), enforced by the `commit-msg` hook.
+8. **Commit as you go** — one of the three types (`feat`, `fix`, `technical`)
+   plus a subject ending in the issue id (`feat: … (timetracker-66k)`),
+   enforced by the `commit-msg` hook. Use `technical` for tests, refactoring
+   and other purely technical work. Mark a **breaking change** with `!` after
+   the type/scope **and** a `BREAKING CHANGE:` footer (the hook requires both
+   together) — breaking means something already built, stored or configured
+   stops working (plugin contracts, JSON files, options, integration mapping);
+   see README.md ("Breaking changes").
 
    **Stop here** — wait for the user to explicitly advance to phase C.
 
