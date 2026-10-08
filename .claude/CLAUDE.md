@@ -122,9 +122,18 @@ or explicitly state that validation could not be performed.
   in sensible, separate commits.
 - **Do not push to remotes without explicit permission from the user** —
   pushing happens only when the user asks for it.
-- Commit messages must follow Conventional Commits **and end with the tracked
-  issue id** (e.g. `feat: show the week view as a tree (timetracker-66k)`); both
-  are enforced by the shared `commit-msg` hook (see README.md for the setup).
+- Commit subjects use one of exactly three types - `feat` (new feature),
+  `fix` (bug fix) or `technical` (tests, refactoring, tooling and other purely
+  technical work) - optionally with a `(scope)` and a `!` breaking-change
+  marker, and **end with the tracked issue id** (e.g. `feat: show the week view
+  as a tree (timetracker-66k)`); both are enforced by the shared `commit-msg`
+  hook (see README.md for the setup).
+- **Breaking changes**: a change is breaking when something already built,
+  stored or configured against the previous version stops working - the plugin
+  contracts, the JSON files, the options or the integration mapping. Mark it
+  with `!` after the type/scope **and** a `BREAKING CHANGE:` footer; the hook
+  requires both together. The current criterion and the not-breaking cases are
+  in README.md ("Breaking changes").
 
 ## Before creating new code
 

@@ -78,9 +78,12 @@ kernel never references plugin concrete types.
 ## Contributing
 
 - Track work in [beads](https://github.com/gastownhall/beads) (`bd ready`, `bd create`, `bd close`).
-- Commits follow [Conventional Commits](https://www.conventionalcommits.org/)
-  and end with the issue id (`feat: show the week view as a tree (timetracker-66k)`),
-  enforced by the `commit-msg` hook — enable once per clone:
+- Commit subjects use one of three types — `feat` (new feature), `fix` (bug
+  fix) or `technical` (tests, refactoring, tooling and other purely technical
+  work) — optionally with a `(scope)` and a `!` breaking-change marker (see
+  [Breaking changes](#breaking-changes)), and end with the issue id
+  (`feat: show the week view as a tree (timetracker-66k)`), enforced by the
+  `commit-msg` hook — enable once per clone:
 
   ```sh
   git config core.hooksPath .beads/hooks   # with bd installed
@@ -89,3 +92,25 @@ kernel never references plugin concrete types.
 
 - Test naming: `<Method>_When<Condition>_Should<Result>` (architecture tests enforce it).
 - AI agent instructions (Claude Code, opencode) live in `.claude/CLAUDE.md`.
+
+### Breaking changes
+
+A change is **breaking** when something already built, stored or configured
+against the previous version stops working. Mark it with `!` after the type or
+scope **and** document it in a `BREAKING CHANGE:` footer; the `commit-msg` hook
+requires both together, so `!` is never cosmetic:
+
+```
+fix!: rename the option key to booking-element (timetracker-9z)
+
+BREAKING CHANGE: existing option files keep the old key; the value is ignored
+until re-entered.
+```
+
+The three contracts that can break:
+
+| Surface | Breaking | Not breaking |
+|---|---|---|
+| **Plugin contract** (`Timetracker.Plugins.Contracts`) | a hook/host interface removed or renamed; an interface member added without a default; a member's signature, nullability or threading contract changed; an enum's meaning remapped | a new optional hook or tab; an interface member added *with* a default |
+| **On-disk data** (`timetracker.json`, `timetracker-options.json`, `timetracker-activity.json`) | a persisted field renamed or removed so old files lose it without a migration; a stored value's meaning, unit or shape changed; a file moved so existing data is not found | a new field with a default old versions ignore; a migration that reads old files; a version bump still readable by the previous release |
+| **Options / integration** (option keys, Azure DevOps mapping, autostart) | an option key renamed so saved values are ignored; a project or field mapping changed so imports land elsewhere; an autostart path changed so the monitor stops launching | a new option or hint; relocalized strings; wording changes |

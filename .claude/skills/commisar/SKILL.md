@@ -88,7 +88,7 @@ Apply the repo's beads conventions exactly:
   screen). Never the plan.
 - **Plan goes to design** (`--design` / `--design-file`), never the
   description. The issue id is tracked in the design field if useful.
-- Title: title case, first word capitalized only; no `feat:`/`fix:` prefixes.
+- Title: title case, first word capitalized only; no `feat:`/`fix:`/`technical:` prefixes.
 - Short, precise, self-contained. Reference source doc only as a pointer; the
   issue must survive even if the doc moves.
 

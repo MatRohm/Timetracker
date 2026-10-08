@@ -61,7 +61,7 @@ bd close <id> --reason="Completed"
 
 ## Issue Naming
 
-- Issue titles MUST NOT be prefixed with git conventions (`feat:`, `fix:`, `chore:`, etc.).
+- Issue titles MUST NOT be prefixed with git conventions (`feat:`, `fix:`, `technical:`, etc.).
 - Use title case: capitalise the first letter of the first word only.
 - Write a short, precise description of the goal.
 
