@@ -86,6 +86,7 @@ public sealed class EntryHistoryGrid : UserControl
         {
             Header = BuildFilterHeader(nameof(EntryRow.BookingElement), Strings.Grid_CaptionBookingElement),
             Width = new DataGridLength(28, DataGridLengthUnitType.Star),
+            SortMemberPath = nameof(EntryRow.BookingElement),
             Binding = new Binding(nameof(EntryRow.BookingElement)),
             // Not sortable: the original app never sorted by booking element.
             CanUserSort = false,
