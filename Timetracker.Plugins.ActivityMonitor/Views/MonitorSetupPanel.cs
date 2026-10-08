@@ -1,10 +1,12 @@
 using System.ComponentModel;
 using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
 using Timetracker.Plugins.ActivityMonitor.Localization;
+using Timetracker.Plugins.ActivityMonitor.Models;
 using Timetracker.Plugins.ActivityMonitor.ViewModels;
 using Timetracker.Plugins.Contracts.Ui;
 
@@ -12,8 +14,9 @@ namespace Timetracker.Plugins.ActivityMonitor.Views;
 
 /// <summary>
 /// Setup block for the options view: install/remove buttons for the per-user
-/// autostart, a status label (Uninstalled / Stopped / Running / Unknown) refreshed
-/// periodically, and the result of the last action shown inline. Registered via
+/// autostart with the result of the last action shown inline, and a status line
+/// below them with a traffic-light circle and the monitor's state (Uninstalled /
+/// Stopped / Running / Unknown), refreshed periodically. Registered via
 /// <see cref="MonitorSetupUiContributor"/>. View-only; state and button rules live
 /// in <see cref="MonitorSetupViewModel"/>.
 /// </summary>
@@ -22,6 +25,7 @@ public sealed class MonitorSetupPanel : UserControl
     private readonly MonitorSetupViewModel _viewModel;
     private readonly Button _installButton = new();
     private readonly Button _uninstallButton = new();
+    private readonly Ellipse _statusLight = new();
     private readonly TextBlock _statusLabel = new();
     private readonly TextBlock _resultLabel = new();
     private readonly DispatcherTimer _refreshTimer;
@@ -31,6 +35,9 @@ public sealed class MonitorSetupPanel : UserControl
 
     /// <summary>Exposed so tests can assert the button state.</summary>
     public Button UninstallButton => _uninstallButton;
+
+    /// <summary>Exposed so tests can assert the traffic-light color.</summary>
+    public Ellipse StatusLight => _statusLight;
 
     /// <summary>Exposed so tests can assert the four-state status text.</summary>
     public TextBlock StatusLabel => _statusLabel;
@@ -48,6 +55,11 @@ public sealed class MonitorSetupPanel : UserControl
         _uninstallButton.Content = Strings.ActivityMon_Remove;
         _uninstallButton.Click += (_, _) => _viewModel.Uninstall();
 
+        _statusLight.Width = 12;
+        _statusLight.Height = 12;
+        _statusLight.VerticalAlignment = VerticalAlignment.Center;
+        _statusLight.Fill = StatusBrush(_viewModel.Status);
+
         _statusLabel.VerticalAlignment = VerticalAlignment.Center;
         _statusLabel.Foreground = ViewBrushes.Info;
         _resultLabel.TextTrimming = TextTrimming.CharacterEllipsis;
@@ -55,9 +67,22 @@ public sealed class MonitorSetupPanel : UserControl
 
         Content = new StackPanel
         {
-            Orientation = Orientation.Horizontal,
-            Spacing = 8,
-            Children = { _installButton, _uninstallButton, _statusLabel, _resultLabel },
+            Spacing = 6,
+            Children =
+            {
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 8,
+                    Children = { _installButton, _uninstallButton, _resultLabel },
+                },
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 6,
+                    Children = { _statusLight, _statusLabel },
+                },
+            },
         };
 
         _installButton.Bind(IsEnabledProperty, GetBinding(nameof(MonitorSetupViewModel.InstallEnabled)));
@@ -80,6 +105,9 @@ public sealed class MonitorSetupPanel : UserControl
     {
         switch (e.PropertyName)
         {
+            case nameof(MonitorSetupViewModel.Status):
+                _statusLight.Fill = StatusBrush(_viewModel.Status);
+                break;
             case nameof(MonitorSetupViewModel.StatusText):
                 _statusLabel.Text = _viewModel.StatusText;
                 break;
@@ -91,6 +119,16 @@ public sealed class MonitorSetupPanel : UserControl
                 break;
         }
     }
+
+    /// <summary>The traffic-light color for a monitor state: green running, amber
+    /// uninstalled, red unknown, grey stopped.</summary>
+    private static IBrush StatusBrush(MonitorStatus status) => status switch
+    {
+        MonitorStatus.Running => ViewBrushes.Success,
+        MonitorStatus.Uninstalled => ViewBrushes.Yellow,
+        MonitorStatus.Unknown => ViewBrushes.Error,
+        _ => ViewBrushes.Info,
+    };
 
     private Avalonia.Data.Binding GetBinding(string propertyName) => new()
     {
