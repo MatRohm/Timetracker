@@ -43,4 +43,17 @@ public sealed class HookRegistryTests
         store.Should().BeOfType<JsonOptionsStore>();
         sections.Should().Equal("General", "Azure DevOps", "Activity monitor");
     }
+
+    [Test]
+    public void BuildServiceProvider_WhenCalled_ShouldContributeTheMonitorButtonsToTheOptionsView()
+    {
+        var services = Timetracker.App.HookRegistry.BuildServiceProvider(NullLoggerFactory.Instance);
+
+        var optionUiSections = services.GetServices<IOptionUiQuery>().Select(c => c.Section);
+        optionUiSections.Should().Equal("Activity monitor");
+
+        // The week view no longer carries the monitor; only Azure DevOps targets a tab.
+        var tabContributors = services.GetServices<IUiQuery>().Select(c => c.TargetTab);
+        tabContributors.Should().Equal("Tracker");
+    }
 }

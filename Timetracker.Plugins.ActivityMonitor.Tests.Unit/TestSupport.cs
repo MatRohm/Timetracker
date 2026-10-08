@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
 using Timetracker.Plugins.Contracts.Interfaces;
-using Timetracker.Plugins.Contracts;
 
 namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit;
 
@@ -61,20 +60,6 @@ internal sealed class InMemoryInstaller : IActivityMonitorInstaller
     {
         IsInstalled = false;
         return true;
-    }
-}
-
-/// <summary>Status sink that records the last message; the setup view model only writes to it.</summary>
-internal sealed class FakeWeekStatusHost : IWeekStatusCommand
-{
-    public string? LastMessage { get; private set; }
-
-    public WeekStatusKind LastKind { get; private set; }
-
-    public void ShowStatus(string message, WeekStatusKind kind)
-    {
-        LastMessage = message;
-        LastKind = kind;
     }
 }
 
