@@ -15,12 +15,6 @@ namespace Timetracker.Plugins.ActivityMonitor.Services;
 /// </summary>
 public sealed class GrpcMonitorStatusQuery : IActivityMonitorStatusQuery, IDisposable
 {
-    /// <summary>Loopback port the monitor's status service listens on.</summary>
-    public const int Port = 50051;
-
-    /// <summary>Loopback endpoint the monitor's status service listens on.</summary>
-    public static string Address => $"http://127.0.0.1:{Port}";
-
     private readonly GrpcChannel _channel;
     private readonly MonitorStatusService.MonitorStatusServiceClient _client;
     private readonly ILogger<GrpcMonitorStatusQuery> _logger;
@@ -28,7 +22,7 @@ public sealed class GrpcMonitorStatusQuery : IActivityMonitorStatusQuery, IDispo
     public GrpcMonitorStatusQuery(ILogger<GrpcMonitorStatusQuery> logger)
     {
         _logger = logger;
-        _channel = GrpcChannel.ForAddress(Address);
+        _channel = GrpcChannel.ForAddress(MonitorEndpoint.Address);
         _client = new MonitorStatusService.MonitorStatusServiceClient(_channel);
     }
 
@@ -47,12 +41,12 @@ public sealed class GrpcMonitorStatusQuery : IActivityMonitorStatusQuery, IDispo
         {
             // No listener: the monitor is simply not running. Expected every poll
             // while stopped, so this stays at debug level to avoid log noise.
-            _logger.LogDebug(ex, "The activity monitor is not answering on {Address}.", Address);
+            _logger.LogDebug(ex, "The activity monitor is not answering on {Address}.", MonitorEndpoint.Address);
             return MonitorStatus.Stopped;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _logger.LogWarning(ex, "Could not query the activity monitor status on {Address}.", Address);
+            _logger.LogWarning(ex, "Could not query the activity monitor status on {Address}.", MonitorEndpoint.Address);
             return MonitorStatus.Unknown;
         }
     }

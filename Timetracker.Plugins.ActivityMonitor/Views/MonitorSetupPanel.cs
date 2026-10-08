@@ -92,13 +92,26 @@ public sealed class MonitorSetupPanel : UserControl
 
         // Refresh the status once the block is on screen, then every five seconds.
         _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
-        _refreshTimer.Tick += async (_, _) => await _viewModel.RefreshStatusAsync();
+        _refreshTimer.Tick += (_, _) => RefreshStatusSafely();
         AttachedToVisualTree += (_, _) =>
         {
-            _ = _viewModel.RefreshStatusAsync();
+            RefreshStatusSafely();
             _refreshTimer.Start();
         };
         DetachedFromVisualTree += (_, _) => _refreshTimer.Stop();
+    }
+
+    /// <summary>Refreshes the status without ever crashing the UI on a failed call.</summary>
+    private async void RefreshStatusSafely()
+    {
+        try
+        {
+            await _viewModel.RefreshStatusAsync();
+        }
+        catch (Exception)
+        {
+            // Keep the last status; the next tick retries.
+        }
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)

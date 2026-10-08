@@ -14,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // The status service is queried only by the local app, over HTTP/2 on loopback.
 builder.WebHost.ConfigureKestrel(kestrel =>
-    kestrel.ListenLocalhost(GrpcMonitorStatusQuery.Port, listen => listen.Protocols = HttpProtocols.Http2));
+    kestrel.ListenLocalhost(MonitorEndpoint.Port, listen => listen.Protocols = HttpProtocols.Http2));
 builder.Services.AddGrpc();
 builder.Services.AddHostedService<MonitorLoopService>();
 
