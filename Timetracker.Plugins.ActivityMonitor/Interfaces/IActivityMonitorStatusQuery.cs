@@ -1,3 +1,5 @@
+using Timetracker.Plugins.ActivityMonitor.Models;
+
 namespace Timetracker.Plugins.ActivityMonitor.Interfaces;
 
 /// <summary>

@@ -2,7 +2,7 @@ using Timetracker.Plugins.ActivityMonitor.Interfaces;
 using System.Runtime.Versioning;
 using Microsoft.Win32;
 
-namespace Timetracker.Plugins.ActivityMonitor;
+namespace Timetracker.Plugins.ActivityMonitor.Services;
 
 /// <summary>
 /// Installs or removes the per-user autostart of the activity monitor via the

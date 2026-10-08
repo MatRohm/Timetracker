@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
 
-namespace Timetracker.Plugins.ActivityMonitor;
+namespace Timetracker.Plugins.ActivityMonitor.Services;
 
 /// <summary>Selects the idle-time implementation for the current operating system.</summary>
 public static class IdleTimeProvider

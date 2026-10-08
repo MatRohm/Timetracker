@@ -1,9 +1,11 @@
 using Grpc.Core;
 using Grpc.Net.Client;
+using Microsoft.Extensions.Logging;
 using Timetracker.Plugins.ActivityMonitor.Grpc;
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
+using Timetracker.Plugins.ActivityMonitor.Models;
 
-namespace Timetracker.Plugins.ActivityMonitor;
+namespace Timetracker.Plugins.ActivityMonitor.Services;
 
 /// <summary>
 /// gRPC-backed <see cref="IActivityMonitorStatusQuery"/>: asks the monitor
@@ -21,9 +23,11 @@ public sealed class GrpcMonitorStatusQuery : IActivityMonitorStatusQuery, IDispo
 
     private readonly GrpcChannel _channel;
     private readonly MonitorStatusService.MonitorStatusServiceClient _client;
+    private readonly ILogger<GrpcMonitorStatusQuery> _logger;
 
-    public GrpcMonitorStatusQuery()
+    public GrpcMonitorStatusQuery(ILogger<GrpcMonitorStatusQuery> logger)
     {
+        _logger = logger;
         _channel = GrpcChannel.ForAddress(Address);
         _client = new MonitorStatusService.MonitorStatusServiceClient(_channel);
     }
@@ -41,10 +45,14 @@ public sealed class GrpcMonitorStatusQuery : IActivityMonitorStatusQuery, IDispo
         }
         catch (RpcException ex) when (ex.StatusCode == StatusCode.Unavailable)
         {
+            // No listener: the monitor is simply not running. Expected every poll
+            // while stopped, so this stays at debug level to avoid log noise.
+            _logger.LogDebug(ex, "The activity monitor is not answering on {Address}.", Address);
             return MonitorStatus.Stopped;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            _logger.LogWarning(ex, "Could not query the activity monitor status on {Address}.", Address);
             return MonitorStatus.Unknown;
         }
     }

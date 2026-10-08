@@ -2,9 +2,11 @@ using AwesomeAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 using NUnit.Framework;
+using Timetracker.Plugins.ActivityMonitor.Models;
+using Timetracker.Plugins.ActivityMonitor.Services;
 using static Timetracker.Plugins.ActivityMonitor.Tests.Unit.TestSupport;
 
-namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit;
+namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit.Services;
 
 [TestFixture]
 public sealed class ActivityTrackerTests

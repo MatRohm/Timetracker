@@ -1,7 +1,8 @@
 using AwesomeAssertions;
 using NUnit.Framework;
+using Timetracker.Plugins.ActivityMonitor.Services;
 
-namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit;
+namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit.Services;
 
 /// <summary>
 /// The idle threshold options: values are whole minutes; missing, blank,

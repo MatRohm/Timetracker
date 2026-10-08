@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
 using Timetracker.Plugins.ActivityMonitor.Localization;
+using Timetracker.Plugins.ActivityMonitor.Models;
 
 namespace Timetracker.Plugins.ActivityMonitor.ViewModels;
 

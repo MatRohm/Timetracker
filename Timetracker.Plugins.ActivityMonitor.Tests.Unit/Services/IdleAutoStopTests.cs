@@ -1,7 +1,8 @@
 using AwesomeAssertions;
 using NUnit.Framework;
+using Timetracker.Plugins.ActivityMonitor.Services;
 
-namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit;
+namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit.Services;
 
 /// <summary>
 /// Idle auto-stop: when a session runs and there has been no keyboard/mouse input

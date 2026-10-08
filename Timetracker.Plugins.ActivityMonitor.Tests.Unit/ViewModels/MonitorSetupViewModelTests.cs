@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using NUnit.Framework;
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
+using Timetracker.Plugins.ActivityMonitor.Models;
 using Timetracker.Plugins.ActivityMonitor.ViewModels;
 
 namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit.ViewModels;

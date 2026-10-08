@@ -1,9 +1,10 @@
 using AwesomeAssertions;
 using NUnit.Framework;
+using Timetracker.Plugins.ActivityMonitor.Services;
 using Timetracker.Plugins.Contracts;
 using static Timetracker.Plugins.ActivityMonitor.Tests.Unit.TestSupport;
 
-namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit;
+namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit.Services;
 
 [TestFixture]
 public sealed class ActivityOptionsContributorTests

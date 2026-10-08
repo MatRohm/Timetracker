@@ -1,8 +1,9 @@
-using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.ActivityMonitor.Localization;
+using Timetracker.Plugins.ActivityMonitor.Models;
+using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Contracts.Interfaces;
 
-namespace Timetracker.Plugins.ActivityMonitor;
+namespace Timetracker.Plugins.ActivityMonitor.Services;
 
 /// <summary>
 /// Feeds the week view from the activity log: the PC activity line per day (e.g.

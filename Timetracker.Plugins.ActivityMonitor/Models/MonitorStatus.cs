@@ -1,4 +1,4 @@
-namespace Timetracker.Plugins.ActivityMonitor;
+namespace Timetracker.Plugins.ActivityMonitor.Models;
 
 /// <summary>The four statuses the options view shows for the PC activity monitor.</summary>
 public enum MonitorStatus

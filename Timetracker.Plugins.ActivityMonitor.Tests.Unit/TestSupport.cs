@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
+using Timetracker.Plugins.ActivityMonitor.Models;
+using Timetracker.Plugins.ActivityMonitor.Services;
 using Timetracker.Plugins.Contracts.Interfaces;
 
 namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit;

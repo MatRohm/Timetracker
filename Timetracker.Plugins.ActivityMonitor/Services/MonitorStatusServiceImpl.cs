@@ -1,7 +1,7 @@
 using Grpc.Core;
 using Timetracker.Plugins.ActivityMonitor.Grpc;
 
-namespace Timetracker.Plugins.ActivityMonitor;
+namespace Timetracker.Plugins.ActivityMonitor.Services;
 
 /// <summary>
 /// gRPC status service hosted by the monitor process: answers "alive" so the
