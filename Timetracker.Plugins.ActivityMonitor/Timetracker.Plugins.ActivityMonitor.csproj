@@ -18,8 +18,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!--
+      Dependency injection comes from the Microsoft.AspNetCore.App framework
+      reference below (it provides IServiceProvider and the GetRequiredService
+      extension), so no explicit DI package is needed.
+    -->
     <PackageReference Include="Avalonia" Version="$(AvaloniaVersion)" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
   </ItemGroup>
 
   <!--
