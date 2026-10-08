@@ -68,6 +68,7 @@ public sealed class LoggingRules
 
     private static bool UsesSerilog(IType type) =>
         type.Dependencies.Any(dependency =>
-            dependency.Target.Namespace.FullName == "Serilog"
-            || dependency.Target.Namespace.FullName.StartsWith("Serilog.", StringComparison.Ordinal));
+            dependency.Target.Namespace is { } ns
+            && (ns.FullName == "Serilog"
+                || ns.FullName.StartsWith("Serilog.", StringComparison.Ordinal)));
 }

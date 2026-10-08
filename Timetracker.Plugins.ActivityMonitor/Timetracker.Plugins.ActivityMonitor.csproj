@@ -22,6 +22,30 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
   </ItemGroup>
 
+  <!--
+    The monitor hosts a gRPC status endpoint so the main app can ask whether the
+    monitor process is running. The server (Grpc.AspNetCore) and the client
+    (Grpc.Net.Client, transitively) live in this project, which the app references,
+    so the ASP.NET Core shared framework is pulled in transitively. Grpc.Tools
+    generates the service stubs from ActivityMonitorStatus.proto.
+  -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Grpc.AspNetCore" Version="2.84.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.36.2" />
+    <PackageReference Include="Grpc.Tools" Version="2.84.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="ActivityMonitorStatus.proto" GrpcServices="Both" />
+  </ItemGroup>
+
   <ItemGroup>
     <EmbeddedResource Update="Localization\Strings.resx">
       <Generator>ResXFileCodeGenerator</Generator>

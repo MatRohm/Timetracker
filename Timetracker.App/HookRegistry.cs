@@ -109,6 +109,9 @@ public static class HookRegistry
         services.AddSingleton<Plugins.ActivityMonitor.ActivityLog>();
         services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IActivityMonitorInstaller>(
             _ => Plugins.ActivityMonitor.ActivityMonitorInstallerFactory.CreateForCurrentPlatform());
+        // The running-state query talks to the monitor's gRPC status endpoint.
+        services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IActivityMonitorStatusQuery,
+            Plugins.ActivityMonitor.GrpcMonitorStatusQuery>();
         // Idle detection comes from the monitor project's platform-specific provider.
         services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IIdleTimeProvider>(
             _ => Plugins.ActivityMonitor.IdleTimeProvider.CreateForCurrentPlatform());

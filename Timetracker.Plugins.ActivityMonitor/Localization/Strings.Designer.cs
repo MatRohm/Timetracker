@@ -46,6 +46,18 @@ public static class Strings
     /// <summary>Activity monitor</summary>
     public static string ActivityMon_Section => ResourceManager.GetString(nameof(ActivityMon_Section))!;
 
+    /// <summary>Uninstalled</summary>
+    public static string ActivityMon_StatusUninstalled => ResourceManager.GetString(nameof(ActivityMon_StatusUninstalled))!;
+
+    /// <summary>Stopped</summary>
+    public static string ActivityMon_StatusStopped => ResourceManager.GetString(nameof(ActivityMon_StatusStopped))!;
+
+    /// <summary>Running</summary>
+    public static string ActivityMon_StatusRunning => ResourceManager.GetString(nameof(ActivityMon_StatusRunning))!;
+
+    /// <summary>Unknown</summary>
+    public static string ActivityMon_StatusUnknown => ResourceManager.GetString(nameof(ActivityMon_StatusUnknown))!;
+
     /// <summary>Idle span threshold (minutes)</summary>
     public static string ActivityMon_IdleSpanLabel => ResourceManager.GetString(nameof(ActivityMon_IdleSpanLabel))!;
 

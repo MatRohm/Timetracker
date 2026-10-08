@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option csharp_namespace = "Timetracker.Plugins.ActivityMonitor.Grpc";
+
+package timetracker.monitor;
+
+// Lets the main app ask the monitor process whether it is alive. A successful
+// call means "running"; the app maps connection failures to "stopped" or
+// "unknown" without needing anything more than an empty reply.
+service MonitorStatusService {
+  rpc GetStatus (GetStatusRequest) returns (GetStatusResponse);
+}
+
+message GetStatusRequest {
+}
+
+message GetStatusResponse {
+}

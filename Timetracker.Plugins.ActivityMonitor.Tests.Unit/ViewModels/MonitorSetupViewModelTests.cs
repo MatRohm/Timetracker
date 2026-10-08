@@ -11,7 +11,7 @@ public sealed class MonitorSetupViewModelTests
     [Test]
     public void InstallEnabled_WhenMonitorIsNotInstalled_ShouldBeTrue()
     {
-        var viewModel = new MonitorSetupViewModel(new InMemoryInstaller { IsInstalled = false });
+        var viewModel = NewViewModel(isInstalled: false);
 
         viewModel.InstallEnabled.Should().BeTrue("not installed yet, so Install is offered");
         viewModel.UninstallEnabled.Should().BeFalse();
@@ -20,7 +20,7 @@ public sealed class MonitorSetupViewModelTests
     [Test]
     public void UninstallEnabled_WhenMonitorIsInstalled_ShouldBeTrue()
     {
-        var viewModel = new MonitorSetupViewModel(new InMemoryInstaller { IsInstalled = true });
+        var viewModel = NewViewModel(isInstalled: true);
 
         viewModel.InstallEnabled.Should().BeFalse();
         viewModel.UninstallEnabled.Should().BeTrue("already installed, so Remove is offered");
@@ -29,7 +29,7 @@ public sealed class MonitorSetupViewModelTests
     [Test]
     public void Install_WhenInstallSucceeds_ShouldFlipButtonStateAndReportSuccess()
     {
-        var viewModel = new MonitorSetupViewModel(new InMemoryInstaller { IsInstalled = false });
+        var viewModel = NewViewModel(isInstalled: false);
 
         viewModel.Install();
 
@@ -41,7 +41,7 @@ public sealed class MonitorSetupViewModelTests
     [Test]
     public void Install_WhenInstallFails_ShouldReportTheFailure()
     {
-        var viewModel = new MonitorSetupViewModel(new FailingInstaller());
+        var viewModel = new MonitorSetupViewModel(new FailingInstaller(), new FakeStatusQuery());
 
         viewModel.Install();
 
@@ -52,7 +52,7 @@ public sealed class MonitorSetupViewModelTests
     [Test]
     public void Uninstall_WhenUninstallSucceeds_ShouldFlipButtonStateAndReportSuccess()
     {
-        var viewModel = new MonitorSetupViewModel(new InMemoryInstaller { IsInstalled = true });
+        var viewModel = NewViewModel(isInstalled: true);
 
         viewModel.Uninstall();
 
@@ -60,6 +60,51 @@ public sealed class MonitorSetupViewModelTests
         viewModel.ResultIsError.Should().BeFalse();
         viewModel.ResultText.Should().NotBeEmpty();
     }
+
+    [Test]
+    public async Task RefreshStatusAsync_WhenNotInstalled_ShouldReportUninstalled()
+    {
+        var viewModel = NewViewModel(isInstalled: false);
+
+        await viewModel.RefreshStatusAsync();
+
+        viewModel.Status.Should().Be(MonitorStatus.Uninstalled);
+    }
+
+    [Test]
+    public async Task RefreshStatusAsync_WhenInstalledAndQuerySaysRunning_ShouldReportRunning()
+    {
+        var viewModel = NewViewModel(isInstalled: true, status: MonitorStatus.Running);
+
+        await viewModel.RefreshStatusAsync();
+
+        viewModel.Status.Should().Be(MonitorStatus.Running);
+    }
+
+    [Test]
+    public async Task RefreshStatusAsync_WhenInstalledAndQuerySaysStopped_ShouldReportStopped()
+    {
+        var viewModel = NewViewModel(isInstalled: true, status: MonitorStatus.Stopped);
+
+        await viewModel.RefreshStatusAsync();
+
+        viewModel.Status.Should().Be(MonitorStatus.Stopped);
+    }
+
+    [Test]
+    public async Task RefreshStatusAsync_WhenInstalledAndQuerySaysUnknown_ShouldReportUnknown()
+    {
+        var viewModel = NewViewModel(isInstalled: true, status: MonitorStatus.Unknown);
+
+        await viewModel.RefreshStatusAsync();
+
+        viewModel.Status.Should().Be(MonitorStatus.Unknown);
+    }
+
+    private static MonitorSetupViewModel NewViewModel(
+        bool isInstalled,
+        MonitorStatus status = MonitorStatus.Unknown) =>
+        new(new InMemoryInstaller { IsInstalled = isInstalled }, new FakeStatusQuery { Status = status });
 
     /// <summary>An installer whose <see cref="IActivityMonitorInstaller.Install"/> always fails.</summary>
     private sealed class FailingInstaller : IActivityMonitorInstaller

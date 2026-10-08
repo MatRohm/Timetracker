@@ -85,6 +85,18 @@
   <data name="ActivityMon_Section" xml:space="preserve">
     <value>Activity monitor</value>
   </data>
+  <data name="ActivityMon_StatusUninstalled" xml:space="preserve">
+    <value>Uninstalled</value>
+  </data>
+  <data name="ActivityMon_StatusStopped" xml:space="preserve">
+    <value>Stopped</value>
+  </data>
+  <data name="ActivityMon_StatusRunning" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="ActivityMon_StatusUnknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
   <data name="ActivityMon_IdleSpanLabel" xml:space="preserve">
     <value>Idle span threshold (minutes)</value>
   </data>

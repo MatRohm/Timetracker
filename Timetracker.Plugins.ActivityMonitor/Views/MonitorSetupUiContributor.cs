@@ -15,5 +15,6 @@ public sealed class MonitorSetupUiContributor : IOptionUiQuery
 
     public Avalonia.Controls.Control CreateControl(IServiceProvider services) =>
         new MonitorSetupPanel(
-            services.GetRequiredService<IActivityMonitorInstaller>());
+            services.GetRequiredService<IActivityMonitorInstaller>(),
+            services.GetRequiredService<IActivityMonitorStatusQuery>());
 }

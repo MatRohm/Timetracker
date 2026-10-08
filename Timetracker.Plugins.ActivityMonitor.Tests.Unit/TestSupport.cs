@@ -63,6 +63,15 @@ internal sealed class InMemoryInstaller : IActivityMonitorInstaller
     }
 }
 
+/// <summary>Status query whose result is set directly; never talks to a real monitor.</summary>
+internal sealed class FakeStatusQuery : IActivityMonitorStatusQuery
+{
+    public MonitorStatus Status { get; set; } = MonitorStatus.Unknown;
+
+    public Task<MonitorStatus> GetStatusAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(Status);
+}
+
 /// <summary>Idle provider for tests: the idle duration is set directly, no platform API.</summary>
 internal sealed class FakeIdleTimeProvider : IIdleTimeProvider
 {
