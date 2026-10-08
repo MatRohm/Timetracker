@@ -19,14 +19,34 @@ public sealed class OptionsTabView : UserControl
 {
     private readonly OptionsViewModel _options;
 
-    public OptionsTabView(OptionsViewModel options)
+    public OptionsTabView(
+        OptionsViewModel options,
+        IReadOnlyList<(string Section, Control Control)> optionUiContributions)
     {
         _options = options;
 
+        var contributionsBySection = optionUiContributions
+            .GroupBy(c => c.Section)
+            .ToDictionary(g => g.Key, g => g.Select(c => c.Control).ToList());
+
         var sections = new StackPanel { Spacing = 14 };
+        var renderedSections = new HashSet<string>(StringComparer.Ordinal);
         foreach (var section in _options.Sections)
         {
-            sections.Children.Add(BuildSection(section));
+            renderedSections.Add(section.Title);
+            contributionsBySection.TryGetValue(section.Title, out var controls);
+            sections.Children.Add(BuildSection(section, controls));
+        }
+
+        // A contribution whose section has no option rows renders as its own section.
+        foreach (var (section, control) in optionUiContributions)
+        {
+            if (!renderedSections.Add(section))
+            {
+                continue;
+            }
+
+            sections.Children.Add(BuildCustomSection(section, control));
         }
 
         var saveButton = new Button
@@ -61,7 +81,7 @@ public sealed class OptionsTabView : UserControl
         };
     }
 
-    private static Control BuildSection(OptionSection section)
+    private static Control BuildSection(OptionSection section, IReadOnlyList<Control>? controls)
     {
         var grid = new Grid
         {
@@ -133,7 +153,32 @@ public sealed class OptionsTabView : UserControl
                 grid,
             },
         };
+        AppendControls(result, controls);
         return result;
+    }
+
+    private static Control BuildCustomSection(string title, Control control) =>
+        new StackPanel
+        {
+            Spacing = 6,
+            Children =
+            {
+                new TextBlock { Text = title, FontSize = 15, FontWeight = FontWeight.Bold },
+                control,
+            },
+        };
+
+    private static void AppendControls(StackPanel section, IReadOnlyList<Control>? controls)
+    {
+        if (controls is null)
+        {
+            return;
+        }
+
+        foreach (var control in controls)
+        {
+            section.Children.Add(control);
+        }
     }
 
     /// <summary>A small flat amber folder, the file-explorer symbol; drawn so it needs no icon font.</summary>

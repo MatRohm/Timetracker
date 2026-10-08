@@ -90,11 +90,17 @@ public sealed class App : Application
                 })
                 .ToList();
 
+            // Options-view contributions: one (Section, Control) pair per add-in block.
+            var optionUiContributions = _services.GetServices<IOptionUiQuery>()
+                .Select(c => (c.Section, c.CreateControl(_services)))
+                .ToList();
+
             var window = new TrackerWindow(
                 viewModel,
                 trackerContributors,
                 pluginTabs,
-                _services.GetRequiredService<ViewModels.OptionsViewModel>());
+                _services.GetRequiredService<ViewModels.OptionsViewModel>(),
+                optionUiContributions);
             desktop.MainWindow = window;
 
             // Let the components run their startup hooks.

@@ -95,7 +95,45 @@ public sealed class OptionsTabViewRenderTests
             "the label cell keeps the Auto,*,Auto layout");
     }
 
-    private static OptionsTabView CreateView(out RecordingExplorer explorer, string? hint = null)
+    [AvaloniaTest]
+    public void OptionsTabView_WhenAContributionMatchesASection_ShouldRenderItBelowTheOptions()
+    {
+        var view = CreateView(out _, contributions:
+        [
+            ("Azure DevOps", new Button { Content = "Contributed" }),
+        ]);
+        var window = new Window { Content = view };
+        window.Show();
+
+        var button = view.GetLogicalDescendants().OfType<Button>()
+            .Single(b => (b.Content as string) == "Contributed");
+
+        // The contribution sits inside the "Azure DevOps" section, after its options.
+        var section = button.GetLogicalAncestors().OfType<StackPanel>()
+            .Single(p => p.Children.OfType<TextBlock>().Any(t => t.Text == "Azure DevOps"));
+        section.Children.Should().Contain(button, "the contribution joins the matching section");
+    }
+
+    [AvaloniaTest]
+    public void OptionsTabView_WhenAContributionMatchesNoSection_ShouldRenderItsOwnSection()
+    {
+        var view = CreateView(out _, contributions:
+        [
+            ("Activity monitor", new Button { Content = "Install" }),
+        ]);
+        var window = new Window { Content = view };
+        window.Show();
+
+        var texts = view.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
+        texts.Should().Contain("Activity monitor", "an unmatched section still gets a heading");
+        view.GetLogicalDescendants().OfType<Button>()
+            .Should().ContainSingle(b => (b.Content as string) == "Install");
+    }
+
+    private static OptionsTabView CreateView(
+        out RecordingExplorer explorer,
+        string? hint = null,
+        IReadOnlyList<(string Section, Control Control)>? contributions = null)
     {
         explorer = new RecordingExplorer();
         var viewModel = new OptionsViewModel(
@@ -111,7 +149,7 @@ public sealed class OptionsTabViewRenderTests
                     new OptionDefinition("AzureDevOps.Pat", "Personal access token", OptionKind.Secret, "token")),
             ],
             explorer);
-        var result = new OptionsTabView(viewModel);
+        var result = new OptionsTabView(viewModel, contributions ?? []);
         return result;
     }
 
