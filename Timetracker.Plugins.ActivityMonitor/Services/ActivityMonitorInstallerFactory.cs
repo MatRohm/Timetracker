@@ -1,6 +1,6 @@
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
 
-namespace Timetracker.Plugins.ActivityMonitor;
+namespace Timetracker.Plugins.ActivityMonitor.Services;
 
 /// <summary>Selects the autostart installer for the current operating system.</summary>
 public static class ActivityMonitorInstallerFactory

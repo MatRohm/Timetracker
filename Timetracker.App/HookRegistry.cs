@@ -106,29 +106,32 @@ public static class HookRegistry
         services.AddSingleton<IUiQuery, Plugins.AzureDevOps.Views.AzureDevOpsUiContributor>();
 
         // PC activity monitor: activity log, per-day lines, installer UI.
-        services.AddSingleton<Plugins.ActivityMonitor.ActivityLog>();
+        services.AddSingleton<Plugins.ActivityMonitor.Services.ActivityLog>();
         services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IActivityMonitorInstaller>(
-            _ => Plugins.ActivityMonitor.ActivityMonitorInstallerFactory.CreateForCurrentPlatform());
+            _ => Plugins.ActivityMonitor.Services.ActivityMonitorInstallerFactory.CreateForCurrentPlatform());
+        // The running-state query talks to the monitor's gRPC status endpoint.
+        services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IActivityMonitorStatusQuery,
+            Plugins.ActivityMonitor.Services.GrpcMonitorStatusQuery>();
         // Idle detection comes from the monitor project's platform-specific provider.
         services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IIdleTimeProvider>(
-            _ => Plugins.ActivityMonitor.IdleTimeProvider.CreateForCurrentPlatform());
+            _ => Plugins.ActivityMonitor.Services.IdleTimeProvider.CreateForCurrentPlatform());
         // The idle auto-stop rule: stops the tracker's session after a long idle stretch,
         // with the idle-stop threshold the user configured in the options tab.
-        services.AddSingleton<Plugins.ActivityMonitor.IdleAutoStop>(sp =>
-            new Plugins.ActivityMonitor.IdleAutoStop(
+        services.AddSingleton<Plugins.ActivityMonitor.Services.IdleAutoStop>(sp =>
+            new Plugins.ActivityMonitor.Services.IdleAutoStop(
                 sp.GetRequiredService<ITrackerSessionQuery>(),
                 sp.GetRequiredService<ITrackerSessionCommand>(),
                 sp.GetRequiredService<Plugins.ActivityMonitor.Interfaces.IIdleTimeProvider>(),
                 options: sp.GetRequiredService<IOptionQuery>()));
         services.AddSingleton<IAppCommand>(sp =>
-            sp.GetRequiredService<Plugins.ActivityMonitor.IdleAutoStop>());
+            sp.GetRequiredService<Plugins.ActivityMonitor.Services.IdleAutoStop>());
         // One contributor instance serves the per-day line and the day's active time.
-        services.AddSingleton<Plugins.ActivityMonitor.ActivityWeekDayContributor>();
+        services.AddSingleton<Plugins.ActivityMonitor.Services.ActivityWeekDayContributor>();
         services.AddSingleton<IWeekDayQuery>(
-            sp => sp.GetRequiredService<Plugins.ActivityMonitor.ActivityWeekDayContributor>());
+            sp => sp.GetRequiredService<Plugins.ActivityMonitor.Services.ActivityWeekDayContributor>());
         services.AddSingleton<IDayActivityQuery>(
-            sp => sp.GetRequiredService<Plugins.ActivityMonitor.ActivityWeekDayContributor>());
-        services.AddSingleton<IUiQuery, Plugins.ActivityMonitor.Views.MonitorSetupUiContributor>();
-        services.AddSingleton<IOptionDefinitionQuery, Plugins.ActivityMonitor.ActivityOptionsContributor>();
+            sp => sp.GetRequiredService<Plugins.ActivityMonitor.Services.ActivityWeekDayContributor>());
+        services.AddSingleton<IOptionUiQuery, Plugins.ActivityMonitor.Views.MonitorSetupUiContributor>();
+        services.AddSingleton<IOptionDefinitionQuery, Plugins.ActivityMonitor.Services.ActivityOptionsContributor>();
     }
 }

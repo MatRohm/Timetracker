@@ -20,6 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Timetracker.App\Timetracker.App.csproj" />
     <ProjectReference Include="..\Timetracker.Plugins.AzureDevOps\Timetracker.Plugins.AzureDevOps.csproj" />
+    <ProjectReference Include="..\Timetracker.Plugins.ActivityMonitor\Timetracker.Plugins.ActivityMonitor.csproj" />
     <ProjectReference Include="..\Timetracker.Plugins.WeekView\Timetracker.Plugins.WeekView.csproj" />
     <!-- Shared test doubles (fakes) live in the unit-test projects. -->
     <ProjectReference Include="..\Timetracker.App.Tests.Unit\Timetracker.App.Tests.Unit.csproj" />

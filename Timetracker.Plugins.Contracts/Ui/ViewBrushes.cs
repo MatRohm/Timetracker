@@ -17,6 +17,9 @@ public static class ViewBrushes
     /// <summary>Warnings that need attention, e.g. a day's untracked time.</summary>
     public static readonly IBrush Warning = new SolidColorBrush(Color.FromRgb(0xC0, 0x56, 0x00));
 
+    /// <summary>Caution amber, e.g. the monitor's "not installed" traffic-light state.</summary>
+    public static readonly IBrush Yellow = new SolidColorBrush(Color.FromRgb(0xFF, 0xB3, 0x00));
+
     /// <summary>Informational / secondary text.</summary>
     public static readonly IBrush Info = new SolidColorBrush(Color.FromRgb(0x69, 0x69, 0x69));
 

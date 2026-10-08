@@ -19,7 +19,8 @@ public sealed class TrackerWindow : Window
         TrackerViewModel viewModel,
         IReadOnlyList<Control> trackerContributors,
         IReadOnlyList<TabItem> pluginTabs,
-        OptionsViewModel options)
+        OptionsViewModel options,
+        IReadOnlyList<(string Section, Control Control)> optionUiContributions)
     {
         _vm = viewModel;
 
@@ -39,7 +40,7 @@ public sealed class TrackerWindow : Window
         {
             tabs.Items.Add(tab);
         }
-        tabs.Items.Add(new TabItem { Header = Strings.App_TabOptions, Content = new OptionsTabView(options) });
+        tabs.Items.Add(new TabItem { Header = Strings.App_TabOptions, Content = new OptionsTabView(options, optionUiContributions) });
 
         Content = tabs;
 

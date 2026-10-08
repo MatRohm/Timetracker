@@ -1,6 +1,6 @@
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
 
-namespace Timetracker.Plugins.ActivityMonitor;
+namespace Timetracker.Plugins.ActivityMonitor.Services;
 
 /// <summary>
 /// Linux autostart installer: writes a freedesktop <c>.desktop</c> entry to the

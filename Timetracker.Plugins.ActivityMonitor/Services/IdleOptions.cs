@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using Timetracker.Plugins.Contracts.Interfaces;
 
-namespace Timetracker.Plugins.ActivityMonitor;
+namespace Timetracker.Plugins.ActivityMonitor.Services;
 
 /// <summary>
 /// The idle durations of the activity monitor, editable in the options tab

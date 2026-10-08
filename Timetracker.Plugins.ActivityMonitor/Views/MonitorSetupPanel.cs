@@ -1,25 +1,34 @@
+using System.ComponentModel;
+using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Threading;
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
 using Timetracker.Plugins.ActivityMonitor.Localization;
-using Timetracker.Plugins.Contracts.Interfaces;
-using Avalonia.Controls;
-using Avalonia.Layout;
-using Avalonia.Threading;
+using Timetracker.Plugins.ActivityMonitor.Models;
 using Timetracker.Plugins.ActivityMonitor.ViewModels;
+using Timetracker.Plugins.Contracts.Ui;
 
 namespace Timetracker.Plugins.ActivityMonitor.Views;
 
 /// <summary>
-/// Setup band for the week view: install/remove buttons for the per-user
-/// autostart of the activity monitor. The current state and the results are
-/// reported through the shared week status line at the bottom of the view.
-/// Registered via <see cref="MonitorSetupUiContributor"/>. View-only; state and
-/// button rules live in <see cref="MonitorSetupViewModel"/>.
+/// Setup block for the options view: install/remove buttons for the per-user
+/// autostart with the result of the last action shown inline, and a status line
+/// below them with a traffic-light circle and the monitor's state (Uninstalled /
+/// Stopped / Running / Unknown), refreshed periodically. Registered via
+/// <see cref="MonitorSetupUiContributor"/>. View-only; state and button rules live
+/// in <see cref="MonitorSetupViewModel"/>.
 /// </summary>
 public sealed class MonitorSetupPanel : UserControl
 {
     private readonly MonitorSetupViewModel _viewModel;
     private readonly Button _installButton = new();
     private readonly Button _uninstallButton = new();
+    private readonly Ellipse _statusLight = new();
+    private readonly TextBlock _statusLabel = new();
+    private readonly TextBlock _resultLabel = new();
+    private readonly DispatcherTimer _refreshTimer;
 
     /// <summary>Exposed so tests can assert the button state.</summary>
     public Button InstallButton => _installButton;
@@ -27,9 +36,18 @@ public sealed class MonitorSetupPanel : UserControl
     /// <summary>Exposed so tests can assert the button state.</summary>
     public Button UninstallButton => _uninstallButton;
 
-    public MonitorSetupPanel(IActivityMonitorInstaller installer, IWeekStatusCommand statusHost)
+    /// <summary>Exposed so tests can assert the traffic-light color.</summary>
+    public Ellipse StatusLight => _statusLight;
+
+    /// <summary>Exposed so tests can assert the four-state status text.</summary>
+    public TextBlock StatusLabel => _statusLabel;
+
+    /// <summary>Exposed so tests can assert the inline result text.</summary>
+    public TextBlock ResultLabel => _resultLabel;
+
+    public MonitorSetupPanel(IActivityMonitorInstaller installer, IActivityMonitorStatusQuery statusQuery)
     {
-        _viewModel = new MonitorSetupViewModel(installer, statusHost);
+        _viewModel = new MonitorSetupViewModel(installer, statusQuery);
 
         _installButton.Content = Strings.ActivityMon_Install;
         _installButton.Click += (_, _) => _viewModel.Install();
@@ -37,20 +55,93 @@ public sealed class MonitorSetupPanel : UserControl
         _uninstallButton.Content = Strings.ActivityMon_Remove;
         _uninstallButton.Click += (_, _) => _viewModel.Uninstall();
 
+        _statusLight.Width = 12;
+        _statusLight.Height = 12;
+        _statusLight.VerticalAlignment = VerticalAlignment.Center;
+        _statusLight.Fill = StatusBrush(_viewModel.Status);
+
+        _statusLabel.VerticalAlignment = VerticalAlignment.Center;
+        _statusLabel.Foreground = ViewBrushes.Info;
+        _resultLabel.TextTrimming = TextTrimming.CharacterEllipsis;
+        _resultLabel.VerticalAlignment = VerticalAlignment.Center;
+
         Content = new StackPanel
         {
-            Orientation = Orientation.Horizontal,
-            Spacing = 8,
-            Children = { _installButton, _uninstallButton },
+            Spacing = 6,
+            Children =
+            {
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 8,
+                    Children = { _installButton, _uninstallButton, _resultLabel },
+                },
+                new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 6,
+                    Children = { _statusLight, _statusLabel },
+                },
+            },
         };
 
         _installButton.Bind(IsEnabledProperty, GetBinding(nameof(MonitorSetupViewModel.InstallEnabled)));
         _uninstallButton.Bind(IsEnabledProperty, GetBinding(nameof(MonitorSetupViewModel.UninstallEnabled)));
 
-        // Report the current state once the view is actually attached.
+        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+
+        // Refresh the status once the block is on screen, then every five seconds.
+        _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        _refreshTimer.Tick += (_, _) => RefreshStatusSafely();
         AttachedToVisualTree += (_, _) =>
-            Dispatcher.UIThread.Post(_viewModel.ReportState, DispatcherPriority.Background);
+        {
+            RefreshStatusSafely();
+            _refreshTimer.Start();
+        };
+        DetachedFromVisualTree += (_, _) => _refreshTimer.Stop();
     }
+
+    /// <summary>Refreshes the status without ever crashing the UI on a failed call.</summary>
+    private async void RefreshStatusSafely()
+    {
+        try
+        {
+            await _viewModel.RefreshStatusAsync();
+        }
+        catch (Exception)
+        {
+            // Keep the last status; the next tick retries.
+        }
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(MonitorSetupViewModel.Status):
+                _statusLight.Fill = StatusBrush(_viewModel.Status);
+                break;
+            case nameof(MonitorSetupViewModel.StatusText):
+                _statusLabel.Text = _viewModel.StatusText;
+                break;
+            case nameof(MonitorSetupViewModel.ResultText):
+                _resultLabel.Text = _viewModel.ResultText;
+                break;
+            case nameof(MonitorSetupViewModel.ResultIsError):
+                _resultLabel.Foreground = _viewModel.ResultIsError ? ViewBrushes.Error : ViewBrushes.Success;
+                break;
+        }
+    }
+
+    /// <summary>The traffic-light color for a monitor state: green running, amber
+    /// uninstalled, red unknown, grey stopped.</summary>
+    private static IBrush StatusBrush(MonitorStatus status) => status switch
+    {
+        MonitorStatus.Running => ViewBrushes.Success,
+        MonitorStatus.Uninstalled => ViewBrushes.Yellow,
+        MonitorStatus.Unknown => ViewBrushes.Error,
+        _ => ViewBrushes.Info,
+    };
 
     private Avalonia.Data.Binding GetBinding(string propertyName) => new()
     {

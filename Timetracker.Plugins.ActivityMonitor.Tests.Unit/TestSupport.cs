@@ -1,7 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
+using Timetracker.Plugins.ActivityMonitor.Models;
+using Timetracker.Plugins.ActivityMonitor.Services;
 using Timetracker.Plugins.Contracts.Interfaces;
-using Timetracker.Plugins.Contracts;
 
 namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit;
 
@@ -64,18 +65,13 @@ internal sealed class InMemoryInstaller : IActivityMonitorInstaller
     }
 }
 
-/// <summary>Status sink that records the last message; the setup view model only writes to it.</summary>
-internal sealed class FakeWeekStatusHost : IWeekStatusCommand
+/// <summary>Status query whose result is set directly; never talks to a real monitor.</summary>
+internal sealed class FakeStatusQuery : IActivityMonitorStatusQuery
 {
-    public string? LastMessage { get; private set; }
+    public MonitorStatus Status { get; set; } = MonitorStatus.Unknown;
 
-    public WeekStatusKind LastKind { get; private set; }
-
-    public void ShowStatus(string message, WeekStatusKind kind)
-    {
-        LastMessage = message;
-        LastKind = kind;
-    }
+    public Task<MonitorStatus> GetStatusAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(Status);
 }
 
 /// <summary>Idle provider for tests: the idle duration is set directly, no platform API.</summary>

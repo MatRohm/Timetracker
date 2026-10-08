@@ -2,7 +2,7 @@ using Avalonia.Threading;
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
 using Timetracker.Plugins.Contracts.Interfaces;
 
-namespace Timetracker.Plugins.ActivityMonitor;
+namespace Timetracker.Plugins.ActivityMonitor.Services;
 
 /// <summary>
 /// Stops the tracker's running session after a long idle stretch, back-dating the

@@ -1,20 +1,20 @@
-using Timetracker.Plugins.ActivityMonitor.Interfaces;
-using Timetracker.Plugins.Contracts.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using Timetracker.Plugins.ActivityMonitor.Interfaces;
+using Timetracker.Plugins.ActivityMonitor.Localization;
+using Timetracker.Plugins.Contracts.Interfaces;
 
 namespace Timetracker.Plugins.ActivityMonitor.Views;
 
 /// <summary>
-/// Contributes the monitor setup band to the week view: install/remove buttons
-/// for the per-user autostart with a state label, reporting results through the
-/// shared status line.
+/// Contributes the monitor setup block to the "Activity monitor" options section:
+/// install/remove buttons for the per-user autostart, with the result shown inline.
 /// </summary>
-public sealed class MonitorSetupUiContributor : IUiQuery
+public sealed class MonitorSetupUiContributor : IOptionUiQuery
 {
-    public string TargetTab => "Week view";
+    public string Section => Strings.ActivityMon_Section;
 
     public Avalonia.Controls.Control CreateControl(IServiceProvider services) =>
         new MonitorSetupPanel(
             services.GetRequiredService<IActivityMonitorInstaller>(),
-            services.GetRequiredService<IWeekStatusCommand>());
+            services.GetRequiredService<IActivityMonitorStatusQuery>());
 }

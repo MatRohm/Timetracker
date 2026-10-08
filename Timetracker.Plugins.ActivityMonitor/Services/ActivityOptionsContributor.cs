@@ -2,7 +2,7 @@ using Timetracker.Plugins.ActivityMonitor.Localization;
 using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Contracts.Interfaces;
 
-namespace Timetracker.Plugins.ActivityMonitor;
+namespace Timetracker.Plugins.ActivityMonitor.Services;
 
 /// <summary>
 /// The "Activity monitor" section of the options tab: where the monitor keeps the
