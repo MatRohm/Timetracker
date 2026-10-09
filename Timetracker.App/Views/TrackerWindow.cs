@@ -51,7 +51,7 @@ public sealed class TrackerWindow : Window
             Path = nameof(TrackerViewModel.Title),
         });
 
-        Closing += OnClosing;
+        Closing += OnClosingAsync;
     }
 
     private static WindowIcon? LoadAppIcon()
@@ -70,7 +70,7 @@ public sealed class TrackerWindow : Window
 
     private bool _closing;
 
-    private async void OnClosing(object? sender, WindowClosingEventArgs e)
+    private async void OnClosingAsync(object? sender, WindowClosingEventArgs e)
     {
         // Never lose a running entry: the view model saves it before the window closes.
         // Hold the window open while the write completes so the UI thread stays free;
