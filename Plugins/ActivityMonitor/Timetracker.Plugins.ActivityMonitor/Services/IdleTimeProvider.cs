@@ -9,7 +9,8 @@ public static class IdleTimeProvider
     /// <summary>
     /// Windows uses the Win32 last-input timestamp; Linux uses the X11
     /// XScreenSaver extension. On any platform where neither is available the
-    /// monitor still records active time, it just never detects idle.
+    /// provider reports idle as unknown (null), so the monitor records "unknown"
+    /// spans that the week view omits rather than misreporting the time as active.
     /// </summary>
     public static IIdleTimeProvider CreateForCurrentPlatform()
     {
@@ -31,22 +32,22 @@ public static class IdleTimeProvider
     }
 }
 
-/// <summary>Reports zero idle time; used when no platform API is available.</summary>
+/// <summary>Reports idle as unknown; used when no platform API is available.</summary>
 internal sealed class NullIdleTimeProvider : IIdleTimeProvider
 {
-    public TimeSpan CurrentIdleTime => TimeSpan.Zero;
+    public TimeSpan? CurrentIdleTime => null;
 }
 
 /// <summary>Win32 last-input timestamp via <c>GetLastInputInfo</c>.</summary>
 internal sealed class WindowsIdleTimeProvider : IIdleTimeProvider
 {
-    public TimeSpan CurrentIdleTime
+    public TimeSpan? CurrentIdleTime
     {
         get
         {
             if (!WindowsNativeMethods.TryGetLastInputTick(out var lastInputTick))
             {
-                return TimeSpan.Zero;
+                return null;
             }
 
             return TimeSpan.FromMilliseconds(IdleMilliseconds(lastInputTick, Environment.TickCount));
@@ -133,21 +134,21 @@ internal sealed class X11IdleTimeProvider : IIdleTimeProvider
         }
     }
 
-    public TimeSpan CurrentIdleTime
+    public TimeSpan? CurrentIdleTime
     {
         get
         {
             var info = X11NativeMethods.XScreenSaverAllocInfo();
             if (info == IntPtr.Zero)
             {
-                return TimeSpan.Zero;
+                return null;
             }
 
             try
             {
                 if (X11NativeMethods.XScreenSaverQueryInfo(_display, _rootWindow, info) == 0)
                 {
-                    return TimeSpan.Zero;
+                    return null;
                 }
 
                 var screenSaverInfo = Marshal.PtrToStructure<XScreenSaverInfo>(info);

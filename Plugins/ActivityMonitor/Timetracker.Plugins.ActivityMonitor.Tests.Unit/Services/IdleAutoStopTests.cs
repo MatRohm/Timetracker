@@ -40,6 +40,18 @@ public sealed class IdleAutoStopTests
     }
 
     [Test]
+    public async Task PollAsync_WhenIdleIsUnknown_ShouldNotStopTheSession()
+    {
+        var host = new FakeTrackerSessionHost { IsSessionRunning = true };
+        var idle = new FakeIdleTimeProvider { CurrentIdleTime = null };
+        var detector = new IdleAutoStop(host, host, idle);
+
+        await detector.PollAsync();
+
+        host.StopCalls.Should().Be(0, "unknown idle must not auto-stop the session");
+    }
+
+    [Test]
     public async Task PollAsync_WhenNoSessionIsRunning_ShouldNotStop()
     {
         var host = new FakeTrackerSessionHost { IsSessionRunning = false };

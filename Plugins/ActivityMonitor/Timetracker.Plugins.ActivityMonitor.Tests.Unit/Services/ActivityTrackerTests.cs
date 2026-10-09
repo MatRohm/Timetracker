@@ -85,6 +85,26 @@ public sealed class ActivityTrackerTests
     }
 
     [Test]
+    public void Poll_WhenIdleIsUnknown_ShouldRecordAnUnknownSpan()
+    {
+        var path = TempPath("log-unknown.json");
+        File.Delete(path);
+        var log = new ActivityLog(path);
+        var tracker = new TrackerForTests(log, () => At(9, 0), path + ".state.json");
+
+        tracker.Start();
+        tracker.PollWithUnknown(At(9, 30));
+        tracker.PollWithDuration(TimeSpan.FromSeconds(5), At(10, 0));
+
+        var spans = log.GetAll();
+        spans.Should().HaveCount(2, "the active stretch and the unknown stretch are recorded");
+        spans[0].Kind.Should().Be("active");
+        spans[1].Kind.Should().Be("unknown", "unmeasurable idle is not misreported as active");
+        spans[1].Start.Should().Be(At(9, 30));
+        spans[1].End.Should().Be(At(10, 0));
+    }
+
+    [Test]
     public void Poll_WhenNoThresholdIsConfigured_ShouldUseTheDefault()
     {
         var path = TempPath("log-default-span.json");

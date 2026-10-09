@@ -69,16 +69,35 @@ public class ActivityTracker
     protected void SetNow(Func<DateTimeOffset> now) => _now = now;
 
     /// <summary>Test seam: polls with an injected idle duration instead of the platform.</summary>
-    protected void PollIdleForTest(TimeSpan idle) => PollWithIdle(idle);
+    protected void PollIdleForTest(TimeSpan? idle) => PollWithIdle(idle);
 
-    private void PollWithIdle(TimeSpan idle)
+    private void PollWithIdle(TimeSpan? idle)
     {
-        if (_state == "active" && idle >= _idleSpanThreshold)
+        if (idle is null)
         {
-            var idleStart = _now() - idle;
+            // Idle cannot be measured: record "unknown" rather than "active".
+            if (_state != "unknown")
+            {
+                CloseAndOpen("unknown", _now());
+            }
+            return;
+        }
+
+        var known = idle.Value;
+        if (_state == "unknown")
+        {
+            // Idle is measurable again: resume classification from now.
+            CloseAndOpen(known >= _idleSpanThreshold ? "idle" : "active",
+                known >= _idleSpanThreshold ? _now() - known : _now());
+            return;
+        }
+
+        if (_state == "active" && known >= _idleSpanThreshold)
+        {
+            var idleStart = _now() - known;
             CloseAndOpen("idle", idleStart);
         }
-        else if (_state == "idle" && idle < _idleSpanThreshold)
+        else if (_state == "idle" && known < _idleSpanThreshold)
         {
             CloseAndOpen("active", _now());
         }
@@ -122,7 +141,8 @@ public class ActivityTracker
         if (now - _lastPollLog >= PollLogInterval)
         {
             _lastPollLog = now;
-            _logger.LogInformation("Poll; state \"{State}\", idle {Idle:hh\\:mm\\:ss}.", _state, idle);
+            var idleText = idle is null ? "unknown" : idle.Value.ToString(@"hh\:mm\:ss");
+            _logger.LogInformation("Poll; state \"{State}\", idle {Idle}.", _state, idleText);
         }
     }
 

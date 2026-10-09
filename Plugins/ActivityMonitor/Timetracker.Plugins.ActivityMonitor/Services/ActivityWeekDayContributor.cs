@@ -17,6 +17,9 @@ public sealed class ActivityWeekDayContributor : IWeekDayQuery, IDayActivityQuer
     /// <summary>Span kind the activity log uses for periods with user input.</summary>
     private const string ActiveKind = "active";
 
+    /// <summary>Span kind the activity log uses for periods without user input.</summary>
+    private const string IdleKind = "idle";
+
     private readonly ActivityLog _log;
 
     /// <summary>Spans of the last read, reused until the log file changes on disk.</summary>
@@ -78,10 +81,11 @@ public sealed class ActivityWeekDayContributor : IWeekDayQuery, IDayActivityQuer
             {
                 activeSeconds += seconds;
             }
-            else
+            else if (part.Kind == IdleKind)
             {
                 idleSeconds += seconds;
             }
+            // "unknown" contributes to neither total and is omitted from the view.
         }
 
         var result = (activeSeconds, idleSeconds);

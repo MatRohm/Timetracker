@@ -3,9 +3,10 @@ using System.Text.Json.Serialization;
 namespace Timetracker.Plugins.ActivityMonitor.Models;
 
 /// <summary>
-/// One activity span: the machine was active (user present) or idle (no input)
-/// between <see cref="Start"/> and <see cref="End"/>. Idle spans shorter than the
-/// configured threshold are never written, so short breaks do not appear here.
+/// One activity span: the machine was active (user present), idle (no input) or
+/// unknown (idle could not be measured) between <see cref="Start"/> and
+/// <see cref="End"/>. Idle spans shorter than the configured threshold are never
+/// written, so short breaks do not appear here.
 /// </summary>
 public sealed class ActivitySpan
 {
@@ -17,7 +18,7 @@ public sealed class ActivitySpan
         End = end;
     }
 
-    /// <summary>"active" or "idle".</summary>
+    /// <summary>"active", "idle" or "unknown".</summary>
     public string Kind { get; set; }
 
     public DateTimeOffset Start { get; set; }
