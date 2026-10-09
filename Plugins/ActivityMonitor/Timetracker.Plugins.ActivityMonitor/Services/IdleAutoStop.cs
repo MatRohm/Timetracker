@@ -65,16 +65,24 @@ public sealed class IdleAutoStop : IAppCommand, IDisposable
         }
 
         var idle = _idleTime.CurrentIdleTime;
+        if (idle is null)
+        {
+            // Idle cannot be measured: do not auto-stop (previously zero idle, which
+            // never crossed the threshold, produced the same outcome).
+            return;
+        }
+
+        var known = idle.Value;
         var threshold = _options is null
             ? IdleStopThreshold
             : IdleOptions.IdleStopThreshold(_options.GetValue(IdleOptions.IdleStopThresholdKey));
-        if (idle < threshold)
+        if (known < threshold)
         {
             return;
         }
 
-        var endedAt = _now() - idle;
-        await _sessionCommand.StopSessionAsync(endedAt, $"⏸ Stopped after {FormatIdle(idle)} idle.");
+        var endedAt = _now() - known;
+        await _sessionCommand.StopSessionAsync(endedAt, $"⏸ Stopped after {FormatIdle(known)} idle.");
     }
 
     private static string FormatIdle(TimeSpan idle)

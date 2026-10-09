@@ -23,6 +23,27 @@ public sealed class ActivityWeekDayContributorTests
     }
 
     [Test]
+    public void GetDayText_WhenAnUnknownSpanIsLogged_ShouldOmitItFromBothTotals()
+    {
+        var contributor = Contributor(out var log);
+        log.Add("active", At(9, 0), At(12, 0));
+        log.Add("unknown", At(12, 0), At(13, 0));
+        log.Add("idle", At(13, 0), At(13, 30));
+
+        contributor.GetDayText(Monday).Should().Be("PC 3:00 active · 0:30 idle");
+    }
+
+    [Test]
+    public void GetActiveTime_WhenAnUnknownSpanIsLogged_ShouldExcludeIt()
+    {
+        var contributor = Contributor(out var log);
+        log.Add("active", At(9, 0), At(12, 0));
+        log.Add("unknown", At(12, 0), At(13, 0));
+
+        contributor.GetActiveTime(Monday).Should().Be(TimeSpan.FromHours(3));
+    }
+
+    [Test]
     public void GetActiveTime_WhenActiveAndIdleSpansAreLogged_ShouldSumOnlyTheActiveSpans()
     {
         var contributor = Contributor(out var log);

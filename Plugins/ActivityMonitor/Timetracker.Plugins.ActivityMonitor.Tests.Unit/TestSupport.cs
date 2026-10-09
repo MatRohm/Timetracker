@@ -36,6 +36,13 @@ internal sealed class TrackerForTests : ActivityTracker
         PollIdleForTest(idle);
     }
 
+    /// <summary>Polls with idle reported as unknown, to exercise the unknown path.</summary>
+    public void PollWithUnknown(DateTimeOffset at)
+    {
+        SetNow(() => at);
+        PollIdleForTest(null);
+    }
+
     /// <summary>Polls at a given moment with no idle, to exercise the log heartbeat.</summary>
     public void PollAt(DateTimeOffset at)
     {
@@ -98,7 +105,7 @@ internal sealed class FakeActivityMonitorController : IActivityMonitorController
 /// <summary>Idle provider for tests: the idle duration is set directly, no platform API.</summary>
 internal sealed class FakeIdleTimeProvider : IIdleTimeProvider
 {
-    public TimeSpan CurrentIdleTime { get; set; }
+    public TimeSpan? CurrentIdleTime { get; set; }
 }
 
 /// <summary>Options kept in memory; tests set <see cref="Values"/> directly.</summary>
