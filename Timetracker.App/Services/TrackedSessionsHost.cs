@@ -55,6 +55,7 @@ public sealed class TrackedSessionsHost : ITrackedSessionsQuery, ITrackedSession
         var entry = new TrackerEntry
         {
             Task = name,
+            TaskId = TrackerEntry.ResolveTaskId(_tracker.SessionLog, name),
             BookingElement = element.Length > 0 ? element : TrackerEntry.LatestBookingElement(_tracker.SessionLog, name),
         };
         entry.Reschedule(range.Start, range.End);

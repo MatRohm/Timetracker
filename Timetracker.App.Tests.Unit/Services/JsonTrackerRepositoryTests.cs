@@ -74,7 +74,7 @@ public sealed class JsonTrackerRepositoryTests
 
         var text = File.ReadAllText(path);
 
-        text.Should().Contain("\"version\": 3");
+        text.Should().Contain("\"version\": 4");
         text.Should().Contain("\"name\": \"Report\"");
         text.Should().Contain("\"sessions\"");
         // One record for the task, not one per session.
@@ -171,6 +171,52 @@ public sealed class JsonTrackerRepositoryTests
     }
 
     [Test]
+    public async Task SaveAsync_WhenCalled_ShouldStoreSessionsAsStartPlusSeconds()
+    {
+        var path = TempPath();
+        var repo = new JsonTrackerRepository(path);
+        await repo.AddAsync(NewEntry("Report"));
+
+        var text = File.ReadAllText(path);
+
+        text.Should().Contain("\"dateStarted\"");
+        text.Should().Contain("\"durationSeconds\"");
+        text.Should().NotContain("\"end\"");
+        text.Should().NotContain("\"duration\"");
+    }
+
+    [Test]
+    public async Task SaveAsync_WhenCalledTwice_ShouldRemainIdempotentAndStayVersionFour()
+    {
+        var path = TempPath();
+        var repo = new JsonTrackerRepository(path);
+        await repo.AddAsync(NewEntry("Report"));
+
+        await repo.SaveAsync(await repo.GetAllAsync());
+
+        var text = File.ReadAllText(path);
+        text.Should().Contain("\"version\": 4");
+        text.Should().NotContain("\"end\"");
+        text.Should().NotContain("\"duration\"");
+    }
+
+    [Test]
+    public async Task GetAllAsync_WhenSessionsAreLoaded_ShouldRecoverEndFromStartAndSeconds()
+    {
+        var path = TempPath();
+        var repo = new JsonTrackerRepository(path);
+        await repo.AddAsync(NewEntry("Report", hour: 9));
+
+        var all = await repo.GetAllAsync();
+        var entry = all.Single();
+
+        entry.Start.Should().Be(new DateTimeOffset(2026, 9, 18, 9, 0, 0, TimeSpan.FromHours(2)));
+        entry.End.Should().Be(new DateTimeOffset(2026, 9, 18, 10, 0, 0, TimeSpan.FromHours(2)));
+        entry.DurationSeconds.Should().Be(3600);
+        entry.Duration.Should().Be("01:00:00");
+    }
+
+    [Test]
     public async Task SaveAsync_WhenCalled_ShouldWriteTheBookingElementUnderItsNewName()
     {
         var path = TempPath();
@@ -182,6 +228,30 @@ public sealed class JsonTrackerRepositoryTests
         var text = File.ReadAllText(path);
         text.Should().Contain("\"bookingElement\"");
         text.Should().NotContain("description");
+    }
+
+    [Test]
+    public async Task SaveAsync_WhenATaskHasAnId_ShouldPreserveItAcrossASaveAndRename()
+    {
+        var path = TempPath();
+        var repo = new JsonTrackerRepository(path);
+        var taskId = Guid.NewGuid();
+        await repo.AddAsync(new TrackerEntry
+        {
+            Task = "Report",
+            TaskId = taskId,
+            Start = new DateTimeOffset(2026, 9, 18, 9, 0, 0, TimeSpan.FromHours(2)),
+            End = new DateTimeOffset(2026, 9, 18, 10, 0, 0, TimeSpan.FromHours(2)),
+            Duration = "01:00:00",
+            DurationSeconds = 3600,
+        });
+
+        var entries = (await repo.GetAllAsync()).ToList();
+        entries[0].Task = "Renamed";
+        await repo.SaveAsync(entries);
+
+        var reloaded = await repo.GetAllAsync();
+        reloaded.Single().TaskId.Should().Be(taskId, "the id follows the task across a save and rename");
     }
 
     [Test]

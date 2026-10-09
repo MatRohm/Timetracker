@@ -1,5 +1,3 @@
-using Timetracker.App.Models;
-
 namespace Timetracker.App.Interfaces;
 
 /// <summary>
@@ -20,8 +18,8 @@ public interface ITrackerFileMigration
     /// <summary>Copy of the original file kept before the step rewrites it.</summary>
     string BackupPath { get; }
 
-    /// <summary>Reads a file of <see cref="FromVersion"/> and returns it at <see cref="ToVersion"/>.</summary>
-    TrackerDocument Read(string text);
+    /// <summary>Reads a file of <see cref="FromVersion"/> and returns its text at <see cref="ToVersion"/>.</summary>
+    string Read(string text);
 }
 
 /// <summary>Upgrades a tracker file to the current version by chaining migrations.</summary>
