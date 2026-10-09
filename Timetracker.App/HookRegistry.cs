@@ -1,4 +1,5 @@
 using Timetracker.App.Interfaces;
+using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Contracts.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -29,7 +30,9 @@ public static class HookRegistry
 
         // Framework services of the main app.
         // One repository instance is shared by every interface it implements.
-        services.AddSingleton<Services.JsonTrackerRepository>();
+        services.AddSingleton<Services.JsonTrackerRepository>(sp =>
+            new Services.JsonTrackerRepository(
+                filePath: Path.Combine(ResolveFolder(sp.GetRequiredService<IOptionQuery>()), "timetracker.json")));
         services.AddSingleton<ITrackerRepository>(
             sp => sp.GetRequiredService<Services.JsonTrackerRepository>());
 
@@ -106,7 +109,9 @@ public static class HookRegistry
         services.AddSingleton<IUiQuery, Plugins.AzureDevOps.Views.AzureDevOpsUiContributor>();
 
         // PC activity monitor: activity log, per-day lines, installer UI.
-        services.AddSingleton<Plugins.ActivityMonitor.Services.ActivityLog>();
+        services.AddSingleton<Plugins.ActivityMonitor.Services.ActivityLog>(sp =>
+            new Plugins.ActivityMonitor.Services.ActivityLog(
+                filePath: Path.Combine(ResolveFolder(sp.GetRequiredService<IOptionQuery>()), "timetracker-activity.json")));
         services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IActivityMonitorInstaller>(
             _ => Plugins.ActivityMonitor.Services.ActivityMonitorInstallerFactory.CreateForCurrentPlatform());
         // The running-state query talks to the monitor's gRPC status endpoint.
@@ -135,6 +140,13 @@ public static class HookRegistry
         services.AddSingleton<IDayActivityQuery>(
             sp => sp.GetRequiredService<Plugins.ActivityMonitor.Services.ActivityWeekDayContributor>());
         services.AddSingleton<IOptionUiQuery, Plugins.ActivityMonitor.Views.MonitorSetupUiContributor>();
-        services.AddSingleton<IOptionDefinitionQuery, Plugins.ActivityMonitor.Services.ActivityOptionsContributor>();
+        services.AddSingleton<IOptionDefinitionQuery>(sp =>
+            new Plugins.ActivityMonitor.Services.ActivityOptionsContributor(
+                sp.GetRequiredService<Plugins.ActivityMonitor.Services.ActivityLog>(),
+                Path.Combine(ResolveFolder(sp.GetRequiredService<IOptionQuery>()), "timetracker-activity.state.json")));
     }
+
+    /// <summary>The effective data folder: the configured <c>General.ConfigFolder</c>, or the default.</summary>
+    private static string ResolveFolder(IOptionQuery options) =>
+        TimetrackerPaths.ResolveFolder(options.GetValue(TimetrackerPaths.ConfigFolderKey));
 }

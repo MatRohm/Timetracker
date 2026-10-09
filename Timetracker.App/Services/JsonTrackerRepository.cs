@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Timetracker.App.Interfaces;
 using Timetracker.App.Models;
+using Timetracker.Plugins.Contracts;
 
 namespace Timetracker.App.Services;
 
@@ -17,12 +18,10 @@ public sealed class JsonTrackerRepository : ITrackerRepository
 
     private bool _fileWasCorrupt;
 
-    /// <param name="filePath">Overrides the default path (used by tests); null = %USERPROFILE%\timetracker.json.</param>
+    /// <param name="filePath">Overrides the default path (used by tests); null = ~/.timetracker/timetracker.json.</param>
     public JsonTrackerRepository(string? filePath = null)
     {
-        _jsonPath = filePath ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            "timetracker.json");
+        _jsonPath = filePath ?? TimetrackerPaths.TrackingFile;
     }
 
     public string FilePath => _jsonPath;

@@ -9,17 +9,20 @@ namespace Timetracker.App.Tests.Unit.Services;
 public sealed class GeneralOptionsContributorTests
 {
     [Test]
-    public void Options_WhenCreated_ShouldShowTheTrackingFileOptionsFileAndLogFolderAsReadOnlyPaths()
+    public void Options_WhenCreated_ShouldShowConfigFolderThenTheThreeReadOnlyPaths()
     {
         var contributor = new GeneralOptionsContributor("C:/data/timetracker.json", "C:/data/options.json", "C:/logs");
 
         var options = contributor.Options;
 
         options.Select(o => (o.Label, o.DefaultValue)).Should().Equal(
+            ("Config folder", ""),
             ("Tracking file", "C:/data/timetracker.json"),
             ("Options file", "C:/data/options.json"),
             ("Log folder", "C:/logs"));
-        options.Should().OnlyContain(o => o.Kind == OptionKind.Path && o.IsReadOnly);
+        options[0].Kind.Should().Be(OptionKind.Path);
+        options[0].IsReadOnly.Should().BeFalse("the config folder is editable");
+        options.Skip(1).Should().OnlyContain(o => o.Kind == OptionKind.Path && o.IsReadOnly);
     }
 
     [Test]

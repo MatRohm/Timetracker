@@ -1,12 +1,13 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Contracts.Interfaces;
 
 namespace Timetracker.App.Services;
 
 /// <summary>
-/// Keeps the user's options in <c>%USERPROFILE%\timetracker-options.json</c> as one
+/// Keeps the user's options in <c>~/.timetracker/timetracker-options.json</c> as one
 /// flat JSON object of key/value strings. The file is read once when the store is
 /// created and rewritten atomically on every change; a missing or broken file
 /// yields no options, so every component falls back to its defaults.
@@ -31,10 +32,8 @@ public sealed class JsonOptionsStore : IOptionQuery, IOptionCommand
         _values = Load();
     }
 
-    /// <summary>Default path of the options file.</summary>
-    public static string DefaultFilePath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        "timetracker-options.json");
+    /// <summary>Default path of the options file (the fixed anchor).</summary>
+    public static string DefaultFilePath => TimetrackerPaths.OptionsFile;
 
     public string FilePath => _path;
 

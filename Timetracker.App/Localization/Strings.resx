@@ -257,4 +257,10 @@
   <data name="Options_LogFolderHint" xml:space="preserve">
     <value>Diagnostic log files are written to this folder.</value>
   </data>
+  <data name="Options_ConfigFolder" xml:space="preserve">
+    <value>Config folder</value>
+  </data>
+  <data name="Options_ConfigFolderHint" xml:space="preserve">
+    <value>Tracking, activity, state and log files are kept under this folder. Leave empty to use the default (~/.timetracker).</value>
+  </data>
 </root>

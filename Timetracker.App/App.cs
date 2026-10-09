@@ -59,6 +59,10 @@ public sealed class App : Application
                 return;
             }
 
+            // Move legacy config/data/log files into ~/.timetracker before the
+            // container is built, so the options store reads the migrated file.
+            Services.PathMigrator.MigrateIfNeeded(logger);
+
             // Composition root: build the container; every component registers
             // itself in HookRegistry, the shell resolves only interfaces.
             _services = HookRegistry.BuildServiceProvider(_loggerFactory);

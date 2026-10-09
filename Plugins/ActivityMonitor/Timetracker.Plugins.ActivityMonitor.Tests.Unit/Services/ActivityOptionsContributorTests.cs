@@ -13,10 +13,11 @@ public sealed class ActivityOptionsContributorTests
     public void Options_WhenCreated_ShouldShowTheActivityAndStateFilesAsReadOnlyPaths()
     {
         var logPath = TempPath($"options-{Guid.NewGuid():N}.json");
-        var contributor = new ActivityOptionsContributor(new ActivityLog(logPath));
+        var statePath = TempPath($"state-{Guid.NewGuid():N}.json");
+        var contributor = new ActivityOptionsContributor(new ActivityLog(logPath), statePath);
 
         var files = contributor.Options.Where(o => o.Kind == OptionKind.Path);
-        files.Select(o => o.DefaultValue).Should().Equal(logPath, ActivityTracker.StateFilePath);
+        files.Select(o => o.DefaultValue).Should().Equal(logPath, statePath);
         files.Should().OnlyContain(o => o.IsReadOnly);
         contributor.Section.Should().Be("Activity monitor");
     }
@@ -25,7 +26,8 @@ public sealed class ActivityOptionsContributorTests
     public void Options_WhenCreated_ShouldOfferTheTwoIdleThresholdsAsEditableMinutes()
     {
         var logPath = TempPath($"options-{Guid.NewGuid():N}.json");
-        var contributor = new ActivityOptionsContributor(new ActivityLog(logPath));
+        var statePath = TempPath($"state-{Guid.NewGuid():N}.json");
+        var contributor = new ActivityOptionsContributor(new ActivityLog(logPath), statePath);
 
         var options = contributor.Options;
         options.Should().Contain(o =>
@@ -46,7 +48,8 @@ public sealed class ActivityOptionsContributorTests
     public void Options_WhenCreated_ShouldCarryAHintForEveryOption()
     {
         var logPath = TempPath($"options-{Guid.NewGuid():N}.json");
-        var contributor = new ActivityOptionsContributor(new ActivityLog(logPath));
+        var statePath = TempPath($"state-{Guid.NewGuid():N}.json");
+        var contributor = new ActivityOptionsContributor(new ActivityLog(logPath), statePath);
 
         var options = contributor.Options;
 

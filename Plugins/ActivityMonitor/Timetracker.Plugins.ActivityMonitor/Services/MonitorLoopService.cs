@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Timetracker.Plugins.Contracts;
 
 namespace Timetracker.Plugins.ActivityMonitor.Services;
 
@@ -20,10 +21,13 @@ public sealed class MonitorLoopService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var log = new ActivityLog();
+        var folder = TimetrackerPaths.ResolveFolder(
+            IdleOptions.ReadValueFromOptionsFile(IdleOptions.OptionsFilePath, TimetrackerPaths.ConfigFolderKey));
+        var log = new ActivityLog(Path.Combine(folder, "timetracker-activity.json"));
         var idleSpanThreshold = IdleOptions.IdleSpanThreshold(
             IdleOptions.ReadValueFromOptionsFile(IdleOptions.OptionsFilePath, IdleOptions.IdleSpanThresholdKey));
         var tracker = new ActivityTracker(log, logger: _logger, idleSpanThreshold: idleSpanThreshold);
+        tracker.UseStateFile(Path.Combine(folder, "timetracker-activity.state.json"));
         tracker.Start();
 
         try

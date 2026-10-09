@@ -1,13 +1,14 @@
 using System.Text.Json;
 using Timetracker.Plugins.ActivityMonitor.Models;
+using Timetracker.Plugins.Contracts;
 
 namespace Timetracker.Plugins.ActivityMonitor.Services;
 
 /// <summary>
 /// Append-only JSON log of activity/idle spans at
-/// <c>%USERPROFILE%\timetracker-activity.json</c>. Writes are atomic; the whole
-/// file is rewritten on each append (the log stays small: at most two spans per
-/// state change).
+/// <c>~/.timetracker/timetracker-activity.json</c> (or the configured folder). Writes
+/// are atomic; the whole file is rewritten on each append (the log stays small: at
+/// most two spans per state change).
 /// </summary>
 public sealed class ActivityLog
 {
@@ -25,9 +26,7 @@ public sealed class ActivityLog
         _path = filePath ?? DefaultFilePath;
     }
 
-    public static string DefaultFilePath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        "timetracker-activity.json");
+    public static string DefaultFilePath => TimetrackerPaths.ActivityFile;
 
     public string FilePath => _path;
 
