@@ -42,7 +42,7 @@ public sealed class MonitorSetupViewModelTests
     [Test]
     public void Install_WhenInstallFails_ShouldReportTheFailure()
     {
-        var viewModel = new MonitorSetupViewModel(new FailingInstaller(), new FakeStatusQuery());
+        var viewModel = new MonitorSetupViewModel(new FailingInstaller(), new FakeStatusQuery(), new FakeActivityMonitorController());
 
         viewModel.Install();
 
@@ -102,10 +102,136 @@ public sealed class MonitorSetupViewModelTests
         viewModel.Status.Should().Be(MonitorStatus.Unknown);
     }
 
+    [Test]
+    public async Task StartEnabled_WhenInstalledAndStopped_ShouldBeTrue()
+    {
+        var viewModel = NewViewModel(isInstalled: true, status: MonitorStatus.Stopped);
+        await viewModel.RefreshStatusAsync();
+
+        viewModel.StartEnabled.Should().BeTrue("installed and stopped, so Start is offered");
+        viewModel.StopEnabled.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task StopEnabled_WhenInstalledAndRunning_ShouldBeTrue()
+    {
+        var viewModel = NewViewModel(isInstalled: true, status: MonitorStatus.Running);
+        await viewModel.RefreshStatusAsync();
+
+        viewModel.StopEnabled.Should().BeTrue("installed and running, so Stop is offered");
+        viewModel.StartEnabled.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task StartEnabled_WhenInstalledAndUnknown_ShouldBeFalse()
+    {
+        var viewModel = NewViewModel(isInstalled: true, status: MonitorStatus.Unknown);
+        await viewModel.RefreshStatusAsync();
+
+        viewModel.StartEnabled.Should().BeFalse("an unknown state offers neither Start nor Stop");
+        viewModel.StopEnabled.Should().BeFalse();
+    }
+
+    [Test]
+    public void StartVisible_WhenNotInstalled_ShouldBeFalse()
+    {
+        var viewModel = NewViewModel(isInstalled: false);
+
+        viewModel.StartVisible.Should().BeFalse("start/stop are hidden until the monitor is installed");
+        viewModel.StopVisible.Should().BeFalse();
+    }
+
+    [Test]
+    public void StartVisible_WhenInstalled_ShouldBeTrue()
+    {
+        var viewModel = NewViewModel(isInstalled: true);
+
+        viewModel.StartVisible.Should().BeTrue();
+        viewModel.StopVisible.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task StopAsync_WhenStopSucceeds_ShouldReportSuccess()
+    {
+        var viewModel = NewViewModel(isInstalled: true, status: MonitorStatus.Running);
+
+        await viewModel.StopAsync();
+
+        viewModel.ResultIsError.Should().BeFalse();
+        viewModel.ResultText.Should().NotBeEmpty();
+    }
+
+    [Test]
+    public async Task StopAsync_WhenStopFails_ShouldReportFailure()
+    {
+        var viewModel = NewViewModel(
+            isInstalled: true,
+            status: MonitorStatus.Running,
+            controller: new FakeActivityMonitorController { StopResult = false });
+
+        await viewModel.StopAsync();
+
+        viewModel.ResultIsError.Should().BeTrue();
+        viewModel.ResultText.Should().NotBeEmpty();
+    }
+
+    [Test]
+    public async Task Start_WhenLaunchFails_ShouldReportFailureAndStayEnabled()
+    {
+        var viewModel = NewViewModel(
+            isInstalled: true,
+            status: MonitorStatus.Stopped,
+            controller: new FakeActivityMonitorController { StartResult = false });
+        await viewModel.RefreshStatusAsync();
+
+        viewModel.Start();
+
+        viewModel.ResultIsError.Should().BeTrue();
+        viewModel.StartEnabled.Should().BeTrue("a failed launch leaves Start available to retry");
+    }
+
+    [Test]
+    public async Task Start_WhenRunningIsObserved_ShouldOfferStop()
+    {
+        var query = new FakeStatusQuery { Status = MonitorStatus.Stopped };
+        var viewModel = new MonitorSetupViewModel(
+            new InMemoryInstaller { IsInstalled = true }, query, new FakeActivityMonitorController());
+
+        viewModel.Start();
+
+        viewModel.StartEnabled.Should().BeFalse("Start stays disabled while the monitor boots");
+        viewModel.StopEnabled.Should().BeFalse();
+
+        query.Status = MonitorStatus.Running;
+        await viewModel.RefreshStatusAsync();
+
+        viewModel.StopEnabled.Should().BeTrue("once Running is observed, Stop is offered");
+        viewModel.StartEnabled.Should().BeFalse();
+    }
+
+    [Test]
+    public async Task Start_WhenRefreshObservesStopped_ShouldReenableStart()
+    {
+        var query = new FakeStatusQuery { Status = MonitorStatus.Stopped };
+        var viewModel = new MonitorSetupViewModel(
+            new InMemoryInstaller { IsInstalled = true }, query, new FakeActivityMonitorController());
+
+        viewModel.Start();
+
+        viewModel.StartEnabled.Should().BeFalse("Start stays disabled while the monitor boots");
+
+        query.Status = MonitorStatus.Stopped; // the monitor crashed / never came up
+        await viewModel.RefreshStatusAsync();
+
+        viewModel.StartEnabled.Should().BeTrue("a crashed boot re-enables Start so the user can retry");
+    }
+
     private static MonitorSetupViewModel NewViewModel(
         bool isInstalled,
-        MonitorStatus status = MonitorStatus.Unknown) =>
-        new(new InMemoryInstaller { IsInstalled = isInstalled }, new FakeStatusQuery { Status = status });
+        MonitorStatus status = MonitorStatus.Unknown,
+        FakeActivityMonitorController? controller = null) =>
+        new(new InMemoryInstaller { IsInstalled = isInstalled }, new FakeStatusQuery { Status = status },
+            controller ?? new FakeActivityMonitorController());
 
     /// <summary>An installer whose <see cref="IActivityMonitorInstaller.Install"/> always fails.</summary>
     private sealed class FailingInstaller : IActivityMonitorInstaller

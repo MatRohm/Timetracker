@@ -6,27 +6,31 @@ using Timetracker.Plugins.ActivityMonitor.Models;
 namespace Timetracker.Plugins.ActivityMonitor.ViewModels;
 
 /// <summary>
-/// Logic behind the monitor setup block in the options view: wraps the installer
-/// and the status query, and reports the button state, the four-state monitor
-/// status and the result of the last install/remove action. Kept free of any UI
-/// type so it can be tested without a running Avalonia application; the panel
+/// Logic behind the monitor setup block in the options view: wraps the installer,
+/// the status query and the process controller, and reports the button state, the
+/// four-state monitor status and the result of the last action. Kept free of any
+/// UI type so it can be tested without a running Avalonia application; the panel
 /// only binds to its properties.
 /// </summary>
 public sealed class MonitorSetupViewModel : INotifyPropertyChanged
 {
     private readonly IActivityMonitorInstaller _installer;
     private readonly IActivityMonitorStatusQuery _statusQuery;
+    private readonly IActivityMonitorController _controller;
 
     private string _resultText = "";
     private bool _resultIsError;
+    private bool _isBusy;
     private MonitorStatus _status;
 
     public MonitorSetupViewModel(
         IActivityMonitorInstaller installer,
-        IActivityMonitorStatusQuery statusQuery)
+        IActivityMonitorStatusQuery statusQuery,
+        IActivityMonitorController controller)
     {
         _installer = installer;
         _statusQuery = statusQuery;
+        _controller = controller;
         RefreshState();
     }
 
@@ -38,6 +42,31 @@ public sealed class MonitorSetupViewModel : INotifyPropertyChanged
     /// <summary>True when Remove should be offered (monitor already installed).</summary>
     public bool UninstallEnabled => _installer.IsInstalled;
 
+    /// <summary>True when Start should be offered: installed, stopped and not busy.</summary>
+    public bool StartEnabled => _installer.IsInstalled && Status == MonitorStatus.Stopped && !IsBusy;
+
+    /// <summary>True when Stop should be offered: installed, running and not busy.</summary>
+    public bool StopEnabled => _installer.IsInstalled && Status == MonitorStatus.Running && !IsBusy;
+
+    /// <summary>The Start/Stop buttons appear only once the monitor is installed.</summary>
+    public bool StartVisible => _installer.IsInstalled;
+
+    /// <summary>The Start/Stop buttons appear only once the monitor is installed.</summary>
+    public bool StopVisible => _installer.IsInstalled;
+
+    /// <summary>True while a start or stop action is in flight.</summary>
+    public bool IsBusy
+    {
+        get => _isBusy;
+        private set
+        {
+            _isBusy = value;
+            OnPropertyChanged(nameof(IsBusy));
+            OnPropertyChanged(nameof(StartEnabled));
+            OnPropertyChanged(nameof(StopEnabled));
+        }
+    }
+
     /// <summary>The monitor's current status (Uninstalled / Stopped / Running / Unknown).</summary>
     public MonitorStatus Status
     {
@@ -47,6 +76,8 @@ public sealed class MonitorSetupViewModel : INotifyPropertyChanged
             _status = value;
             OnPropertyChanged(nameof(Status));
             OnPropertyChanged(nameof(StatusText));
+            OnPropertyChanged(nameof(StartEnabled));
+            OnPropertyChanged(nameof(StopEnabled));
         }
     }
 
@@ -59,7 +90,7 @@ public sealed class MonitorSetupViewModel : INotifyPropertyChanged
         _ => Strings.ActivityMon_StatusUnknown,
     };
 
-    /// <summary>Result of the last install/remove action; empty until the first one.</summary>
+    /// <summary>Result of the last action; empty until the first one.</summary>
     public string ResultText
     {
         get => _resultText;
@@ -104,6 +135,40 @@ public sealed class MonitorSetupViewModel : INotifyPropertyChanged
     }
 
     /// <summary>
+    /// Launches the monitor process. Start stays disabled until the next status
+    /// refresh observes Running, so a second click cannot launch a duplicate
+    /// process while the monitor is booting.
+    /// </summary>
+    public void Start()
+    {
+        IsBusy = true;
+        var started = _controller.Start();
+        ResultText = started
+            ? Strings.ActivityMon_StartOk
+            : string.Format(Strings.ActivityMon_StartFailed, _installer.MonitorExePath);
+        ResultIsError = !started;
+        if (!started)
+        {
+            // Nothing launched, so nothing is in flight; let Start be retried.
+            IsBusy = false;
+        }
+        RefreshState();
+    }
+
+    /// <summary>Asks the monitor to stop gracefully and reports the result inline.</summary>
+    public async Task StopAsync(CancellationToken cancellationToken = default)
+    {
+        IsBusy = true;
+        var stopped = await _controller.StopAsync(cancellationToken);
+        ResultText = stopped
+            ? Strings.ActivityMon_StopOk
+            : Strings.ActivityMon_StopFailed;
+        ResultIsError = !stopped;
+        IsBusy = false;
+        RefreshState();
+    }
+
+    /// <summary>
     /// Re-reads the monitor status: Uninstalled when there is no autostart entry,
     /// otherwise the running state reported by the status query.
     /// </summary>
@@ -117,12 +182,20 @@ public sealed class MonitorSetupViewModel : INotifyPropertyChanged
 
         var status = await _statusQuery.GetStatusAsync(cancellationToken);
         Status = status;
+        // A fresh status resolves any in-flight start/stop, so clear the busy flag
+        // regardless of the outcome; otherwise a monitor that crashes on boot would
+        // leave Start/Stop permanently disabled.
+        IsBusy = false;
     }
 
     private void RefreshState()
     {
         OnPropertyChanged(nameof(InstallEnabled));
         OnPropertyChanged(nameof(UninstallEnabled));
+        OnPropertyChanged(nameof(StartEnabled));
+        OnPropertyChanged(nameof(StopEnabled));
+        OnPropertyChanged(nameof(StartVisible));
+        OnPropertyChanged(nameof(StopVisible));
     }
 
     private void OnPropertyChanged(string propertyName) =>

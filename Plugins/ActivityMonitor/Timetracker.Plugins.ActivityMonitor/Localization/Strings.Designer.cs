@@ -87,4 +87,22 @@ public static class Strings
 
     /// <summary>PC {0} active · {1} idle</summary>
     public static string ActivityMon_DaySummaryIdle => ResourceManager.GetString(nameof(ActivityMon_DaySummaryIdle))!;
+
+    /// <summary>▶ Start</summary>
+    public static string ActivityMon_Start => ResourceManager.GetString(nameof(ActivityMon_Start))!;
+
+    /// <summary>■ Stop</summary>
+    public static string ActivityMon_Stop => ResourceManager.GetString(nameof(ActivityMon_Stop))!;
+
+    /// <summary>✓ The PC activity monitor started.</summary>
+    public static string ActivityMon_StartOk => ResourceManager.GetString(nameof(ActivityMon_StartOk))!;
+
+    /// <summary>✗ Could not start the monitor. Make sure "{0}" exists next to the app.</summary>
+    public static string ActivityMon_StartFailed => ResourceManager.GetString(nameof(ActivityMon_StartFailed))!;
+
+    /// <summary>✓ The PC activity monitor stopped.</summary>
+    public static string ActivityMon_StopOk => ResourceManager.GetString(nameof(ActivityMon_StopOk))!;
+
+    /// <summary>✗ Could not stop the monitor; it may already be stopping.</summary>
+    public static string ActivityMon_StopFailed => ResourceManager.GetString(nameof(ActivityMon_StopFailed))!;
 }
