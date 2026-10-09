@@ -4,15 +4,23 @@ option csharp_namespace = "Timetracker.Plugins.ActivityMonitor.Grpc";
 
 package timetracker.monitor;
 
-// Lets the main app ask the monitor process whether it is alive. A successful
-// call means "running"; the app maps connection failures to "stopped" or
-// "unknown" without needing anything more than an empty reply.
+// Lets the main app ask the monitor process whether it is alive and stop it. A
+// successful GetStatus means "running"; the app maps connection failures to
+// "stopped" or "unknown" without needing anything more than an empty reply.
+// Stop asks the monitor to shut down gracefully (closing the open span).
 service MonitorStatusService {
   rpc GetStatus (GetStatusRequest) returns (GetStatusResponse);
+  rpc Stop (StopRequest) returns (StopResponse);
 }
 
 message GetStatusRequest {
 }
 
 message GetStatusResponse {
+}
+
+message StopRequest {
+}
+
+message StopResponse {
 }

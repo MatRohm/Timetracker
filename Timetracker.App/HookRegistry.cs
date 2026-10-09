@@ -112,6 +112,9 @@ public static class HookRegistry
         // The running-state query talks to the monitor's gRPC status endpoint.
         services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IActivityMonitorStatusQuery,
             Plugins.ActivityMonitor.Services.GrpcMonitorStatusQuery>();
+        // Start/stop the monitor process on demand (launch + graceful gRPC stop).
+        services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IActivityMonitorController,
+            Plugins.ActivityMonitor.Services.ProcessMonitorController>();
         // Idle detection comes from the monitor project's platform-specific provider.
         services.AddSingleton<Plugins.ActivityMonitor.Interfaces.IIdleTimeProvider>(
             _ => Plugins.ActivityMonitor.Services.IdleTimeProvider.CreateForCurrentPlatform());

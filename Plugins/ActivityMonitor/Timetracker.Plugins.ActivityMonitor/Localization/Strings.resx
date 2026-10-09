@@ -127,4 +127,22 @@
   <data name="ActivityMon_DaySummaryIdle" xml:space="preserve">
     <value>PC {0} active · {1} idle</value>
   </data>
+  <data name="ActivityMon_Start" xml:space="preserve">
+    <value>▶ Start</value>
+  </data>
+  <data name="ActivityMon_Stop" xml:space="preserve">
+    <value>■ Stop</value>
+  </data>
+  <data name="ActivityMon_StartOk" xml:space="preserve">
+    <value>✓ The PC activity monitor started.</value>
+  </data>
+  <data name="ActivityMon_StartFailed" xml:space="preserve">
+    <value>✗ Could not start the monitor. Make sure "{0}" exists next to the app.</value>
+  </data>
+  <data name="ActivityMon_StopOk" xml:space="preserve">
+    <value>✓ The PC activity monitor stopped.</value>
+  </data>
+  <data name="ActivityMon_StopFailed" xml:space="preserve">
+    <value>✗ Could not stop the monitor; it may already be stopping.</value>
+  </data>
 </root>

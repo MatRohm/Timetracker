@@ -24,7 +24,7 @@ public sealed class MonitorSetupPanelRenderTests
     [AvaloniaTest]
     public void MonitorSetupPanel_WhenRendered_ShouldShowInstallAndRemoveButtons()
     {
-        var panel = new MonitorSetupPanel(new FakeInstaller { IsInstalled = false }, new FakeStatusQuery());
+        var panel = new MonitorSetupPanel(new FakeInstaller { IsInstalled = false }, new FakeStatusQuery(), new FakeController());
         var window = new Window { Content = panel };
         window.Show();
 
@@ -35,7 +35,7 @@ public sealed class MonitorSetupPanelRenderTests
     [AvaloniaTest]
     public void MonitorSetupPanel_WhenInstallSucceeds_ShouldShowTheSuccessMessageInline()
     {
-        var panel = new MonitorSetupPanel(new FakeInstaller { IsInstalled = false }, new FakeStatusQuery());
+        var panel = new MonitorSetupPanel(new FakeInstaller { IsInstalled = false }, new FakeStatusQuery(), new FakeController());
         var window = new Window { Content = panel };
         window.Show();
 
@@ -87,9 +87,27 @@ public sealed class MonitorSetupPanelRenderTests
         statusTop.Should().BeGreaterThan(buttonsTop, "the status sits on its own line below the buttons");
     }
 
+    [AvaloniaTest]
+    public void MonitorSetupPanel_WhenInstalledAndStopped_ShouldOfferStartNotStop()
+    {
+        var panel = Realize(new FakeInstaller { IsInstalled = true }, new FakeStatusQuery { Status = MonitorStatus.Stopped });
+
+        panel.StartButton.IsEnabled.Should().BeTrue("installed and stopped, so Start is offered");
+        panel.StopButton.IsEnabled.Should().BeFalse();
+    }
+
+    [AvaloniaTest]
+    public void MonitorSetupPanel_WhenNotInstalled_ShouldHideStartAndStop()
+    {
+        var panel = Realize(new FakeInstaller { IsInstalled = false }, new FakeStatusQuery());
+
+        panel.StartButton.IsVisible.Should().BeFalse("start/stop are hidden until the monitor is installed");
+        panel.StopButton.IsVisible.Should().BeFalse();
+    }
+
     private static MonitorSetupPanel Realize(IActivityMonitorInstaller installer, IActivityMonitorStatusQuery query)
     {
-        var panel = new MonitorSetupPanel(installer, query);
+        var panel = new MonitorSetupPanel(installer, query, new FakeController());
         var window = new Window { Content = panel, Width = 900, Height = 500 };
         window.Show();
         Dispatcher.UIThread.RunJobs();
@@ -123,5 +141,13 @@ public sealed class MonitorSetupPanelRenderTests
 
         public Task<MonitorStatus> GetStatusAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(Status);
+    }
+
+    private sealed class FakeController : IActivityMonitorController
+    {
+        public bool Start() => true;
+
+        public Task<bool> StopAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(true);
     }
 }
