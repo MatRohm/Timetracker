@@ -29,6 +29,7 @@ public sealed class MonitorSetupPanel : UserControl
     private readonly Button _stopButton = new();
     private readonly Ellipse _statusLight = new();
     private readonly TextBlock _statusLabel = new();
+    private readonly TextBlock _stateLabel = new();
     private readonly TextBlock _resultLabel = new();
     private readonly DispatcherTimer _refreshTimer;
 
@@ -49,6 +50,9 @@ public sealed class MonitorSetupPanel : UserControl
 
     /// <summary>Exposed so tests can assert the four-state status text.</summary>
     public TextBlock StatusLabel => _statusLabel;
+
+    /// <summary>Exposed so tests can assert the state label text.</summary>
+    public TextBlock StateLabel => _stateLabel;
 
     /// <summary>Exposed so tests can assert the inline result text.</summary>
     public TextBlock ResultLabel => _resultLabel;
@@ -79,6 +83,9 @@ public sealed class MonitorSetupPanel : UserControl
 
         _statusLabel.VerticalAlignment = VerticalAlignment.Center;
         _statusLabel.Foreground = ViewBrushes.Info;
+        _stateLabel.Text = Strings.ActivityMon_StateLabel;
+        _stateLabel.VerticalAlignment = VerticalAlignment.Center;
+        _stateLabel.Foreground = ViewBrushes.Info;
         _resultLabel.TextTrimming = TextTrimming.CharacterEllipsis;
         _resultLabel.VerticalAlignment = VerticalAlignment.Center;
 
@@ -97,7 +104,7 @@ public sealed class MonitorSetupPanel : UserControl
                 {
                     Orientation = Orientation.Horizontal,
                     Spacing = 6,
-                    Children = { _statusLight, _statusLabel },
+                    Children = { _stateLabel, _statusLight, _statusLabel },
                 },
             },
         };

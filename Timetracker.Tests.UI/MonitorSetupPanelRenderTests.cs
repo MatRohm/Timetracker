@@ -105,6 +105,14 @@ public sealed class MonitorSetupPanelRenderTests
         panel.StopButton.IsVisible.Should().BeFalse();
     }
 
+    [AvaloniaTest]
+    public void MonitorSetupPanel_WhenRendered_ShouldShowTheStateLabel()
+    {
+        var panel = Realize(new FakeInstaller { IsInstalled = true }, new FakeStatusQuery { Status = MonitorStatus.Running });
+
+        panel.StateLabel.Text.Should().Be("Activity monitor state");
+    }
+
     private static MonitorSetupPanel Realize(IActivityMonitorInstaller installer, IActivityMonitorStatusQuery query)
     {
         var panel = new MonitorSetupPanel(installer, query, new FakeController());

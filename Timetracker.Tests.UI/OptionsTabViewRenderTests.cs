@@ -1,7 +1,9 @@
 using AwesomeAssertions;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.NUnit;
 using Avalonia.LogicalTree;
+using Avalonia.Threading;
 using NUnit.Framework;
 using Timetracker.App.Interfaces;
 using Timetracker.App.ViewModels;
@@ -68,7 +70,7 @@ public sealed class OptionsTabViewRenderTests
 
         var hintedLabel = view.GetLogicalDescendants().OfType<TextBlock>()
             .Single(t => t.Text == "Organization URL");
-        hintedLabel.MinWidth.Should().Be(140, "the label keeps its column width");
+        hintedLabel.Width.Should().Be(200, "the label keeps a fixed column width so the icons align");
         var labelCell = (StackPanel)hintedLabel.Parent!;
         labelCell.Children.Should().HaveCount(2, "the cell holds the label and the icon");
     }
@@ -87,7 +89,7 @@ public sealed class OptionsTabViewRenderTests
 
         var labelCells = view.GetLogicalDescendants().OfType<TextBlock>()
             .Where(t => t.Text is "Tracking file" or "Organization URL" or "Personal access token");
-        labelCells.Should().OnlyContain(t => t.MinWidth == 140);
+        labelCells.Should().OnlyContain(t => t.Width == 200);
         var grid = view.GetLogicalDescendants().OfType<Grid>()
             .First(g => g.Children.OfType<TextBlock>().Any(t => t.Text == "Organization URL"));
         grid.ColumnDefinitions.Select(c => c.Width).Should().Equal(
@@ -128,6 +130,32 @@ public sealed class OptionsTabViewRenderTests
         texts.Should().Contain("Activity monitor", "an unmatched section still gets a heading");
         view.GetLogicalDescendants().OfType<Button>()
             .Should().ContainSingle(b => (b.Content as string) == "Install");
+    }
+
+    [AvaloniaTest]
+    public void OptionsTabView_WhenSeveralOptionsHaveHints_ShouldAlignTheirIcons()
+    {
+        var viewModel = new OptionsViewModel(
+            new EmptyStore(),
+            new EmptyStore(),
+            [
+                new Contributor("General",
+                    new OptionDefinition("General.Short", "Short", OptionKind.Text, "v", HintText: "h"),
+                    new OptionDefinition("General.AMuchLongerLabel", "A much longer label", OptionKind.Text, "v", HintText: "h")),
+            ],
+            new RecordingExplorer());
+        var view = new OptionsTabView(viewModel, []);
+        var window = new Window { Content = view, Width = 900, Height = 500 };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+
+        var icons = view.GetLogicalDescendants().OfType<Viewbox>().ToList();
+        icons.Should().HaveCount(2, "both options carry a hint");
+
+        var xs = icons.Select(i => i.TranslatePoint(default, view)!.Value.X).ToList();
+        xs[1].Should().Be(xs[0], "every hint icon sits at the same x-position");
     }
 
     private static OptionsTabView CreateView(

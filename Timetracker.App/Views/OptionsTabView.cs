@@ -99,7 +99,11 @@ public sealed class OptionsTabView : UserControl
             {
                 Text = row.Label,
                 VerticalAlignment = VerticalAlignment.Center,
-                MinWidth = 140,
+                // A fixed width keeps every hint icon at the same x: the icon sits
+                // after the label, so a variable label width would scatter it. A
+                // longer localized label is ellipsized instead of clipped.
+                Width = 200,
+                TextTrimming = TextTrimming.CharacterEllipsis,
             };
             Control labelContent = row.HasHint
                 ? new StackPanel

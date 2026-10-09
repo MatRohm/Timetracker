@@ -58,6 +58,9 @@ public static class Strings
     /// <summary>Unknown</summary>
     public static string ActivityMon_StatusUnknown => ResourceManager.GetString(nameof(ActivityMon_StatusUnknown))!;
 
+    /// <summary>Activity monitor state</summary>
+    public static string ActivityMon_StateLabel => ResourceManager.GetString(nameof(ActivityMon_StateLabel))!;
+
     /// <summary>Idle span threshold (minutes)</summary>
     public static string ActivityMon_IdleSpanLabel => ResourceManager.GetString(nameof(ActivityMon_IdleSpanLabel))!;
 
