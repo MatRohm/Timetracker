@@ -28,9 +28,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Timetracker.Plugins.AzureDevOps\Timetracker.Plugins.AzureDevOps.csproj" />
-    <ProjectReference Include="..\Timetracker.Plugins.ActivityMonitor\Timetracker.Plugins.ActivityMonitor.csproj" />
-    <ProjectReference Include="..\Timetracker.Plugins.WeekView\Timetracker.Plugins.WeekView.csproj" />
+    <ProjectReference Include="..\Plugins\AzureDevOps\Timetracker.Plugins.AzureDevOps\Timetracker.Plugins.AzureDevOps.csproj" />
+    <ProjectReference Include="..\Plugins\ActivityMonitor\Timetracker.Plugins.ActivityMonitor\Timetracker.Plugins.ActivityMonitor.csproj" />
+    <ProjectReference Include="..\Plugins\WeekView\Timetracker.Plugins.WeekView\Timetracker.Plugins.WeekView.csproj" />
     <ProjectReference Include="..\Timetracker.Plugins.Contracts\Timetracker.Plugins.Contracts.csproj" />
   </ItemGroup>
 
@@ -67,13 +67,13 @@
 
   <Target Name="PublishActivityMonitor" AfterTargets="Publish">
     <PropertyGroup>
-      <ActivityMonitorOutputDir>$(MSBuildThisFileDirectory)..\Timetracker.Plugins.ActivityMonitor\bin\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\publish\</ActivityMonitorOutputDir>
+      <ActivityMonitorOutputDir>$(MSBuildThisFileDirectory)..\Plugins\ActivityMonitor\Timetracker.Plugins.ActivityMonitor\bin\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\publish\</ActivityMonitorOutputDir>
       <ActivityMonitorPublishOut>$(PublishDir)</ActivityMonitorPublishOut>
     </PropertyGroup>
 
     <!-- Publish the monitor for the same RID so its single-file exe sits next to the app. -->
     <MSBuild
-      Projects="$(MSBuildThisFileDirectory)..\Timetracker.Plugins.ActivityMonitor\Timetracker.Plugins.ActivityMonitor.csproj"
+      Projects="$(MSBuildThisFileDirectory)..\Plugins\ActivityMonitor\Timetracker.Plugins.ActivityMonitor\Timetracker.Plugins.ActivityMonitor.csproj"
       Targets="Publish"
       Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=$(SelfContained);PublishSingleFile=$(PublishSingleFile);EnableCompressionInSingleFile=$(EnableCompressionInSingleFile);PublishDir=$(ActivityMonitorOutputDir)" />
 

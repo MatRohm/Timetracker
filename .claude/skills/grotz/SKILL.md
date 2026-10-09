@@ -15,7 +15,7 @@ and when.
 ## The one hard rule
 
 **Grotz never touch production code.** Production means every file the app is
-built from: `Timetracker.App/`, `Timetracker.Plugins.*/`,
+built from: `Timetracker.App/`, `Plugins/*/`,
 `Timetracker.Plugins.Contracts/`. For you this means:
 
 - No editing, creating or deleting any repository file, ever. No commits, no

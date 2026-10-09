@@ -67,6 +67,8 @@ kernel never references plugin concrete types.
 - **Contracts** (`Timetracker.Plugins.Contracts`): the plug-in seam — hook interfaces the kernel calls (`IUiQuery`, `IWeekDayQuery`, `IAppCommand`, …) and host interfaces plugins call into (`ITrackerSessionQuery/Command`, `IOptionQuery`, `IUiTimer`, …). No plugin logic.
 - **Plugins** (WeekView, AzureDevOps, ActivityMonitor): implement hooks, self-register in `Timetracker.App/HookRegistry.cs`. Adding a feature = implement a hook + register. MVVM throughout: view models know nothing about Avalonia.
 
+Each plugin lives under `Plugins/<Name>/`, with its `.Tests.Unit` project beside it; `Timetracker.Plugins.Contracts` stays at the repository root.
+
 | Project | Role |
 |---|---|
 | `Timetracker.App` | Micro-kernel (ships as `Timetracker.exe`) |
