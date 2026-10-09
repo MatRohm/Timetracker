@@ -7,6 +7,9 @@ public sealed class TrackerEntry
 
     public string Task { get; set; } = "";
 
+    /// <summary>Stable identity of the task this session belongs to; empty when unknown.</summary>
+    public Guid TaskId { get; set; }
+
     /// <summary>Booking element this session belongs to; may be empty.</summary>
     public string BookingElement { get; set; } = "";
 
@@ -39,6 +42,7 @@ public sealed class TrackerEntry
     {
         Id = Id,
         Task = Task,
+        TaskId = TaskId,
         BookingElement = BookingElement,
         Start = Start,
         End = End,
@@ -52,4 +56,18 @@ public sealed class TrackerEntry
             .Where(e => e.Task.Trim().Equals(task.Trim(), StringComparison.OrdinalIgnoreCase))
             .Select(e => e.BookingElement)
             .LastOrDefault(b => !string.IsNullOrWhiteSpace(b)) ?? "";
+
+    /// <summary>The task's stable id, reusing the first existing one or creating a new one.</summary>
+    public static Guid ResolveTaskId(IEnumerable<TrackerEntry> entries, string task)
+    {
+        var existing = entries
+            .Where(e => e.Task.Trim().Equals(task.Trim(), StringComparison.OrdinalIgnoreCase))
+            .Select(e => e.TaskId)
+            .FirstOrDefault(id => id != Guid.Empty);
+        var result = OrNew(existing);
+        return result;
+    }
+
+    /// <summary>A non-empty id, reusing <paramref name="id"/> or creating a new one.</summary>
+    public static Guid OrNew(Guid id) => id != Guid.Empty ? id : Guid.NewGuid();
 }

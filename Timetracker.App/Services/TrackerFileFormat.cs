@@ -46,6 +46,7 @@ internal static class TrackerFileFormat
 
     private static TrackedTask BuildTask(IGrouping<string, TrackerEntry> group) => new()
     {
+        Id = FirstTaskId(group),
         Name = group.Key,
         BookingElement = FirstBookingElement(group),
         Sessions = [.. group
@@ -53,26 +54,46 @@ internal static class TrackerFileFormat
             .Select(e => new SessionSpan
             {
                 Id = e.Id,
-                Start = e.Start,
-                End = e.End,
-                Duration = e.Duration,
-                DurationSeconds = e.DurationSeconds,
+                DateStarted = e.Start,
+                DurationSeconds = SecondsBetween(e.Start, e.End),
             })],
     };
 
     private static IEnumerable<TrackerEntry> BuildEntries(TrackedTask task) =>
-        task.Sessions.Select(session => new TrackerEntry
+        task.Sessions.Select(session =>
         {
-            Id = session.Id,
-            Task = task.Name,
-            BookingElement = task.BookingElement,
-            Start = session.Start,
-            End = session.End,
-            Duration = session.Duration,
-            DurationSeconds = session.DurationSeconds,
+            var start = session.DateStarted;
+            var end = start.AddSeconds(session.DurationSeconds);
+            return new TrackerEntry
+            {
+                Id = session.Id,
+                Task = task.Name,
+                TaskId = task.Id,
+                BookingElement = task.BookingElement,
+                Start = start,
+                End = end,
+                Duration = (end - start).ToString(@"hh\:mm\:ss"),
+                DurationSeconds = session.DurationSeconds,
+            };
         });
 
     private static string FirstBookingElement(IEnumerable<TrackerEntry> group) =>
         group.Select(e => e.BookingElement)
             .FirstOrDefault(b => !string.IsNullOrWhiteSpace(b)) ?? "";
+
+    private static Guid FirstTaskId(IEnumerable<TrackerEntry> group) =>
+        TrackerEntry.OrNew(group.Select(e => e.TaskId).FirstOrDefault(id => id != Guid.Empty));
+
+    /// <summary>The length of a span in seconds, rounded to one decimal and clamped to zero.</summary>
+    internal static double SecondsBetween(DateTimeOffset start, DateTimeOffset end)
+    {
+        var elapsed = end - start;
+        if (elapsed < TimeSpan.Zero)
+        {
+            elapsed = TimeSpan.Zero;
+        }
+
+        var result = Math.Round(elapsed.TotalSeconds, 1);
+        return result;
+    }
 }

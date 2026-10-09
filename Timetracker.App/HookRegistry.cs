@@ -43,6 +43,9 @@ public static class HookRegistry
         services.AddSingleton<ITrackerFileMigration>(sp =>
             new Services.VersionTwoToThreeMigration(
                 sp.GetRequiredService<Services.JsonTrackerRepository>().FilePath));
+        services.AddSingleton<ITrackerFileMigration>(sp =>
+            new Services.VersionThreeToFourMigration(
+                sp.GetRequiredService<Services.JsonTrackerRepository>().FilePath));
         services.AddSingleton<ITrackerFileMigrationRunner>(sp =>
             new Services.TrackerFileMigrator(
                 sp.GetRequiredService<Services.JsonTrackerRepository>().FilePath,

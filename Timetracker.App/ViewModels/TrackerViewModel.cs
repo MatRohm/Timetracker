@@ -465,6 +465,7 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     private TrackerEntry BuildEntry(DateTimeOffset endedAt, TimeSpan elapsed) => new()
     {
         Task = TaskName.Trim(),
+        TaskId = TrackerEntry.ResolveTaskId(_sessions, TaskName),
         // An integration-provided element wins for this session; otherwise the new
         // session inherits the task's latest booking element so grouping stays consistent.
         BookingElement = PreviewBookingElement.Length > 0

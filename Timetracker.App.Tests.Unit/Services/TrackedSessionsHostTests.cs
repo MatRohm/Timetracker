@@ -41,6 +41,23 @@ public sealed class TrackedSessionsHostTests
     }
 
     [Test]
+    public async Task BookAsync_WhenTheTaskHasAnId_ShouldReuseItOnTheNewSession()
+    {
+        var taskId = Guid.NewGuid();
+        var (host, repo, tracker) = Create(Entry("Report", 9, taskId: taskId));
+        await tracker.InitialLoad;
+        var range = new TimeRange(
+            new DateTimeOffset(2026, 9, 21, 10, 15, 0, TimeSpan.FromHours(2)),
+            new DateTimeOffset(2026, 9, 21, 11, 5, 0, TimeSpan.FromHours(2)));
+
+        await host.BookAsync(range, "Report", "Project X");
+
+        var persisted = RepositoryFake.Persisted(repo);
+        persisted.Should().HaveCount(2);
+        persisted.Should().OnlyContain(e => e.TaskId == taskId, "the new session reuses the task's id");
+    }
+
+    [Test]
     public async Task BookAsync_WhenTheBookingElementIsEmpty_ShouldInheritTheTasksLatestBookingElement()
     {
         var (host, repo, tracker) = Create(Entry("Report", 9, "Project X"));
@@ -121,9 +138,10 @@ public sealed class TrackedSessionsHostTests
         return (host, repo, tracker);
     }
 
-    private static TrackerEntry Entry(string task, int hour, string bookingElement = "") => new()
+    private static TrackerEntry Entry(string task, int hour, string bookingElement = "", Guid taskId = default) => new()
     {
         Task = task,
+        TaskId = taskId,
         BookingElement = bookingElement,
         Start = new DateTimeOffset(2026, 9, 19, hour, 0, 0, TimeSpan.FromHours(2)),
         End = new DateTimeOffset(2026, 9, 19, hour, 30, 0, TimeSpan.FromHours(2)),

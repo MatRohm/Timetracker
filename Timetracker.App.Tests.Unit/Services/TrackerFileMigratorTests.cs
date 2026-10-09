@@ -44,7 +44,7 @@ public sealed class TrackerFileMigratorTests
     }
 
     [Test]
-    public async Task MigrateIfNeeded_WhenTheFileIsVersionOne_ShouldUpgradeItToVersionThree()
+    public async Task MigrateIfNeeded_WhenTheFileIsVersionOne_ShouldUpgradeItToVersionFour()
     {
         var path = TempPath();
         WriteVersionOne(path, """
@@ -61,7 +61,7 @@ public sealed class TrackerFileMigratorTests
 
         migrated.Should().BeTrue();
         var text = File.ReadAllText(path);
-        text.Should().Contain("\"version\": 3");
+        text.Should().Contain("\"version\": 4");
         text.Should().Contain("\"name\": \"Report\"");
         text.Should().Contain("\"sessions\"");
         text.Split("\"name\":").Length.Should().Be(3, "Report and Meeting are two records");
@@ -91,7 +91,7 @@ public sealed class TrackerFileMigratorTests
         File.Exists(BackupPath(path)).Should().BeTrue("the original is kept");
         File.ReadAllText(BackupPath(path)).Should().Be(original,
             "the backup is the untouched version-1 file");
-        File.ReadAllText(path).Should().Contain("\"version\": 3");
+        File.ReadAllText(path).Should().Contain("\"version\": 4");
     }
 
     [Test]
@@ -127,9 +127,36 @@ public sealed class TrackerFileMigratorTests
         var migrated = migrator.MigrateIfNeeded();
 
         migrated.Should().BeTrue("version 2 predates the stable identity");
-        File.ReadAllText(path).Should().Contain("\"version\": 3");
+        File.ReadAllText(path).Should().Contain("\"version\": 4");
         var all = await repo.GetAllAsync();
         all.Single().Id.Should().NotBe(Guid.Empty, "the migrated session gains a stable identity");
+    }
+
+    [Test]
+    public async Task MigrateIfNeeded_WhenTheFileIsVersionThree_ShouldBackItUpAndSimplifyTheSessions()
+    {
+        var path = TempPath();
+        File.WriteAllText(path, """
+            {
+              "version": 3,
+              "tasks": [
+                { "name": "Report", "bookingElement": "Quarterly", "sessions": [
+                  { "id": "11111111-1111-1111-1111-111111111111", "start": "2026-09-18T09:00:00+02:00", "end": "2026-09-18T10:30:00+02:00", "duration": "01:30:00", "durationSeconds": 5400 }
+                ] }
+              ]
+            }
+            """);
+        var repo = new JsonTrackerRepository(path);
+        var migrator = MigratorFor(path);
+
+        var migrated = migrator.MigrateIfNeeded();
+
+        migrated.Should().BeTrue("version 3 predates the simplified shape");
+        File.ReadAllText(path).Should().Contain("\"version\": 4");
+        File.ReadAllText(path).Should().Contain("\"dateStarted\"");
+        File.ReadAllText(path).Should().NotContain("\"end\"");
+        var all = await repo.GetAllAsync();
+        all.Single().DurationSeconds.Should().Be(5400);
     }
 
     [Test]
@@ -186,7 +213,12 @@ public sealed class TrackerFileMigratorTests
 
     /// <summary>A migrator with the production migration set (v1 → current).</summary>
     private static TrackerFileMigrator MigratorFor(string path) =>
-        new(path, [new VersionOneToTwoMigration(path), new VersionTwoToThreeMigration(path)]);
+        new(path,
+        [
+            new VersionOneToTwoMigration(path),
+            new VersionTwoToThreeMigration(path),
+            new VersionThreeToFourMigration(path),
+        ]);
 
     /// <summary>Where the production migration keeps the pre-migration copy.</summary>
     private static string BackupPath(string path) =>
@@ -224,7 +256,7 @@ public sealed class TrackerFileMigratorTests
 
         public string BackupPath => $"stub-{FromVersion}-{ToVersion}.bak";
 
-        public TrackerDocument Read(string text) => new();
+        public string Read(string text) => "";
     }
 }
 

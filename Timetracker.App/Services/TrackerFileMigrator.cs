@@ -58,8 +58,8 @@ public sealed class TrackerFileMigrator : ITrackerFileMigrationRunner
 
             File.Copy(_jsonPath, chain[0].BackupPath, overwrite: true);
 
-            var document = ReadAsCurrent(text, chain);
-            WriteDocument(document);
+            var migrated = ReadAsCurrent(text, chain);
+            WriteText(migrated);
             return true;
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
@@ -106,24 +106,21 @@ public sealed class TrackerFileMigrator : ITrackerFileMigrationRunner
         return chain;
     }
 
-    /// <summary>Applies the steps in order, starting from the raw file text.</summary>
-    private static TrackerDocument ReadAsCurrent(string text, IEnumerable<ITrackerFileMigration> chain)
+    /// <summary>Applies the steps in order, piping the file text through each one.</summary>
+    private static string ReadAsCurrent(string text, IEnumerable<ITrackerFileMigration> chain)
     {
-        TrackerDocument? document = null;
+        var current = text;
         foreach (var step in chain)
         {
-            document = step.Read(document is null ? text : Serialize(document));
+            current = step.Read(current);
         }
-        return document ?? throw new JsonException("The tracker file already matches the current version.");
+        return current;
     }
 
-    private void WriteDocument(TrackerDocument document)
+    private void WriteText(string text)
     {
         // Atomic replace: readers never see a half-written file, and a failed write
         // leaves the original version in place (MigrateIfNeeded logs the error).
-        AtomicFile.WriteAllText(_jsonPath, Serialize(document));
+        AtomicFile.WriteAllText(_jsonPath, text);
     }
-
-    private static string Serialize(TrackerDocument document) =>
-        JsonSerializer.Serialize(document, TrackerFileFormat.JsonOptions);
 }
