@@ -97,6 +97,9 @@
   <data name="ActivityMon_StatusUnknown" xml:space="preserve">
     <value>Unknown</value>
   </data>
+  <data name="ActivityMon_StateLabel" xml:space="preserve">
+    <value>Activity monitor state</value>
+  </data>
   <data name="ActivityMon_IdleSpanLabel" xml:space="preserve">
     <value>Idle span threshold (minutes)</value>
   </data>
