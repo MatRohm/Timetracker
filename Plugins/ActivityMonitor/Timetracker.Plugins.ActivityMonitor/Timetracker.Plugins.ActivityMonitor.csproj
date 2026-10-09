@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Timetracker.Plugins.Contracts\Timetracker.Plugins.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Timetracker.Plugins.Contracts\Timetracker.Plugins.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

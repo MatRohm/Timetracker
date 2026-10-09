@@ -21,7 +21,7 @@ line, never a reason to edit the thing it tests.
 file the app is built from:
 
 - `Timetracker.App/` (except nothing — all of it is production)
-- `Timetracker.Plugins.*/` — the plugins
+- `Plugins/*/Timetracker.Plugins.*/` — the plugins
 - `Timetracker.Plugins.Contracts/` — the contracts
 - `Timetracker.Tests.Architecture/` — the architecture rules themselves
 - `*.csproj`, `Directory.Build.props`, `opencode.json`, `.claude/`, `AGENTS.md`
@@ -29,7 +29,7 @@ file the app is built from:
 Your only editable surface is **test code**:
 
 - `Timetracker.App.Tests.Unit/`
-- `Timetracker.Plugins.*.Tests.Unit/`
+- `Plugins/*/Timetracker.Plugins.*.Tests.Unit/`
 - `Timetracker.Tests.UI/`
 
 Inside that surface you may add tests, strengthen weak tests, and refactor test

@@ -23,7 +23,7 @@ trigger. Do not improvise an ordering it already fixes.
 ## The one hard rule
 
 **Lictors never touch production code.** Production is what the app is built
-from: `Timetracker.App/`, `Timetracker.Plugins.*/`,
+from: `Timetracker.App/`, `Plugins/*/Timetracker.Plugins.*/`,
 `Timetracker.Plugins.Contracts/`, `Timetracker.Tests.Architecture/` (the rules
 themselves), every `*.csproj` and `Directory.Build.props`, and the
 configuration that wires the agents — `opencode.json`, `.claude/`,
@@ -31,7 +31,7 @@ configuration that wires the agents — `opencode.json`, `.claude/`,
 them is the job, editing them is production work.)
 
 Your only editable surface is test code: `Timetracker.App.Tests.Unit/`,
-`Timetracker.Plugins.*.Tests.Unit/` and `Timetracker.Tests.UI/`. You may add
+`Plugins/*/Timetracker.Plugins.*.Tests.Unit/` and `Timetracker.Tests.UI/`. You may add
 tests and strengthen weak ones; you may not weaken, skip or delete one, and you
 may not touch a test project file. When you are done, `git status --short` MUST
 show changes only under those three folders.
