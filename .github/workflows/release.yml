@@ -145,7 +145,6 @@ jobs:
               printf '%b' "$OTHERS"
               printf '\n'
             fi
-            printf 'Timetracker %s - portable cross-platform executables.\n\n' "$RELEASE_VERSION"
             printf -- '- Timetracker-%s-linux-x64.tar.gz - for 64-bit Linux\n' "$RELEASE_VERSION"
             printf -- '- Timetracker-%s-win-x64.zip - for 64-bit Windows\n\n' "$RELEASE_VERSION"
             printf 'Self-contained single-file builds: no .NET installation needed.\n'
