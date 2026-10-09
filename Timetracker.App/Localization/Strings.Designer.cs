@@ -213,4 +213,10 @@ public static class Strings
 
     /// <summary>Diagnostic log files are written to this folder.</summary>
     public static string Options_LogFolderHint => ResourceManager.GetString(nameof(Options_LogFolderHint))!;
+
+    /// <summary>Config folder</summary>
+    public static string Options_ConfigFolder => ResourceManager.GetString(nameof(Options_ConfigFolder))!;
+
+    /// <summary>Tracking, activity, state and log files are kept under this folder. Leave empty to use the default (~/.timetracker).</summary>
+    public static string Options_ConfigFolderHint => ResourceManager.GetString(nameof(Options_ConfigFolderHint))!;
 }

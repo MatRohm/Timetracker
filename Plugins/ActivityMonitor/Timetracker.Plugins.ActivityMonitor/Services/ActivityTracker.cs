@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
+using Timetracker.Plugins.Contracts;
 
 namespace Timetracker.Plugins.ActivityMonitor.Services;
 
@@ -56,9 +57,7 @@ public class ActivityTracker
     }
 
     /// <summary>Path of the state file used to recover across restarts.</summary>
-    public static string StateFilePath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        "timetracker-activity.state.json");
+    public static string StateFilePath => TimetrackerPaths.ActivityStateFile;
 
     /// <summary>Overrides the state file path (tests use per-test files).</summary>
     /// <remarks>Set right after construction, before Start/Poll.</remarks>

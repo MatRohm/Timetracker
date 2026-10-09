@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Contracts.Interfaces;
 
 namespace Timetracker.Plugins.ActivityMonitor.Services;
@@ -16,9 +17,7 @@ public static class IdleOptions
     public const string IdleStopThresholdKey = "ActivityMonitor.IdleStopThreshold";
 
     /// <summary>The same options file the app's options store writes (duplicated: no app reference).</summary>
-    public static string OptionsFilePath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        "timetracker-options.json");
+    public static string OptionsFilePath => TimetrackerPaths.OptionsFile;
 
     /// <summary>The shortest idle stretch the monitor logs as an "idle" span; default one hour.</summary>
     public static TimeSpan IdleSpanThreshold(string? value)

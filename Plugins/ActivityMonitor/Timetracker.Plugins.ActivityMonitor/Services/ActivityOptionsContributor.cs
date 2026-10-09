@@ -9,7 +9,7 @@ namespace Timetracker.Plugins.ActivityMonitor.Services;
 /// recorded spans and its state across restarts (read-only), plus the two idle
 /// thresholds in whole minutes.
 /// </summary>
-public sealed class ActivityOptionsContributor(ActivityLog log) : IOptionDefinitionQuery
+public sealed class ActivityOptionsContributor(ActivityLog log, string stateFilePath) : IOptionDefinitionQuery
 {
     public string Section => Strings.ActivityMon_Section;
 
@@ -38,7 +38,7 @@ public sealed class ActivityOptionsContributor(ActivityLog log) : IOptionDefinit
             "ActivityMonitor.StateFile",
             Strings.ActivityMon_StateFileLabel,
             OptionKind.Path,
-            ActivityTracker.StateFilePath,
+            stateFilePath,
             IsReadOnly: true,
             HintText: Strings.ActivityMon_StateFileHint),
     ];
