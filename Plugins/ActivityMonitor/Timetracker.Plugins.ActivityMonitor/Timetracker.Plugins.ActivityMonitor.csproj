@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -19,26 +18,23 @@
 
   <ItemGroup>
     <!--
-      Dependency injection comes from the Microsoft.AspNetCore.App framework
-      reference below (it provides IServiceProvider and the GetRequiredService
-      extension), so no explicit DI package is needed.
+      Dependency injection (IServiceProvider, GetRequiredService) and logging
+      come from the base shared framework. The tracking loop's BackgroundService
+      needs the generic-host abstractions (a small package, not ASP.NET Core).
     -->
     <PackageReference Include="Avalonia" Version="$(AvaloniaVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.12" />
   </ItemGroup>
 
   <!--
-    The monitor hosts a gRPC status endpoint so the main app can ask whether the
-    monitor process is running. The server (Grpc.AspNetCore) and the client
-    (Grpc.Net.Client, transitively) live in this project, which the app references,
-    so the ASP.NET Core shared framework is pulled in transitively. Grpc.Tools
-    generates the service stubs from ActivityMonitorStatus.proto.
+    The library is the gRPC client: it asks the monitor app (which owns the
+    status server) whether it is alive. The server lives in
+    Timetracker.Plugins.ActivityMonitor.App, so the app, which references only
+    this library, no longer carries the ASP.NET Core shared framework. Grpc.Tools
+    generates the client and service stubs from ActivityMonitorStatus.proto.
   -->
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Grpc.AspNetCore" Version="2.84.0" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.84.0" />
     <PackageReference Include="Google.Protobuf" Version="3.36.2" />
     <PackageReference Include="Grpc.Tools" Version="2.84.0">
       <PrivateAssets>all</PrivateAssets>
