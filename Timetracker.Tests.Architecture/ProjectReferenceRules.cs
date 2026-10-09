@@ -48,12 +48,25 @@ public sealed class ProjectReferenceRules
     {
         var offenders = ProductProjects()
             .SelectMany(p => p.ProjectReferences
-                .Where(r => r != PluginsProject)
+                .Where(r => r != PluginsProject && !IsCompanionAppReference(p.Name, r))
                 .Select(r => $"{p.Name} -> {r}"));
 
         offenders.Should().BeEmpty(
-            $"a product project may only reference {PluginsProject}, but found: "
+            $"a product project may only reference {PluginsProject} (or, for a .App companion, its own library), but found: "
             + string.Join(", ", offenders));
+    }
+
+    [Test]
+    public void Companion_app_projects_may_reference_their_own_library()
+    {
+        // The monitor app is a runtime companion of the library (not an independent
+        // plugin), so its reference to its own library is allowed by the rule.
+        var app = Projects().Single(p => p.Name == "Timetracker.Plugins.ActivityMonitor.App");
+
+        app.References("Timetracker.Plugins.ActivityMonitor").Should().BeTrue(
+            "the monitor app references its companion library");
+        IsCompanionAppReference(app.Name, "Timetracker.Plugins.ActivityMonitor").Should().BeTrue(
+            "the app's reference to its own library is recognised as a companion reference");
     }
 
     [Test]
@@ -73,6 +86,15 @@ public sealed class ProjectReferenceRules
     private static bool IsApp(string name) => name == AppProject;
 
     private static bool IsTest(string name) => name.Contains(".Tests.");
+
+    /// <summary>
+    /// A companion <c>.App</c> process (e.g. the activity monitor's headless exe)
+    /// references its own library, not an independent plugin; allow that single
+    /// reference so the app's runtime dependency on its library is not flagged.
+    /// </summary>
+    private static bool IsCompanionAppReference(string project, string reference) =>
+        project.EndsWith(".App", StringComparison.Ordinal)
+        && reference == project[..^".App".Length];
 
     private static IReadOnlyList<ProjectFile> Projects() =>
         [.. SolutionFiles.ProjectFiles().Select(ProjectFile.Read)];

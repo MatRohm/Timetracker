@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Timetracker.Plugins.ActivityMonitor.Services;
+using Timetracker.Plugins.ActivityMonitor.App.Services;
 using Timetracker.Plugins.Contracts.Logging;
 
 // Headless background monitor: hosts a gRPC status endpoint on loopback so the

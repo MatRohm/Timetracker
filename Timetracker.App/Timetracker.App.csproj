@@ -63,23 +63,33 @@
     <ActivityMonitorFileName Condition="'$(RuntimeIdentifier)' == ''">Timetracker.Plugins.ActivityMonitor</ActivityMonitorFileName>
     <ActivityMonitorFileName Condition="$(RuntimeIdentifier.StartsWith('win'))">Timetracker.Plugins.ActivityMonitor.exe</ActivityMonitorFileName>
     <ActivityMonitorFileName Condition="'$(ActivityMonitorFileName)' == ''">Timetracker.Plugins.ActivityMonitor</ActivityMonitorFileName>
+    <ActivityMonitorAppFileName Condition="'$(RuntimeIdentifier)' == ''">Timetracker.Plugins.ActivityMonitor.App</ActivityMonitorAppFileName>
+    <ActivityMonitorAppFileName Condition="$(RuntimeIdentifier.StartsWith('win'))">Timetracker.Plugins.ActivityMonitor.App.exe</ActivityMonitorAppFileName>
+    <ActivityMonitorAppFileName Condition="'$(ActivityMonitorAppFileName)' == ''">Timetracker.Plugins.ActivityMonitor.App</ActivityMonitorAppFileName>
   </PropertyGroup>
 
   <Target Name="PublishActivityMonitor" AfterTargets="Publish">
     <PropertyGroup>
-      <ActivityMonitorOutputDir>$(MSBuildThisFileDirectory)..\Plugins\ActivityMonitor\Timetracker.Plugins.ActivityMonitor\bin\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\publish\</ActivityMonitorOutputDir>
+      <ActivityMonitorOutputDir>$(MSBuildThisFileDirectory)..\Plugins\ActivityMonitor\Timetracker.Plugins.ActivityMonitor.App\bin\$(Configuration)\$(TargetFramework)\$(RuntimeIdentifier)\publish\</ActivityMonitorOutputDir>
       <ActivityMonitorPublishOut>$(PublishDir)</ActivityMonitorPublishOut>
     </PropertyGroup>
 
-    <!-- Publish the monitor for the same RID so its single-file exe sits next to the app. -->
+    <!-- Restore the monitor app for the same RID first: it is not a ProjectReference of the app, so the publish does not restore it. -->
     <MSBuild
-      Projects="$(MSBuildThisFileDirectory)..\Plugins\ActivityMonitor\Timetracker.Plugins.ActivityMonitor\Timetracker.Plugins.ActivityMonitor.csproj"
+      Projects="$(MSBuildThisFileDirectory)..\Plugins\ActivityMonitor\Timetracker.Plugins.ActivityMonitor.App\Timetracker.Plugins.ActivityMonitor.App.csproj"
+      Targets="Restore"
+      Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier)" />
+
+    <!-- Publish the monitor app for the same RID so its single-file exe sits next to the app. -->
+    <MSBuild
+      Projects="$(MSBuildThisFileDirectory)..\Plugins\ActivityMonitor\Timetracker.Plugins.ActivityMonitor.App\Timetracker.Plugins.ActivityMonitor.App.csproj"
       Targets="Publish"
       Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=$(SelfContained);PublishSingleFile=$(PublishSingleFile);EnableCompressionInSingleFile=$(EnableCompressionInSingleFile);PublishDir=$(ActivityMonitorOutputDir)" />
 
-    <Copy SourceFiles="$(ActivityMonitorOutputDir)$(ActivityMonitorFileName)" DestinationFolder="$(ActivityMonitorPublishOut)" SkipUnchangedFiles="true" Condition="Exists('$(ActivityMonitorOutputDir)$(ActivityMonitorFileName)')" />
-    <Message Text="Published activity monitor: $(ActivityMonitorOutputDir)$(ActivityMonitorFileName) -&gt; $(ActivityMonitorPublishOut)" Importance="high" Condition="Exists('$(ActivityMonitorOutputDir)$(ActivityMonitorFileName)')" />
-    <Warning Text="$(ActivityMonitorFileName) was not found to publish; the install button will not find the monitor." Condition="!Exists('$(ActivityMonitorOutputDir)$(ActivityMonitorFileName)')" />
+    <!-- The monitor app publishes as Timetracker.Plugins.ActivityMonitor.App; rename to the name the installer expects. -->
+    <Copy SourceFiles="$(ActivityMonitorOutputDir)$(ActivityMonitorAppFileName)" DestinationFiles="$(ActivityMonitorPublishOut)$(ActivityMonitorFileName)" SkipUnchangedFiles="true" Condition="Exists('$(ActivityMonitorOutputDir)$(ActivityMonitorAppFileName)')" />
+    <Message Text="Published activity monitor: $(ActivityMonitorOutputDir)$(ActivityMonitorAppFileName) -&gt; $(ActivityMonitorPublishOut)$(ActivityMonitorFileName)" Importance="high" Condition="Exists('$(ActivityMonitorOutputDir)$(ActivityMonitorAppFileName)')" />
+    <Warning Text="$(ActivityMonitorAppFileName) was not found to publish; the install button will not find the monitor." Condition="!Exists('$(ActivityMonitorOutputDir)$(ActivityMonitorAppFileName)')" />
   </Target>
 
   <ItemGroup>

@@ -2,6 +2,7 @@
   <Project Path="Timetracker.App/Timetracker.App.csproj" />
   <Project Path="Plugins/AzureDevOps/Timetracker.Plugins.AzureDevOps/Timetracker.Plugins.AzureDevOps.csproj" />
   <Project Path="Plugins/ActivityMonitor/Timetracker.Plugins.ActivityMonitor/Timetracker.Plugins.ActivityMonitor.csproj" />
+  <Project Path="Plugins/ActivityMonitor/Timetracker.Plugins.ActivityMonitor.App/Timetracker.Plugins.ActivityMonitor.App.csproj" />
   <Project Path="Timetracker.Plugins.Contracts/Timetracker.Plugins.Contracts.csproj" />
   <Project Path="Plugins/WeekView/Timetracker.Plugins.WeekView/Timetracker.Plugins.WeekView.csproj" />
   <Project Path="Timetracker.App.Tests.Unit/Timetracker.App.Tests.Unit.csproj" />
