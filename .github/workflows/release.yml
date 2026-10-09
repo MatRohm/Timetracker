@@ -23,6 +23,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history and tags, so the release-notes step can enumerate the
+          # commits since the previous release tag.
+          fetch-depth: 0
 
       - name: Validate version input
         shell: bash
@@ -73,6 +77,82 @@ jobs:
           (cd "$WIN_DIR" && zip -q "$OLDPWD/$WIN_ARCHIVE" Timetracker.exe Timetracker.Plugins.ActivityMonitor.exe) || \
             (cd "$WIN_DIR" && tar -acf "$OLDPWD/$WIN_ARCHIVE" Timetracker.exe Timetracker.Plugins.ActivityMonitor.exe)
 
+      - name: Generate release notes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Commits since the previous release tag, or from the root if none exists.
+          PREV=$(git tag --sort=-v:refname | head -1)
+          if [ -z "$PREV" ]; then
+            PREV=$(git rev-list --max-parents=0 HEAD)
+          fi
+
+          FEATURES=""
+          FIXES=""
+          OTHERS=""
+          BREAKING=""
+
+          while IFS= read -r hash; do
+            subject=$(git log -1 --pretty=%s "$hash")
+            body=$(git log -1 --pretty=%b "$hash")
+
+            case "$subject" in
+              feat*) section=Features ;;
+              fix*) section="Bug fixes" ;;
+              technical*) section=Other ;;
+              *) continue ;;
+            esac
+
+            bullet="* $subject"
+
+            # Breaking: "!" after type/scope AND a BREAKING CHANGE footer (both required).
+            if printf '%s' "$subject" | grep -Eq '^(feat|fix|technical)(\([^()]+\))?!:' \
+               && printf '%s\n' "$body" | grep -Eq '^BREAKING[ -]CHANGE:'; then
+              footer=$(printf '%s\n' "$body" \
+                | sed -n '/^BREAKING[ -]CHANGE:/,$p' \
+                | sed '1s/^BREAKING[ -]CHANGE:[[:space:]]*//' \
+                | tr '\n' ' ' \
+                | sed 's/[[:space:]][[:space:]]*/ /g; s/[[:space:]]*$//')
+              BREAKING="${BREAKING}* ${footer}\n"
+            fi
+
+            case "$section" in
+              Features) FEATURES="${FEATURES}${bullet}\n" ;;
+              "Bug fixes") FIXES="${FIXES}${bullet}\n" ;;
+              Other) OTHERS="${OTHERS}${bullet}\n" ;;
+            esac
+          done < <(git rev-list --reverse "$PREV..HEAD")
+
+          {
+            if [ -n "$BREAKING" ]; then
+              printf '## Breaking changes\n\n'
+              printf '%b' "$BREAKING"
+              printf '\n'
+            fi
+            if [ -n "$FEATURES" ]; then
+              printf '## Features\n\n'
+              printf '%b' "$FEATURES"
+              printf '\n'
+            fi
+            if [ -n "$FIXES" ]; then
+              printf '## Bug fixes\n\n'
+              printf '%b' "$FIXES"
+              printf '\n'
+            fi
+            if [ -n "$OTHERS" ]; then
+              printf '## Other\n\n'
+              printf '%b' "$OTHERS"
+              printf '\n'
+            fi
+            printf 'Timetracker %s - portable cross-platform executables.\n\n' "$RELEASE_VERSION"
+            printf -- '- Timetracker-%s-linux-x64.tar.gz - for 64-bit Linux\n' "$RELEASE_VERSION"
+            printf -- '- Timetracker-%s-win-x64.zip - for 64-bit Windows\n\n' "$RELEASE_VERSION"
+            printf 'Self-contained single-file builds: no .NET installation needed.\n'
+            printf 'Unzip and run Timetracker (or Timetracker.exe), then use the week view to install the PC activity monitor.\n'
+            printf 'Data file: timetracker.json in your user folder.\n'
+          } > release-notes.md
+
       - name: Create GitHub Release
         shell: bash
         env:
@@ -81,14 +161,7 @@ jobs:
           VERSION="$RELEASE_VERSION"
           gh release create "$VERSION" \
             --title "Timetracker $VERSION" \
-            --notes "Timetracker $VERSION - portable cross-platform executables.
-
-          - Timetracker-$VERSION-linux-x64.tar.gz - for 64-bit Linux
-          - Timetracker-$VERSION-win-x64.zip - for 64-bit Windows
-
-          Self-contained single-file builds: no .NET installation needed.
-          Unzip and run Timetracker (or Timetracker.exe), then use the week view to
-          install the PC activity monitor. Data file: timetracker.json in your user folder." \
+            --notes-file release-notes.md \
             "Timetracker-$VERSION-linux-x64.tar.gz" \
             "Timetracker-$VERSION-win-x64.zip"
 
