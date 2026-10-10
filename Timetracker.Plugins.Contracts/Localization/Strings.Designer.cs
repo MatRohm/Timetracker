@@ -33,10 +33,4 @@ public static class Strings
 
     /// <summary>Timetracker</summary>
     public static string Confirm_Title => ResourceManager.GetString(nameof(Confirm_Title))!;
-
-    /// <summary>Apply</summary>
-    public static string Confirm_Apply => ResourceManager.GetString(nameof(Confirm_Apply))!;
-
-    /// <summary>The sessions are rewritten in the JSON file.</summary>
-    public static string Confirm_Rewritten => ResourceManager.GetString(nameof(Confirm_Rewritten))!;
 }
