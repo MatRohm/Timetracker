@@ -165,7 +165,7 @@ public sealed class WeekTrackingTree : UserControl
 
     /// <summary>
     /// Day node: expander, caption, the day's sum, the PC activity line, the untracked
-    /// time and, for days with bookings, Round ½h and Distribute buttons.
+    /// time and, for days with bookings, a Distribute button.
     /// </summary>
     private Control BuildDayNode(WeekDayViewModel day)
     {
@@ -223,22 +223,6 @@ public sealed class WeekTrackingTree : UserControl
 
         if (day.TotalText.Length > 0)
         {
-            var round = new Button
-            {
-                Content = Strings.Week_Round,
-                FontSize = 11,
-                Padding = new Thickness(6, 0),
-                VerticalAlignment = VerticalAlignment.Center,
-                IsEnabled = day.CanRound,
-            };
-            ToolTip.SetTip(round, day.RoundingHint);
-            ToolTip.SetShowOnDisabled(round, true);
-            round.Click += async (_, _) => await _week.RoundDayAsync(
-                day,
-                changes => Confirmations.ConfirmChangesAsync(
-                    this, string.Format(Strings.Week_RoundConfirm, day.Header), changes));
-            row.Children.Add(round);
-
             var distribute = new Button
             {
                 Content = Strings.Week_Distribute,

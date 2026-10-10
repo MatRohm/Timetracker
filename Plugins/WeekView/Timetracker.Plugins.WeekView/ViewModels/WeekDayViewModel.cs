@@ -137,40 +137,6 @@ public sealed class WeekDayViewModel : ObservableObject
     /// </summary>
     public IReadOnlyList<WeekGapViewModel> Gaps { get; private set; } = [];
 
-    /// <summary>What rounding the day's task totals to half hours would change.</summary>
-    public RoundingPlan Rounding { get; private set; } = RoundingPlan.Empty;
-
-    /// <summary>True when some task of the day is not on a half hour.</summary>
-    public bool CanRound => Rounding.HasWork;
-
-    /// <summary>Tooltip for the round action.</summary>
-    public string RoundingHint => CanRound
-        ? Strings.Week_RoundingHintIdle
-        : Strings.Week_RoundingHintAlready;
-
-    /// <summary>
-    /// One confirmation line per rounded task, e.g.
-    /// "Report 0:50 → 1:00: 10:00–10:50 → 10:00–11:00" (a removed session reads
-    /// "11:00–11:10 removed").
-    /// </summary>
-    public IReadOnlyList<string> RoundingLines =>
-        [.. Rounding.Tasks.Select(t =>
-            $"{t.Name} {WeekTimeFormat.HoursMinutes(t.Total)} → {WeekTimeFormat.HoursMinutes(t.Target)}: "
-            + string.Join("; ", t.Changes.Select(WeekTimeFormat.Describe)))];
-
-    /// <summary>One line per task that could not be rounded, with the reason.</summary>
-    public IReadOnlyList<string> RoundingSkippedLines =>
-        [.. Rounding.Skipped.Select(t =>
-            $"{t.Name} {WeekTimeFormat.HoursMinutes(t.Total)} (no free time next to its last session)")];
-
-    /// <summary>Replaces the day's rounding plan.</summary>
-    public void SetRounding(RoundingPlan rounding)
-    {
-        Rounding = rounding;
-        OnPropertyChanged(nameof(Rounding));
-        OnPropertyChanged(nameof(CanRound));
-    }
-
     /// <summary>What distributing the day's untracked time over its tasks would change.</summary>
     public DistributionPlan Distribution { get; private set; } = DistributionPlan.Empty;
 
