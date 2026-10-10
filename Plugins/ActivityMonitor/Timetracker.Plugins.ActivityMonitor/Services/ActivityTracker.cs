@@ -13,7 +13,12 @@ namespace Timetracker.Plugins.ActivityMonitor.Services;
 /// restarts via a small state file, so logoff/shutdown
 /// ends the open span correctly on the next start.
 /// </summary>
-public class ActivityTracker
+public class ActivityTracker(
+    ActivityLog log,
+    Func<DateTimeOffset>? now = null,
+    IIdleTimeProvider? idleTime = null,
+    ILogger<ActivityTracker>? logger = null,
+    TimeSpan? idleSpanThreshold = null)
 {
     /// <summary>Idle periods shorter than the configured threshold are not logged; the default.</summary>
     public static readonly TimeSpan DefaultIdleThreshold = TimeSpan.FromHours(1);
@@ -21,33 +26,19 @@ public class ActivityTracker
     /// <summary>How often a routine polling entry is written to the monitor log.</summary>
     public static readonly TimeSpan PollLogInterval = TimeSpan.FromMinutes(5);
 
-    private readonly ActivityLog _log;
-    private readonly IIdleTimeProvider _idleTime;
-    private readonly ILogger<ActivityTracker> _logger;
-    private Func<DateTimeOffset> _now;
+    private readonly ActivityLog _log = log;
+    private readonly IIdleTimeProvider _idleTime = idleTime ?? IdleTimeProvider.CreateForCurrentPlatform();
+    private readonly ILogger<ActivityTracker> _logger = logger ?? NullLogger<ActivityTracker>.Instance;
+    private Func<DateTimeOffset> _now = now ?? (() => DateTimeOffset.Now);
 
     /// <summary>Idle stretches shorter than this are not logged; the option may lower or raise it.</summary>
-    private TimeSpan _idleSpanThreshold;
+    private TimeSpan _idleSpanThreshold = idleSpanThreshold ?? DefaultIdleThreshold;
 
     /// <summary>Moment of the last polling log entry; throttles it to <see cref="PollLogInterval"/>.</summary>
     private DateTimeOffset _lastPollLog;
 
     private string _state = "active";
     private DateTimeOffset _stateStart;
-
-    public ActivityTracker(
-        ActivityLog log,
-        Func<DateTimeOffset>? now = null,
-        IIdleTimeProvider? idleTime = null,
-        ILogger<ActivityTracker>? logger = null,
-        TimeSpan? idleSpanThreshold = null)
-    {
-        _log = log;
-        _now = now ?? (() => DateTimeOffset.Now);
-        _idleTime = idleTime ?? IdleTimeProvider.CreateForCurrentPlatform();
-        _logger = logger ?? NullLogger<ActivityTracker>.Instance;
-        _idleSpanThreshold = idleSpanThreshold ?? DefaultIdleThreshold;
-    }
 
     /// <summary>The configured shortest logged idle stretch; tests set it directly.</summary>
     internal TimeSpan IdleSpanThreshold

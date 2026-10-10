@@ -10,7 +10,14 @@ namespace Timetracker.Plugins.ActivityMonitor.Services;
 /// auto-stop rule that used to live in the tracker view model; runs as an
 /// application hook, polling the idle state on a UI-thread timer.
 /// </summary>
-public sealed class IdleAutoStop : IAppCommand, IDisposable
+/// <param name="now">Current time; replaceable so back-dating can be tested deterministically.</param>
+/// <param name="options">The user's options; null keeps the built-in threshold.</param>
+public sealed class IdleAutoStop(
+    ITrackerSessionQuery sessionQuery,
+    ITrackerSessionCommand sessionCommand,
+    IIdleTimeProvider idleTime,
+    Func<DateTimeOffset>? now = null,
+    IOptionQuery? options = null) : IAppCommand, IDisposable
 {
     /// <summary>No keyboard/mouse input for this long stops the running session.</summary>
     public static readonly TimeSpan IdleStopThreshold = TimeSpan.FromMinutes(30);
@@ -18,29 +25,13 @@ public sealed class IdleAutoStop : IAppCommand, IDisposable
     /// <summary>How often the idle state is polled while the app runs.</summary>
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(5);
 
-    private readonly ITrackerSessionQuery _sessionQuery;
-    private readonly ITrackerSessionCommand _sessionCommand;
-    private readonly IIdleTimeProvider _idleTime;
-    private readonly IOptionQuery? _options;
-    private readonly Func<DateTimeOffset> _now;
+    private readonly ITrackerSessionQuery _sessionQuery = sessionQuery;
+    private readonly ITrackerSessionCommand _sessionCommand = sessionCommand;
+    private readonly IIdleTimeProvider _idleTime = idleTime;
+    private readonly IOptionQuery? _options = options;
+    private readonly Func<DateTimeOffset> _now = now ?? (() => DateTimeOffset.Now);
 
     private DispatcherTimer? _timer;
-
-    /// <param name="now">Current time; replaceable so back-dating can be tested deterministically.</param>
-    /// <param name="options">The user's options; null keeps the built-in threshold.</param>
-    public IdleAutoStop(
-        ITrackerSessionQuery sessionQuery,
-        ITrackerSessionCommand sessionCommand,
-        IIdleTimeProvider idleTime,
-        Func<DateTimeOffset>? now = null,
-        IOptionQuery? options = null)
-    {
-        _sessionQuery = sessionQuery;
-        _sessionCommand = sessionCommand;
-        _idleTime = idleTime;
-        _options = options;
-        _now = now ?? (() => DateTimeOffset.Now);
-    }
 
     public void OnAppStarted()
     {

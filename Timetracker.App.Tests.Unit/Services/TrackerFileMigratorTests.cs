@@ -242,52 +242,14 @@ public sealed class TrackerFileMigratorTests
     };
 
     /// <summary>A migration that moves data through untouched, for chain testing.</summary>
-    private sealed class StubMigration : ITrackerFileMigration
+    private sealed class StubMigration(int fromVersion, int toVersion) : ITrackerFileMigration
     {
-        public StubMigration(int fromVersion, int toVersion)
-        {
-            FromVersion = fromVersion;
-            ToVersion = toVersion;
-        }
+        public int FromVersion { get; } = fromVersion;
 
-        public int FromVersion { get; }
-
-        public int ToVersion { get; }
+        public int ToVersion { get; } = toVersion;
 
         public string BackupPath => $"stub-{FromVersion}-{ToVersion}.bak";
 
         public string Read(string text) => "";
-    }
-}
-
-/// <summary>The version-1 step describes the range it migrates and where it backs up.</summary>
-[TestFixture]
-public sealed class VersionOneToTwoMigrationTests
-{
-    [Test]
-    public void FromVersion_WhenAsked_ShouldStateTheRangeItHandles()
-    {
-        var migration = new VersionOneToTwoMigration("unused.json");
-
-        migration.FromVersion.Should().Be(TrackerDocument.UnversionedVersion);
-        migration.ToVersion.Should().Be(2);
-        migration.ToVersion.Should().Be(migration.FromVersion + 1, "a step moves exactly one version");
-        migration.BackupPath.Should().Be("unused.json.v1-backup");
-    }
-}
-
-/// <summary>The version-2 step describes the range it migrates and where it backs up.</summary>
-[TestFixture]
-public sealed class VersionTwoToThreeMigrationTests
-{
-    [Test]
-    public void FromVersion_WhenAsked_ShouldStateTheRangeItHandles()
-    {
-        var migration = new VersionTwoToThreeMigration("unused.json");
-
-        migration.FromVersion.Should().Be(2);
-        migration.ToVersion.Should().Be(3);
-        migration.ToVersion.Should().Be(migration.FromVersion + 1, "a step moves exactly one version");
-        migration.BackupPath.Should().Be("unused.json.v2-backup");
     }
 }

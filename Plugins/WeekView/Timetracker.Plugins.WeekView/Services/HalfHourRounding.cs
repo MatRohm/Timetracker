@@ -2,24 +2,6 @@ using Timetracker.Plugins.Contracts;
 
 namespace Timetracker.Plugins.WeekView.Services;
 
-/// <summary>A task whose day total is rounded: its old total, the target and the session changes.</summary>
-public sealed record RoundedTask(string Name, TimeSpan Total, TimeSpan Target, IReadOnlyList<SessionChange> Changes);
-
-/// <summary>A task that could not be adjusted because no free time borders its last session.</summary>
-public sealed record SkippedTask(string Name, TimeSpan Total);
-
-/// <summary>What rounding a day would do: the rounded tasks and the tasks that had to be skipped.</summary>
-public sealed record RoundingPlan(IReadOnlyList<RoundedTask> Tasks, IReadOnlyList<SkippedTask> Skipped)
-{
-    public static readonly RoundingPlan Empty = new([], []);
-
-    /// <summary>Every session change of the rounded tasks, in task order.</summary>
-    public IReadOnlyList<SessionChange> Changes { get; } = [.. Tasks.SelectMany(t => t.Changes)];
-
-    /// <summary>True when some task of the day is not on a half hour.</summary>
-    public bool HasWork => Tasks.Count > 0 || Skipped.Count > 0;
-}
-
 /// <summary>
 /// Plans rounding each task's total on a day to the nearest half hour, for booking
 /// systems that work in half hours. Exactly a quarter past rounds up, and a total

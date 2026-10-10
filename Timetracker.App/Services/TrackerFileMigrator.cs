@@ -15,24 +15,17 @@ namespace Timetracker.App.Services;
 /// runner does not change. The original file is backed up before the first step
 /// rewrites it, and a failure leaves the file untouched.
 /// </summary>
-public sealed class TrackerFileMigrator : ITrackerFileMigrationRunner
+/// <param name="jsonPath">File to migrate.</param>
+/// <param name="migrations">Available steps (order does not matter).</param>
+/// <param name="logger">Receives failures so startup can continue despite a bad file.</param>
+public sealed class TrackerFileMigrator(
+    string jsonPath,
+    IEnumerable<ITrackerFileMigration> migrations,
+    ILogger<TrackerFileMigrator>? logger = null) : ITrackerFileMigrationRunner
 {
-    private readonly string _jsonPath;
-    private readonly IReadOnlyList<ITrackerFileMigration> _migrations;
-    private readonly ILogger<TrackerFileMigrator> _logger;
-
-    /// <param name="jsonPath">File to migrate.</param>
-    /// <param name="migrations">Available steps (order does not matter).</param>
-    /// <param name="logger">Receives failures so startup can continue despite a bad file.</param>
-    public TrackerFileMigrator(
-        string jsonPath,
-        IEnumerable<ITrackerFileMigration> migrations,
-        ILogger<TrackerFileMigrator>? logger = null)
-    {
-        _jsonPath = jsonPath;
-        _migrations = [.. migrations];
-        _logger = logger ?? NullLogger<TrackerFileMigrator>.Instance;
-    }
+    private readonly string _jsonPath = jsonPath;
+    private readonly IReadOnlyList<ITrackerFileMigration> _migrations = [.. migrations];
+    private readonly ILogger<TrackerFileMigrator> _logger = logger ?? NullLogger<TrackerFileMigrator>.Instance;
 
     public bool MigrateIfNeeded()
     {

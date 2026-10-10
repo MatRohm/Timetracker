@@ -12,17 +12,12 @@ namespace Timetracker.App.Services;
 /// the version-1 flat array; they are read transparently here and upgraded to the
 /// current version by <see cref="TrackerFileMigrator"/> at startup.
 /// </summary>
-public sealed class JsonTrackerRepository : ITrackerRepository
+/// <param name="filePath">Overrides the default path (used by tests); null = ~/.timetracker/timetracker.json.</param>
+public sealed class JsonTrackerRepository(string? filePath = null) : ITrackerRepository
 {
-    private readonly string _jsonPath;
+    private readonly string _jsonPath = filePath ?? TimetrackerPaths.TrackingFile;
 
     private bool _fileWasCorrupt;
-
-    /// <param name="filePath">Overrides the default path (used by tests); null = ~/.timetracker/timetracker.json.</param>
-    public JsonTrackerRepository(string? filePath = null)
-    {
-        _jsonPath = filePath ?? TimetrackerPaths.TrackingFile;
-    }
 
     public string FilePath => _jsonPath;
 

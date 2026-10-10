@@ -10,7 +10,8 @@ namespace Timetracker.Plugins.ActivityMonitor.Services;
 /// are atomic; the whole file is rewritten on each append (the log stays small: at
 /// most two spans per state change).
 /// </summary>
-public sealed class ActivityLog
+/// <param name="filePath">Overrides the default path (used by tests).</param>
+public sealed class ActivityLog(string? filePath = null)
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -18,13 +19,7 @@ public sealed class ActivityLog
         WriteIndented = true,
     };
 
-    private readonly string _path;
-
-    /// <param name="filePath">Overrides the default path (used by tests).</param>
-    public ActivityLog(string? filePath = null)
-    {
-        _path = filePath ?? DefaultFilePath;
-    }
+    private readonly string _path = filePath ?? DefaultFilePath;
 
     public static string DefaultFilePath => TimetrackerPaths.ActivityFile;
 
