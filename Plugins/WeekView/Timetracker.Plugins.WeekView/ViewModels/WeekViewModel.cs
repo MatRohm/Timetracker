@@ -126,8 +126,7 @@ public sealed class WeekViewModel : ObservableObject
     public DistributeDayViewModel CreateDistributeDay(WeekDayViewModel day)
     {
         var daySessions = _sessions.Sessions.Where(s => s.Start.Date == day.Date.Date).ToList();
-        TimeRange? running = _sessions.RunningSince is { } since ? new TimeRange(since, DateTimeOffset.MaxValue) : null;
-        var result = new DistributeDayViewModel(day.Header, day.UntrackedTime, daySessions, _sessions.Sessions, running);
+        var result = new DistributeDayViewModel(day.Header, day.UntrackedTime, daySessions);
         return result;
     }
 
@@ -234,7 +233,7 @@ public sealed class WeekViewModel : ObservableObject
                 .Select(s => s.GetActiveTime(date))
                 .DefaultIfEmpty(TimeSpan.Zero)
                 .Max();
-            _days[i].SetDistribution(DayDistribution.Plan(daySessions, _days[i].UntrackedTime, sessions, running));
+            _days[i].SetDistribution(DayDistribution.Plan(daySessions, _days[i].UntrackedTime));
 
             // Every session counts, not only the day's: one started the evening before
             // can cover the early hours of this day.

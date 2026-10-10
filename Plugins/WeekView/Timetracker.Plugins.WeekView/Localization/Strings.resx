@@ -169,9 +169,6 @@
   <data name="Week_GapWarning" xml:space="preserve">
     <value>⚠ {0} untracked ({1})</value>
   </data>
-  <data name="Week_DistributeBlocked" xml:space="preserve">
-    <value>no free time next to its last session</value>
-  </data>
   <data name="Week_DistributeUntracked" xml:space="preserve">
     <value>{0} untracked</value>
   </data>

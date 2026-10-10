@@ -64,7 +64,7 @@ public sealed class DistributeDayDialogTests
     }
 
     [AvaloniaTest]
-    public void DistributeDayWindow_WhenADaysShareCannotBePlaced_ShouldShowTheReasonAndDisableItsPlus()
+    public void DistributeDayWindow_WhenAShareIsBoxedIn_ShouldStillShowItsTarget()
     {
         // Report 09:00–10:00 is boxed in by Meeting 08:30–09:00 and Deploy 10:00–11:00.
         var dialog = Build(
@@ -74,16 +74,10 @@ public sealed class DistributeDayDialogTests
             WeekViewTestSupport.Session(At(10, 0), "Deploy"));
 
         var reportRow = dialog.ViewModel.Rows.Single(r => r.Task == "Report");
-        reportRow.IsBlocked.Should().BeTrue();
-        reportRow.BlockedText.Should().Be("no free time next to its last session");
-        reportRow.TargetDisplayText.Should().Be("no free time next to its last session");
-        DialogTexts(dialog).Should().Contain("no free time next to its last session",
-            "the reason is shown in the row's target cell");
-        DialogButtons(dialog).Where(b => (string)(b.Content ?? "") == "−")
-            .Count(b => b.Command is { } && !b.Command.CanExecute(null))
-            .Should().BeGreaterThanOrEqualTo(1, "the boxed row's steppers are disabled");
-        dialog.ViewModel.Plan.Tasks.Should().NotContain(t => t.Name == "Report");
-        reportRow.IncreaseCommand.CanExecute(null).Should().BeFalse();
+        reportRow.ShareText.Should().Be("+0:30");
+        reportRow.TargetText.Should().Be("1:30");
+        DialogTexts(dialog).Should().Contain("1:30", "the boxed-in row still shows its target");
+        dialog.ViewModel.Plan.Tasks.Should().Contain(t => t.Name == "Report");
     }
 
     [AvaloniaTest]
