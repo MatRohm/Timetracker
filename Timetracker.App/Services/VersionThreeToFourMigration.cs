@@ -9,18 +9,13 @@ namespace Timetracker.App.Services;
 /// instant plus its length in seconds and giving every task a stable id. The
 /// original file is copied to <c>&lt;file&gt;.v3-backup</c> before it is rewritten.
 /// </summary>
-public sealed class VersionThreeToFourMigration : ITrackerFileMigration
+public sealed class VersionThreeToFourMigration(string jsonPath) : ITrackerFileMigration
 {
     public const int SourceVersion = 3;
     public const int TargetVersion = 4;
     public const string BackupExtension = ".v3-backup";
 
-    private readonly string _jsonPath;
-
-    public VersionThreeToFourMigration(string jsonPath)
-    {
-        _jsonPath = jsonPath;
-    }
+    private readonly string _jsonPath = jsonPath;
 
     public int FromVersion => SourceVersion;
 

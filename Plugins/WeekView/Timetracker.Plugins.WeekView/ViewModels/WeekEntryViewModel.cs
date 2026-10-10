@@ -4,23 +4,17 @@ namespace Timetracker.Plugins.WeekView.ViewModels;
 /// One task node in the week tree: a task worked on the day, merged across its
 /// entries, with the summed time. The leaf of the tree (not collapsible).
 /// </summary>
-public sealed class WeekEntryViewModel
+public sealed class WeekEntryViewModel(string task, double durationSeconds)
 {
-    public WeekEntryViewModel(string task, double durationSeconds)
-    {
-        Task = task;
-        DurationSeconds = durationSeconds;
-        TotalText = WeekTimeFormat.HoursMinutes(durationSeconds);
-    }
 
     /// <summary>Task name, e.g. "Report".</summary>
-    public string Task { get; }
+    public string Task { get; } = task;
 
     /// <summary>Summed time of this task's entries for the day, in seconds.</summary>
-    public double DurationSeconds { get; }
+    public double DurationSeconds { get; } = durationSeconds;
 
     /// <summary>Summed time of this task's entries, e.g. "1:00".</summary>
-    public string TotalText { get; }
+    public string TotalText { get; } = WeekTimeFormat.HoursMinutes(durationSeconds);
 
     /// <summary>Copy text for the entry's copy button: the task name only.</summary>
     public string CopyText => Task;

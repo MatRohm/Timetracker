@@ -10,14 +10,9 @@ namespace Timetracker.Plugins.ActivityMonitor.App.Services;
 /// gracefully on request. The reply is empty; a successful call is the whole
 /// signal.
 /// </summary>
-public sealed class MonitorStatusServiceImpl : MonitorStatusService.MonitorStatusServiceBase
+public sealed class MonitorStatusServiceImpl(IHostApplicationLifetime lifetime) : MonitorStatusService.MonitorStatusServiceBase
 {
-    private readonly IHostApplicationLifetime _lifetime;
-
-    public MonitorStatusServiceImpl(IHostApplicationLifetime lifetime)
-    {
-        _lifetime = lifetime;
-    }
+    private readonly IHostApplicationLifetime _lifetime = lifetime;
 
     public override Task<GetStatusResponse> GetStatus(
         GetStatusRequest request,

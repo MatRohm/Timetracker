@@ -8,22 +8,15 @@ namespace Timetracker.Plugins.ActivityMonitor.Models;
 /// <see cref="End"/>. Idle spans shorter than the configured threshold are never
 /// written, so short breaks do not appear here.
 /// </summary>
-public sealed class ActivitySpan
+[method: JsonConstructor]
+public sealed class ActivitySpan(string kind, DateTimeOffset start, DateTimeOffset end)
 {
-    [JsonConstructor]
-    public ActivitySpan(string kind, DateTimeOffset start, DateTimeOffset end)
-    {
-        Kind = kind;
-        Start = start;
-        End = end;
-    }
-
     /// <summary>"active", "idle" or "unknown".</summary>
-    public string Kind { get; set; }
+    public string Kind { get; set; } = kind;
 
-    public DateTimeOffset Start { get; set; }
+    public DateTimeOffset Start { get; set; } = start;
 
-    public DateTimeOffset End { get; set; }
+    public DateTimeOffset End { get; set; } = end;
 
     /// <summary>Duration text, e.g. "1:30".</summary>
     [JsonIgnore]

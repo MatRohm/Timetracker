@@ -8,16 +8,10 @@ namespace Timetracker.Plugins.Contracts.ViewModels.Mvvm;
 /// the view model methods this command wraps catch and report their own errors,
 /// so the awaited task is not expected to throw.
 /// </summary>
-public sealed class AsyncRelayCommand : ICommand
+public sealed class AsyncRelayCommand(Func<Task> execute, Func<bool>? canExecute = null) : ICommand
 {
-    private readonly Func<Task> _execute;
-    private readonly Func<bool>? _canExecute;
-
-    public AsyncRelayCommand(Func<Task> execute, Func<bool>? canExecute = null)
-    {
-        _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-        _canExecute = canExecute;
-    }
+    private readonly Func<Task> _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+    private readonly Func<bool>? _canExecute = canExecute;
 
     public event EventHandler? CanExecuteChanged;
 

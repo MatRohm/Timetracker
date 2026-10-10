@@ -9,14 +9,9 @@ namespace Timetracker.Plugins.WeekView.Services;
 /// status message to the week view model. The week view owns its status line now
 /// that it lives in this plugin.
 /// </summary>
-public sealed class WeekStatusHost : IWeekStatusCommand
+public sealed class WeekStatusHost(WeekViewModel week) : IWeekStatusCommand
 {
-    private readonly WeekViewModel _week;
-
-    public WeekStatusHost(WeekViewModel week)
-    {
-        _week = week;
-    }
+    private readonly WeekViewModel _week = week;
 
     public void ShowStatus(string message, WeekStatusKind kind) =>
         _week.ShowStatus(message, Map(kind));

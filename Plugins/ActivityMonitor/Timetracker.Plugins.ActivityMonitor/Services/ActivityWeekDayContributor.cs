@@ -12,7 +12,7 @@ namespace Timetracker.Plugins.ActivityMonitor.Services;
 /// log's active/idle spans; the active stretches themselves are exposed too, so
 /// the week view can show when time went untracked.
 /// </summary>
-public sealed class ActivityWeekDayContributor : IWeekDayQuery, IDayActivityQuery
+public sealed class ActivityWeekDayContributor(ActivityLog log) : IWeekDayQuery, IDayActivityQuery
 {
     /// <summary>Span kind the activity log uses for periods with user input.</summary>
     private const string ActiveKind = "active";
@@ -20,7 +20,7 @@ public sealed class ActivityWeekDayContributor : IWeekDayQuery, IDayActivityQuer
     /// <summary>Span kind the activity log uses for periods without user input.</summary>
     private const string IdleKind = "idle";
 
-    private readonly ActivityLog _log;
+    private readonly ActivityLog _log = log;
 
     /// <summary>Spans of the last read, reused until the log file changes on disk.</summary>
     private IReadOnlyList<ActivitySpan>? _cachedSpans;
@@ -30,11 +30,6 @@ public sealed class ActivityWeekDayContributor : IWeekDayQuery, IDayActivityQuer
 
     /// <summary>File length the cache was read from; catches same-tick rewrites the mtime misses.</summary>
     private long _cachedLength;
-
-    public ActivityWeekDayContributor(ActivityLog log)
-    {
-        _log = log;
-    }
 
     public string GetDayText(DateOnly day)
     {

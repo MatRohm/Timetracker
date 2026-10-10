@@ -242,17 +242,11 @@ public sealed class TrackerFileMigratorTests
     };
 
     /// <summary>A migration that moves data through untouched, for chain testing.</summary>
-    private sealed class StubMigration : ITrackerFileMigration
+    private sealed class StubMigration(int fromVersion, int toVersion) : ITrackerFileMigration
     {
-        public StubMigration(int fromVersion, int toVersion)
-        {
-            FromVersion = fromVersion;
-            ToVersion = toVersion;
-        }
+        public int FromVersion { get; } = fromVersion;
 
-        public int FromVersion { get; }
-
-        public int ToVersion { get; }
+        public int ToVersion { get; } = toVersion;
 
         public string BackupPath => $"stub-{FromVersion}-{ToVersion}.bak";
 

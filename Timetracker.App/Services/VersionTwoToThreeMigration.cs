@@ -8,18 +8,13 @@ namespace Timetracker.App.Services;
 /// identity. The original file is copied to <c>&lt;file&gt;.v2-backup</c> before it
 /// is rewritten; sessions that already carry an id are left untouched.
 /// </summary>
-public sealed class VersionTwoToThreeMigration : ITrackerFileMigration
+public sealed class VersionTwoToThreeMigration(string jsonPath) : ITrackerFileMigration
 {
     public const int SourceVersion = 2;
     public const int TargetVersion = 3;
     public const string BackupExtension = ".v2-backup";
 
-    private readonly string _jsonPath;
-
-    public VersionTwoToThreeMigration(string jsonPath)
-    {
-        _jsonPath = jsonPath;
-    }
+    private readonly string _jsonPath = jsonPath;
 
     public int FromVersion => SourceVersion;
 

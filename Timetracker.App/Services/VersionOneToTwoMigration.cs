@@ -9,18 +9,13 @@ namespace Timetracker.App.Services;
 /// (one record per task with its sessions). The original file is copied to
 /// <c>&lt;file&gt;.v1-backup</c> before it is rewritten.
 /// </summary>
-public sealed class VersionOneToTwoMigration : ITrackerFileMigration
+public sealed class VersionOneToTwoMigration(string jsonPath) : ITrackerFileMigration
 {
     public const int SourceVersion = TrackerDocument.UnversionedVersion;
     public const int TargetVersion = 2;
     public const string BackupExtension = ".v1-backup";
 
-    private readonly string _jsonPath;
-
-    public VersionOneToTwoMigration(string jsonPath)
-    {
-        _jsonPath = jsonPath;
-    }
+    private readonly string _jsonPath = jsonPath;
 
     public int FromVersion => SourceVersion;
 

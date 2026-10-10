@@ -10,14 +10,9 @@ namespace Timetracker.Plugins.ActivityMonitor.Services;
 /// host shuts down. Moved out of Program.cs so the gRPC host and the tracker
 /// coexist under one <see cref="IHost"/>.
 /// </summary>
-public sealed class MonitorLoopService : BackgroundService
+public sealed class MonitorLoopService(ILogger<ActivityTracker> logger) : BackgroundService
 {
-    private readonly ILogger<ActivityTracker> _logger;
-
-    public MonitorLoopService(ILogger<ActivityTracker> logger)
-    {
-        _logger = logger;
-    }
+    private readonly ILogger<ActivityTracker> _logger = logger;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
