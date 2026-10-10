@@ -88,3 +88,15 @@ are `stack trace (probe run)`, `failing test <name>`, `captured log line`,
 one sentence after the table, nothing else. In the main session, print the
 report for the boss directly; as a dispatched tester, return it to the caller
 unchanged.
+
+## Memory
+
+After the report to the boss, run the **end-of-session retain pass** documented
+in
+[`.claude/skills/references/memory-retain-pass.md`](.claude/skills/references/memory-retain-pass.md):
+sweep the hunt for decisions and durable facts and **retain them in Hindsight** —
+every decision with its reasons, rejected alternatives, date, source and scope —
+then report what you kept, **separately from the report** (the report shape is
+unchanged). Retaining memory is a remote Hindsight write, not a repository
+change, so it does not break the one hard rule; memory work is not tracked in
+beads.

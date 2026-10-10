@@ -223,3 +223,13 @@ When reporting a challenge (the draft fails a check), return:
 - Scope smuggled under a small title ("small fix" that touches 12 files).
 - References to session context the issue text doesn't contain.
 - A draft "good enough": a near-miss is a miss.
+
+## Memory
+
+Once the issue is filed or reviewed and the report is delivered, run the
+**end-of-session retain pass** documented in
+[`.claude/skills/references/memory-retain-pass.md`](.claude/skills/references/memory-retain-pass.md):
+sweep the session for decisions and durable facts and **retain them in
+Hindsight** — every decision with its reasons, rejected alternatives, date,
+source and scope — then report what you kept. It runs after the report and does
+not change it; memory work is not tracked in beads.

@@ -122,3 +122,13 @@ begin a phase until the user has said to move on.
    branch, and any blocked commit/push step.
 7. **Note the CI gate** — every push builds & tests on Windows and Linux; the
    manual **Release** workflow publishes both single-file executables.
+
+## Memory
+
+The last act of a run, before the hand-off, is the **end-of-session retain
+pass** documented in
+[`.claude/skills/references/memory-retain-pass.md`](.claude/skills/references/memory-retain-pass.md):
+sweep the run for decisions and durable facts and **retain them in Hindsight** —
+every decision with its reasons, rejected alternatives, date, source and scope —
+then report what you kept so the user can correct it. Memory work is not tracked
+in beads and changes no repository file.

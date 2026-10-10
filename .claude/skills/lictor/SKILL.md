@@ -112,3 +112,13 @@ caller shows it to the boss unchanged.
 
 Coverage is a map, not the territory: raising the number without killing a real
 target is failure.
+
+## Memory
+
+After the result report, run the **end-of-session retain pass** documented in
+[`.claude/skills/references/memory-retain-pass.md`](.claude/skills/references/memory-retain-pass.md):
+sweep the run for decisions and durable facts and **retain them in Hindsight** —
+every decision with its reasons, rejected alternatives, date, source and scope —
+then report what you kept. Retaining memory is a remote Hindsight write, not a
+repository change, so it does not break the one hard rule; memory work is not
+tracked in beads.
