@@ -204,41 +204,6 @@ public sealed class WeekViewModelTests
     }
 
     [Test]
-    public async Task RoundDayAsync_WhenTheUserConfirms_ShouldApplyTheDaysRoundingPlan()
-    {
-        var week = Create(out var sessions, out _);
-        var monday = DateTimeOffset.Now.Date.AddDays(-(((int)DateTimeOffset.Now.DayOfWeek + 6) % 7));
-        sessions.SetSessions(Session(monday, 9, 50, "A"));
-        IReadOnlyList<SessionChange>? applied = null;
-        sessions.ApplyChanges = changes => { applied = changes; return Task.FromResult(true); };
-        IReadOnlyList<string>? shown = null;
-
-        var result = await week.RoundDayAsync(week.Days[0], lines => { shown = lines; return Task.FromResult(true); });
-
-        result.Should().BeTrue();
-        week.Days[0].CanRound.Should().BeTrue();
-        applied.Should().BeSameAs(week.Days[0].Rounding.Changes);
-        shown.Should().Equal("A 0:50 → 1:00: 09:00–09:50 → 09:00–10:00");
-        week.Status.Should().Be(WeekStatus.Success);
-    }
-
-    [Test]
-    public async Task RoundDayAsync_WhenEveryTaskIsOnAHalfHour_ShouldNotAskOrApply()
-    {
-        var week = Create(out var sessions, out _);
-        var monday = DateTimeOffset.Now.Date.AddDays(-(((int)DateTimeOffset.Now.DayOfWeek + 6) % 7));
-        sessions.SetSessions(Session(monday, 9, 90, "A"));
-        var asked = false;
-        sessions.ApplyChanges = _ => Task.FromResult(true);
-
-        var result = await week.RoundDayAsync(week.Days[0], _ => { asked = true; return Task.FromResult(true); });
-
-        week.Days[0].CanRound.Should().BeFalse();
-        result.Should().BeFalse();
-        asked.Should().BeFalse();
-    }
-
-    [Test]
     public void Days_WhenATimerRuns_ShouldKeepItsTimeOutOfTheGaps()
     {
         var week = Create(out var sessions, out var activity);

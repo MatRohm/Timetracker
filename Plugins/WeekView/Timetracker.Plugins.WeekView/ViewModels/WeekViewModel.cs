@@ -153,40 +153,6 @@ public sealed class WeekViewModel : ObservableObject
         return saved;
     }
 
-    /// <summary>
-    /// Rounds each task's total on <paramref name="day"/> to the nearest half hour
-    /// after the user confirmed the listed changes (skipped tasks are listed too).
-    /// False when nothing could be rounded, the user declined or the save failed.
-    /// </summary>
-    /// <param name="confirm">Shows the change lines and returns the user's answer.</param>
-    public async Task<bool> RoundDayAsync(WeekDayViewModel day, Func<IReadOnlyList<string>, Task<bool>> confirm)
-    {
-        var plan = day.Rounding;
-        var skipped = day.RoundingSkippedLines.Select(s => Strings.Week_Skipped + s).ToList();
-        if (plan.Changes.Count == 0)
-        {
-            if (skipped.Count > 0)
-            {
-                ShowStatus(Strings.Week_NothingToRound + string.Join(" · ", skipped), WeekStatus.Info);
-            }
-            return false;
-        }
-
-        if (!await confirm([.. day.RoundingLines, .. skipped]))
-        {
-            return false;
-        }
-
-        var saved = await _sessionCommands.ApplyChangesAsync(plan.Changes);
-        if (saved)
-        {
-            var note = skipped.Count > 0 ? " " + string.Join(" · ", skipped) : "";
-            ShowStatus(string.Format(Strings.Week_Rounded, plan.Tasks.Count, day.Header, note), WeekStatus.Success);
-        }
-
-        return saved;
-    }
-
     public ICommand PreviousWeekCommand => _previousWeekCommand;
 
     public ICommand NextWeekCommand => _nextWeekCommand;
@@ -225,7 +191,6 @@ public sealed class WeekViewModel : ObservableObject
             var day = _weekStart.AddDays(i);
             var daySessions = weekSessions.Where(s => s.Start.Date == day.Date).ToList();
             _days[i].Update(day, daySessions);
-            _days[i].SetRounding(HalfHourRounding.Plan(daySessions, sessions, running));
             var date = DateOnly.FromDateTime(day.Date);
             _days[i].ContributorText = string.Join(" · ",
                 _dayContributors.Select(c => c.GetDayText(date)).Where(text => text.Length > 0));

@@ -118,7 +118,7 @@ The report has exactly three parts:
 
    | # | Gap | Where | Uncovered | Test to add | Layer |
    |---|---|---|---|---|---|
-   | 1 | Rounding never rounds up | `HalfHourRounding.cs` | 14 lines, 3 branches | boundary table at :29/:47 | unit |
+   | 1 | Duration rounds at the midpoint | `WeekTimeFormat.cs` | 14 lines, 3 branches | boundary table at :10/:11 | unit |
    | 2 | Migration v1→v2 skips null entries | `TrackerFileMigrator.cs:52` | 9 lines | v1 file with null entries | unit |
 
    - `Gap` and `Test to add` are at most six words: no sentences.

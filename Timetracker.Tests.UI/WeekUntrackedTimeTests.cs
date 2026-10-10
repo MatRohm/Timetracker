@@ -80,27 +80,6 @@ public sealed class WeekUntrackedTimeTests
         distribute.IsEnabled.Should().BeFalse("there is no untracked time to distribute");
     }
 
-    [AvaloniaTest]
-    public void WeekTrackingTree_WhenADayHasBookings_ShouldOfferRoundingOnlyWhenATaskIsOffTheHalfHour()
-    {
-        var today = DateTimeOffset.Now.Date;
-        var offset = DateTimeOffset.Now.Offset;
-        var yesterdayOrTomorrow = today.DayOfWeek == DayOfWeek.Monday ? today.AddDays(1) : today.AddDays(-1);
-        var view = WeekViewTestSupport.Build(
-        [
-            WeekViewTestSupport.Session(new DateTimeOffset(today.AddHours(9), offset), "Report", minutes: 50),
-            WeekViewTestSupport.Session(new DateTimeOffset(yesterdayOrTomorrow.AddHours(9), offset), "Review", minutes: 90),
-        ]).View;
-
-        Realize(view);
-
-        var roundButtons = view.GetVisualDescendants().OfType<Button>()
-            .Where(b => b.Content as string == "Round ½h")
-            .ToList();
-        roundButtons.Should().HaveCount(2, "only the two days with bookings offer rounding");
-        roundButtons.Count(b => b.IsEnabled).Should().Be(1, "only the 0:50 day is off the half hour");
-    }
-
     private static void Realize(Control root)
     {
         var host = new Window { Content = root, Width = 900, Height = 500 };

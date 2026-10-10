@@ -76,23 +76,11 @@
   <data name="Week_BookToolTip" xml:space="preserve">
     <value>Book this untracked time as a session</value>
   </data>
-  <data name="Week_Round" xml:space="preserve">
-    <value>Round ½h</value>
-  </data>
-  <data name="Week_RoundConfirm" xml:space="preserve">
-    <value>Round the tasks of {0} to half hours?</value>
-  </data>
   <data name="Week_Distribute" xml:space="preserve">
     <value>Distribute</value>
   </data>
   <data name="Week_DistributeTitle" xml:space="preserve">
     <value>Distribute untracked time</value>
-  </data>
-  <data name="Week_RoundingHintIdle" xml:space="preserve">
-    <value>Round each task's time on this day to the nearest half hour</value>
-  </data>
-  <data name="Week_RoundingHintAlready" xml:space="preserve">
-    <value>Every task on this day is already on a half hour</value>
   </data>
   <data name="Week_DistributionHint" xml:space="preserve">
     <value>Distribute the day's untracked time over its tasks</value>
@@ -115,20 +103,11 @@
   <data name="Week_CopyFailed" xml:space="preserve">
     <value>Could not copy: {0}</value>
   </data>
-  <data name="Week_Skipped" xml:space="preserve">
-    <value>Skipped: </value>
-  </data>
   <data name="Week_NothingToDistribute" xml:space="preserve">
     <value>Nothing could be distributed.</value>
   </data>
-  <data name="Week_NothingToRound" xml:space="preserve">
-    <value>Nothing could be rounded. </value>
-  </data>
   <data name="Week_Distributed" xml:space="preserve">
     <value>✓ Distributed {0} over {1} task(s) on {2}.</value>
-  </data>
-  <data name="Week_Rounded" xml:space="preserve">
-    <value>✓ Rounded {0} task(s) on {1} to half hours.{2}</value>
   </data>
   <data name="Week_TotalText" xml:space="preserve">
     <value>Σ {0}</value>

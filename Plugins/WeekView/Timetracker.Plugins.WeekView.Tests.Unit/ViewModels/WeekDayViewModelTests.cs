@@ -1,7 +1,6 @@
 using AwesomeAssertions;
 using NUnit.Framework;
 using Timetracker.Plugins.Contracts;
-using Timetracker.Plugins.WeekView.Services;
 using Timetracker.Plugins.WeekView.ViewModels;
 
 namespace Timetracker.Plugins.WeekView.Tests.Unit.ViewModels;
@@ -192,46 +191,6 @@ public sealed class WeekDayViewModelTests
         day.Update(date, [Session(date, 9, 50, "A")]);
 
         day.UntrackedText.Should().Be("0:10 untracked");
-    }
-
-    [Test]
-    public void RoundingLines_WhenATaskIsRoundedUp_ShouldDescribeTotalsAndTheChangedSession()
-    {
-        var day = new WeekDayViewModel();
-        var date = new DateTimeOffset(2026, 9, 21, 0, 0, 0, TimeSpan.FromHours(2));
-        var original = Session(date, 10, 50, "Report");
-        var updated = Session(date, 10, 60, "Report");
-
-        day.SetRounding(new RoundingPlan(
-            [new RoundedTask("Report", TimeSpan.FromMinutes(50), TimeSpan.FromHours(1), [new SessionChange(original, updated)])],
-            []));
-
-        day.RoundingLines.Should().Equal("Report 0:50 → 1:00: 10:00–10:50 → 10:00–11:00");
-    }
-
-    [Test]
-    public void RoundingLines_WhenASessionIsRemoved_ShouldSaySo()
-    {
-        var day = new WeekDayViewModel();
-        var date = new DateTimeOffset(2026, 9, 21, 0, 0, 0, TimeSpan.FromHours(2));
-        var tail = Session(date, 11, 10, "Report");
-
-        day.SetRounding(new RoundingPlan(
-            [new RoundedTask("Report", TimeSpan.FromMinutes(70), TimeSpan.FromHours(1), [new SessionChange(tail, null)])],
-            []));
-
-        day.RoundingLines.Single().Should().EndWith("11:00–11:10 removed");
-    }
-
-    [Test]
-    public void RoundingSkippedLines_WhenATaskCannotBeRounded_ShouldGiveTheReason()
-    {
-        var day = new WeekDayViewModel();
-
-        day.SetRounding(new RoundingPlan([], [new SkippedTask("Report", TimeSpan.FromMinutes(50))]));
-
-        day.RoundingSkippedLines.Should().Equal("Report 0:50 (no free time next to its last session)");
-        day.CanRound.Should().BeTrue("the user should learn why nothing can be rounded");
     }
 
     private static TrackedSession Session(DateTimeOffset date, int startHour, int minutes, string task, string bookingElement = "") => new()

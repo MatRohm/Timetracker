@@ -37,23 +37,11 @@ public static class Strings
     /// <summary>Book this untracked time as a session</summary>
     public static string Week_BookToolTip => ResourceManager.GetString(nameof(Week_BookToolTip))!;
 
-    /// <summary>Round ½h</summary>
-    public static string Week_Round => ResourceManager.GetString(nameof(Week_Round))!;
-
-    /// <summary>Round the tasks of {0} to half hours?</summary>
-    public static string Week_RoundConfirm => ResourceManager.GetString(nameof(Week_RoundConfirm))!;
-
     /// <summary>Distribute</summary>
     public static string Week_Distribute => ResourceManager.GetString(nameof(Week_Distribute))!;
 
     /// <summary>Distribute untracked time</summary>
     public static string Week_DistributeTitle => ResourceManager.GetString(nameof(Week_DistributeTitle))!;
-
-    /// <summary>Round each task's time on this day to the nearest half hour</summary>
-    public static string Week_RoundingHintIdle => ResourceManager.GetString(nameof(Week_RoundingHintIdle))!;
-
-    /// <summary>Every task on this day is already on a half hour</summary>
-    public static string Week_RoundingHintAlready => ResourceManager.GetString(nameof(Week_RoundingHintAlready))!;
 
     /// <summary>Distribute the day's untracked time over its tasks</summary>
     public static string Week_DistributionHint => ResourceManager.GetString(nameof(Week_DistributionHint))!;
@@ -76,20 +64,11 @@ public static class Strings
     /// <summary>Could not copy: {0}</summary>
     public static string Week_CopyFailed => ResourceManager.GetString(nameof(Week_CopyFailed))!;
 
-    /// <summary>Skipped: </summary>
-    public static string Week_Skipped => ResourceManager.GetString(nameof(Week_Skipped))!;
-
     /// <summary>Nothing could be distributed.</summary>
     public static string Week_NothingToDistribute => ResourceManager.GetString(nameof(Week_NothingToDistribute))!;
 
-    /// <summary>Nothing could be rounded. </summary>
-    public static string Week_NothingToRound => ResourceManager.GetString(nameof(Week_NothingToRound))!;
-
     /// <summary>✓ Distributed {0} over {1} task(s) on {2}.</summary>
     public static string Week_Distributed => ResourceManager.GetString(nameof(Week_Distributed))!;
-
-    /// <summary>✓ Rounded {0} task(s) on {1} to half hours.{2}</summary>
-    public static string Week_Rounded => ResourceManager.GetString(nameof(Week_Rounded))!;
 
     /// <summary>Σ {0}</summary>
     public static string Week_TotalText => ResourceManager.GetString(nameof(Week_TotalText))!;

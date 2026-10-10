@@ -46,8 +46,8 @@ what the user (or a file, a time, a plugin) can feed the app. In particular:
   `AzureDevOpsSettings`, `AzureDevOpsConfig` — network errors, bad PATs, empty
   responses, malformed JSON.
 - Null/empty/overflow edges: empty collections, division by zero, integer
-  overflow on durations, `ToString`/culture/rounding (`HalfHourRounding`,
-  `WeekTimeFormat`), `DateTime.Now`, day-boundary math, DST-timezone jumps.
+  overflow on durations, `ToString`/culture/rounding (`WeekTimeFormat`),
+  `DateTime.Now`, day-boundary math, DST-timezone jumps.
 
 For each candidate weak point, confirm it in the source before reporting it,
 with a `file:line` location and the concrete input or event that trips it.
