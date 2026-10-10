@@ -76,6 +76,25 @@ memory (Hindsight or `bd remember`) is not tracked in beads — do **not** creat
 beads issue for it. The usual "every task commit must have a beads issue" rule
 does not apply to memory-only work.
 
+### End-of-session retain pass
+
+At session close, or whenever the user asks, run a memory pass:
+
+1. Sweep the session for candidates: decisions, rules the user stated,
+   non-obvious configuration facts, corrections.
+2. Keep only what is persistent, non-obvious, not already stored (check with
+   `recall`) and consequential. Feature mechanics belong in the issue/design,
+   not in memory.
+3. Retain every decision **with its background** — what was decided, why, which
+   alternatives were rejected and why, the date, the source (boss directive or
+   agent) and the scope. A decision without its reasons is not retained.
+4. `recall` related memories first; when a fact supersedes an older one, retain
+   the new fact naming the replaced memory and invalidate the old one.
+5. Retain the clear keepers automatically, then report the batch so the user can
+   correct or invalidate anything wrong.
+6. If Hindsight is unreachable, store the same content with `bd remember` and
+   mirror it later. Memory work is never tracked in beads.
+
 ## Architecture
 
 The app follows a **Micro-Kernel Architecture**:
