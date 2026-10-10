@@ -16,7 +16,7 @@ public sealed class DayDistributionTests
         var report = Session("Report", At(9, 0), At(10, 0));
         var review = Session("Review", At(10, 30), At(11, 30));
 
-        var plan = DayDistribution.Plan([report, review], TimeSpan.FromMinutes(60), [report, review], null);
+        var plan = DayDistribution.Plan([report, review], TimeSpan.FromMinutes(60));
 
         plan.Tasks.Should().ContainSingle(t => t.Name == "Report")
             .Which.Share.Should().Be(TimeSpan.FromMinutes(30));
@@ -30,7 +30,7 @@ public sealed class DayDistributionTests
         var report = Session("Report", At(9, 0), At(10, 30));
         var review = Session("Review", At(11, 0), At(11, 30));
 
-        var plan = DayDistribution.Plan([report, review], TimeSpan.FromMinutes(60), [report, review], null);
+        var plan = DayDistribution.Plan([report, review], TimeSpan.FromMinutes(60));
 
         plan.Tasks.Should().ContainSingle(t => t.Name == "Report")
             .Which.Share.Should().Be(TimeSpan.FromMinutes(45));
@@ -43,7 +43,7 @@ public sealed class DayDistributionTests
     {
         var report = Session("Report", At(9, 0), At(10, 0));
 
-        var plan = DayDistribution.Plan([report], TimeSpan.FromMinutes(30), [report], null);
+        var plan = DayDistribution.Plan([report], TimeSpan.FromMinutes(30));
 
         var change = plan.Changes.Should().ContainSingle().Which;
         change.Original.Should().BeSameAs(report);
@@ -52,7 +52,7 @@ public sealed class DayDistributionTests
     }
 
     [Test]
-    public void Plan_WhenATasksLastSessionIsBoxedIn_ShouldSkipTheTask()
+    public void Plan_WhenATasksLastSessionIsBoxedIn_ShouldGrowItForward()
     {
         var report = Session("Report", At(9, 0), At(10, 0));
         var blocker = new[]
@@ -62,10 +62,11 @@ public sealed class DayDistributionTests
         };
         var sessions = new[] { report, blocker[0], blocker[1] };
 
-        var plan = DayDistribution.Plan(sessions, TimeSpan.FromMinutes(30), sessions, null);
+        var plan = DayDistribution.Plan(sessions, TimeSpan.FromMinutes(30));
 
-        plan.Tasks.Should().ContainSingle(t => t.Name == "Meeting");
-        plan.Skipped.Should().ContainSingle().Which.Name.Should().Be("Report");
+        plan.Tasks.Should().ContainSingle(t => t.Name == "Report")
+            .Which.Changes.Should().ContainSingle()
+            .Which.Updated!.End.Should().Be(At(10, 10));
     }
 
     [Test]
@@ -74,7 +75,7 @@ public sealed class DayDistributionTests
         var report = Session("Report", At(9, 0), At(10, 0));
         var review = Session("Review", At(10, 30), At(11, 30));
 
-        var plan = DayDistribution.Plan([report, review], TimeSpan.FromMinutes(61), [report, review], null);
+        var plan = DayDistribution.Plan([report, review], TimeSpan.FromMinutes(61));
 
         plan.Tasks.Aggregate(TimeSpan.Zero, (sum, t) => sum + t.Share)
             .Should().Be(TimeSpan.FromMinutes(61), "the shares add up to the missing time");
@@ -89,7 +90,7 @@ public sealed class DayDistributionTests
     {
         var report = Session("Report", At(9, 0), At(10, 0));
 
-        var plan = DayDistribution.Plan([report], TimeSpan.Zero, [report], null);
+        var plan = DayDistribution.Plan([report], TimeSpan.Zero);
 
         plan.HasWork.Should().BeFalse();
     }
@@ -97,7 +98,7 @@ public sealed class DayDistributionTests
     [Test]
     public void Plan_WhenThereAreNoSessions_ShouldPlanNothing()
     {
-        var plan = DayDistribution.Plan([], TimeSpan.FromMinutes(30), [], null);
+        var plan = DayDistribution.Plan([], TimeSpan.FromMinutes(30));
 
         plan.HasWork.Should().BeFalse();
     }
@@ -107,7 +108,7 @@ public sealed class DayDistributionTests
     {
         var report = Session("Report", At(9, 0), At(10, 0));
 
-        DayDistribution.Plan([report], TimeSpan.FromMinutes(30), [report], null);
+        DayDistribution.Plan([report], TimeSpan.FromMinutes(30));
 
         report.Start.Should().Be(At(9, 0));
         report.End.Should().Be(At(10, 0));
@@ -127,7 +128,7 @@ public sealed class DayDistributionTests
             new AssignedShare("Adhoc", TimeSpan.Zero),
         };
 
-        var plan = DayDistribution.Plan(shares, sessions, sessions, null);
+        var plan = DayDistribution.Plan(shares, sessions);
 
         plan.Tasks.Select(t => (t.Name, t.Share)).Should().Equal(
             ("Report", TimeSpan.FromMinutes(15)),
@@ -140,7 +141,7 @@ public sealed class DayDistributionTests
     }
 
     [Test]
-    public void Plan_WhenAnExplicitShareCannotBePlaced_ShouldSkipThatTask()
+    public void Plan_WhenAnExplicitShareIsBoxedIn_ShouldGrowTheLastSessionForward()
     {
         var report = Session("Report", At(9, 0), At(10, 0));
         var sessions = new[]
@@ -151,10 +152,11 @@ public sealed class DayDistributionTests
         };
 
         var plan = DayDistribution.Plan(
-            [new AssignedShare("Report", TimeSpan.FromMinutes(15))], sessions, sessions, null);
+            [new AssignedShare("Report", TimeSpan.FromMinutes(15))], sessions);
 
-        plan.Tasks.Should().BeEmpty();
-        plan.Skipped.Should().ContainSingle().Which.Name.Should().Be("Report");
+        plan.Tasks.Should().ContainSingle(t => t.Name == "Report")
+            .Which.Changes.Should().ContainSingle()
+            .Which.Updated!.End.Should().Be(At(10, 15));
     }
 
     [Test]

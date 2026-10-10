@@ -12,35 +12,29 @@ public sealed record AssignedShare(string Task, TimeSpan Share);
 internal readonly record struct DayTask(string Name, TimeSpan Total, IReadOnlyList<TrackedSession> Sessions);
 
 /// <summary>What distributing a day's missing time over its tasks would do.</summary>
-public sealed record DistributionPlan(IReadOnlyList<DistributedTask> Tasks, IReadOnlyList<SkippedTask> Skipped)
+public sealed record DistributionPlan(IReadOnlyList<DistributedTask> Tasks)
 {
-    public static readonly DistributionPlan Empty = new([], []);
+    public static readonly DistributionPlan Empty = new([]);
 
     /// <summary>Every session change of the distributed tasks, in task order.</summary>
     public IReadOnlyList<SessionChange> Changes { get; } = [.. Tasks.SelectMany(t => t.Changes)];
 
-    /// <summary>True when some task of the day can take a share or had to be skipped.</summary>
-    public bool HasWork => Tasks.Count > 0 || Skipped.Count > 0;
+    /// <summary>True when some task of the day can take a share.</summary>
+    public bool HasWork => Tasks.Count > 0;
 }
 
 /// <summary>
 /// Plans distributing a day's missing (untracked) time over its tasks, in
-/// proportion to each task's current total. Each task's last session is grown by
-/// its share — later when free, else earlier — so a task whose last session is
-/// boxed in on both sides is skipped. Nothing ever overlaps another session or
-/// the running timer.
+/// proportion to each task's current total. Each task's last session is grown
+/// forward by its share, so every positive share is always placed.
 /// </summary>
 internal static class DayDistribution
 {
     /// <param name="daySessions">The day's sessions (as the week view groups them).</param>
     /// <param name="missing">The day's missing time to hand out.</param>
-    /// <param name="allSessions">Every stored session, so a change never overlaps one.</param>
-    /// <param name="running">The running timer's range, if any; never touched or overlapped.</param>
     public static DistributionPlan Plan(
         IReadOnlyList<TrackedSession> daySessions,
-        TimeSpan missing,
-        IReadOnlyList<TrackedSession> allSessions,
-        TimeRange? running)
+        TimeSpan missing)
     {
         if (missing <= TimeSpan.Zero || daySessions.Count == 0)
         {
@@ -67,7 +61,7 @@ internal static class DayDistribution
             shares.Add(new AssignedShare(tasks[i].Name, share));
         }
 
-        return Plan(shares, daySessions, allSessions, running);
+        return Plan(shares, daySessions);
     }
 
     /// <summary>
@@ -110,31 +104,22 @@ internal static class DayDistribution
     }
 
     /// <summary>
-    /// Plans handing each task of <paramref name="daySessions"/> exactly its assigned share out,
-    /// growing the task's last session — later when free, else earlier. A task whose share
-    /// cannot be placed is skipped. Nothing ever overlaps another session or the running timer.
+    /// Plans handing each task of <paramref name="daySessions"/> exactly its assigned
+    /// share out, growing the task's last session forward by its share.
     /// </summary>
     /// <param name="shares">The share per task, matched case-insensitively by name.</param>
     /// <param name="daySessions">The day's sessions to extend; the shares belong to them.</param>
-    /// <param name="allSessions">Every stored session, so a change never overlaps one.</param>
-    /// <param name="running">The running timer's range, if any; never touched or overlapped.</param>
     public static DistributionPlan Plan(
         IReadOnlyList<AssignedShare> shares,
-        IReadOnlyList<TrackedSession> daySessions,
-        IReadOnlyList<TrackedSession> allSessions,
-        TimeRange? running)
+        IReadOnlyList<TrackedSession> daySessions)
     {
         if (shares.Count == 0)
         {
             return DistributionPlan.Empty;
         }
 
-        // Only the day's own sessions are extended; every other stored session just
-        // blocks time (also a same-named task on another day: its share stays here).
         var tasks = GroupTasks(daySessions);
         var distributed = new List<DistributedTask>();
-        var skipped = new List<SkippedTask>();
-        var occupied = Occupied(allSessions, daySessions);
 
         foreach (var task in tasks)
         {
@@ -144,29 +129,11 @@ internal static class DayDistribution
                 continue;
             }
 
-            var changes = Extend(task.Sessions[^1], share, occupied, running);
-            if (changes.Count == 0)
-            {
-                skipped.Add(new SkippedTask(task.Name, task.Total));
-                continue;
-            }
-
-            foreach (var change in changes)
-            {
-                if (change.Updated is { } updated)
-                {
-                    occupied[change.Original] = new TimeRange(updated.Start, updated.End);
-                }
-                else
-                {
-                    occupied.Remove(change.Original);
-                }
-            }
-
+            var changes = Extend(task.Sessions[^1], share);
             distributed.Add(new DistributedTask(task.Name, task.Total, share, changes));
         }
 
-        var result = new DistributionPlan(distributed, skipped);
+        var result = new DistributionPlan(distributed);
         return result;
     }
 
@@ -183,20 +150,6 @@ internal static class DayDistribution
             .OrderBy(t => t.Sessions.Min(s => s.Start))
     ];
 
-    /// <summary>Builds the occupied map from a seed session list.</summary>
-    private static Dictionary<TrackedSession, TimeRange> Occupied(
-        IReadOnlyList<TrackedSession> allSessions, IReadOnlyList<TrackedSession> daySessions)
-    {
-        // Current ranges of every session; updated as changes are planned, so one
-        // task's extension is respected by the next task's.
-        var occupied = new Dictionary<TrackedSession, TimeRange>(ReferenceEqualityComparer.Instance);
-        foreach (var session in allSessions.Concat(daySessions))
-        {
-            occupied.TryAdd(session, new TimeRange(session.Start, session.End));
-        }
-        return occupied;
-    }
-
     /// <summary>The share assigned to a task's name, or zero when none was given.</summary>
     private static TimeSpan ShareOf(IReadOnlyList<AssignedShare> shares, string taskName)
     {
@@ -205,40 +158,11 @@ internal static class DayDistribution
         return result;
     }
 
-    /// <summary>Grows the task's last session by <paramref name="delta"/> later, or else earlier.</summary>
-    private static IReadOnlyList<SessionChange> Extend(
-        TrackedSession last,
-        TimeSpan delta,
-        Dictionary<TrackedSession, TimeRange> occupied,
-        TimeRange? running)
+    /// <summary>Grows the task's last session forward by <paramref name="delta"/>.</summary>
+    private static IReadOnlyList<SessionChange> Extend(TrackedSession last, TimeSpan delta)
     {
-        var current = occupied[last];
-        var later = new TimeRange(current.End, current.End + delta);
-        if (IsFree(later, last, occupied, running))
-        {
-            return [new SessionChange(last, last.Reschedule(current.Start, later.End))];
-        }
-
-        var earlier = new TimeRange(current.Start - delta, current.Start);
-        if (IsFree(earlier, last, occupied, running))
-        {
-            return [new SessionChange(last, last.Reschedule(earlier.Start, current.End))];
-        }
-
-        return [];
-    }
-
-    private static bool IsFree(
-        TimeRange range, TrackedSession self, Dictionary<TrackedSession, TimeRange> occupied, TimeRange? running)
-    {
-        var others = occupied.Where(o => !ReferenceEquals(o.Key, self)).Select(o => o.Value);
-        if (running is not null)
-        {
-            others = others.Append(running);
-        }
-
-        var result = !others.Any(o => o.Start < range.End && o.End > range.Start);
-        return result;
+        var updated = last.Reschedule(last.Start, last.End + delta);
+        return [new SessionChange(last, updated)];
     }
 
     /// <summary>Rounds a share to whole minutes so the planned times read cleanly.</summary>

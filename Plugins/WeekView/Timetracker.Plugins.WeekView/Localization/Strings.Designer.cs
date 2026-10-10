@@ -130,9 +130,6 @@ public static class Strings
     /// <summary>⚠ {0} untracked ({1})</summary>
     public static string Week_GapWarning => ResourceManager.GetString(nameof(Week_GapWarning))!;
 
-    /// <summary>no free time next to its last session</summary>
-    public static string Week_DistributeBlocked => ResourceManager.GetString(nameof(Week_DistributeBlocked))!;
-
     /// <summary>{0} untracked</summary>
     public static string Week_DistributeUntracked => ResourceManager.GetString(nameof(Week_DistributeUntracked))!;
 

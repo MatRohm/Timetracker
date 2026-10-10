@@ -7,7 +7,7 @@ namespace Timetracker.Plugins.WeekView.ViewModels;
 /// assigned extra share and the −/+ steppers that change the share in 15-minute
 /// steps. The steppers run exactly the actions passed in; the row only carries
 /// display state, refreshed by <see cref="DistributeDayViewModel"/> via
-/// <see cref="SetState"/> when the shares or the placeability change.
+/// <see cref="SetState"/> when the shares change.
 /// </summary>
 public sealed class DistributeRowViewModel : ObservableObject
 {
@@ -35,26 +35,13 @@ public sealed class DistributeRowViewModel : ObservableObject
     /// <summary>The assigned extra share as "+0:30"; empty when the share is zero.</summary>
     public string ShareText { get; private set; } = "";
 
-    /// <summary>The expected total with the share applied, e.g. "1:30"; empty while blocked.</summary>
+    /// <summary>The expected total with the share applied, e.g. "1:30"; empty when the share is zero.</summary>
     public string TargetText { get; private set; } = "";
-
-    /// <summary>Why the assigned share cannot be placed; empty when the share is placeable.</summary>
-    public string BlockedText { get; private set; } = "";
-
-    /// <summary>
-    /// What the target cell shows: the expected total, or the reason when the share
-    /// cannot be placed.
-    /// </summary>
-    public string TargetDisplayText => TargetText.Length > 0 ? TargetText : BlockedText;
-
-    /// <summary>True when the assigned share cannot be placed next to the task's last session.</summary>
-    public bool IsBlocked => BlockedText.Length > 0;
 
     /// <summary>The planned session changes of this row, e.g. "09:00–10:00 → 09:00–10:30"; tooltip text.</summary>
     public string ChangeText { get; private set; } = "";
 
     public RelayCommand IncreaseCommand { get; }
-
     public RelayCommand DecreaseCommand { get; }
 
     internal TimeSpan Share { get; private set; }
@@ -71,22 +58,16 @@ public sealed class DistributeRowViewModel : ObservableObject
     }
 
     /// <summary>Replaces the row's display state from the dialog view model's recompute.</summary>
-    internal void SetState(TimeSpan share, bool canIncrease, string changeText, string blockedText)
+    internal void SetState(TimeSpan share, bool canIncrease, string changeText)
     {
         CanIncrease = canIncrease;
         Share = share;
         ShareText = share > TimeSpan.Zero ? $"+{WeekTimeFormat.HoursMinutes(share)}" : "";
-        TargetText = blockedText.Length == 0 && share > TimeSpan.Zero
-            ? WeekTimeFormat.HoursMinutes(Current + share)
-            : "";
+        TargetText = share > TimeSpan.Zero ? WeekTimeFormat.HoursMinutes(Current + share) : "";
         ChangeText = changeText;
-        BlockedText = blockedText;
         OnPropertyChanged(nameof(ShareText));
         OnPropertyChanged(nameof(TargetText));
-        OnPropertyChanged(nameof(TargetDisplayText));
         OnPropertyChanged(nameof(ChangeText));
-        OnPropertyChanged(nameof(BlockedText));
-        OnPropertyChanged(nameof(IsBlocked));
         RaiseCommandsChanged();
     }
 
@@ -97,4 +78,3 @@ public sealed class DistributeRowViewModel : ObservableObject
         DecreaseCommand.RaiseCanExecuteChanged();
     }
 }
-

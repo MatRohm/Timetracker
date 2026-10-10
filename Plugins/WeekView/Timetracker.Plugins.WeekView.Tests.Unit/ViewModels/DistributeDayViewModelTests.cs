@@ -20,7 +20,6 @@ public sealed class DistributeDayViewModelTests
         vm.Rows.Select(r => (r.Task, r.CurrentText, r.ShareText, r.TargetText)).Should().Equal(
             ("Report", "1:00", "+0:45", "1:45"),
             ("Review", "0:30", "+0:30", "1:00"));
-        vm.Rows.Should().OnlyContain(r => !r.IsBlocked);
         vm.Remaining.Should().Be(TimeSpan.Zero);
         vm.RemainingText.Should().Be("left 0:00");
         vm.MissingText.Should().Be("1:15 untracked");
@@ -28,10 +27,10 @@ public sealed class DistributeDayViewModelTests
     }
 
     [Test]
-    public void Rows_WhenAShareCannotBePlaced_ShouldStartThatRowAtZeroWithTheBlockedReason()
+    public void Rows_WhenAShareIsBoxedIn_ShouldStillPlaceIt()
     {
         // Report's 09:00–10:00 sits between Meeting 08:30–09:00 and Deploy 10:00–11:00,
-        // so its 15-minute share cannot extend either way.
+        // but its share still grows the session forward.
         var vm = Create(TimeSpan.FromHours(4),
             Session("Meeting", At(8, 30), At(9, 0)),
             Session("Report", At(9, 0), At(10, 0)),
@@ -39,14 +38,10 @@ public sealed class DistributeDayViewModelTests
             Session("Deploy", At(10, 0), At(11, 0)));
 
         var report = vm.Rows.Single(r => r.Task == "Report");
-        report.IsBlocked.Should().BeTrue();
-        report.BlockedText.Should().Be("no free time next to its last session");
-        report.ShareText.Should().BeEmpty();
-        report.TargetText.Should().BeEmpty();
-        report.IncreaseCommand.CanExecute(null).Should().BeFalse("even +0:15 cannot be placed");
-        vm.Plan.Tasks.Should().NotContain(t => t.Name == "Report");
-        vm.Rows.Single(r => r.Task == "Deploy").ShareText.Should().Be("+0:15", "the other rows carry their prefill");
-        vm.CanAccept.Should().BeTrue("the other rows still carry shares");
+        report.ShareText.Should().Be("+0:15");
+        report.TargetText.Should().Be("1:15");
+        vm.Plan.Tasks.Should().Contain(t => t.Name == "Report");
+        vm.CanAccept.Should().BeTrue();
     }
 
     [Test]
@@ -107,24 +102,22 @@ public sealed class DistributeDayViewModelTests
     }
 
     [Test]
-    public void Increase_WhenAHandBackFreesTime_ShouldStayBlockedOnlyForTheBoxedRow()
+    public void Increase_WhenATaskIsBoxedIn_ShouldStillAllowItToGrow()
     {
-        // Report's +0:15 was blocked at prefill (walled in by Meeting and Deploy);
-        // draining Deploy's prefill grows the pool, but Report stays blocked while
-        // Deploy itself can grow into the freed eleven o'clock slot.
+        // Report's 09:00–10:00 is walled in by Meeting and Deploy, but it can still
+        // take a step once one is freed from the pool.
         var vm = Create(TimeSpan.FromHours(4),
             Session("Meeting", At(8, 30), At(9, 0)),
             Session("Report", At(9, 0), At(10, 0)),
             Session("Deploy", At(10, 0), At(11, 0)));
-        vm.Rows.Single(r => r.Task == "Report").IsBlocked.Should().BeTrue();
 
         vm.Decrease(vm.Rows.Single(r => r.Task == "Deploy"));
+        var report = vm.Rows.Single(r => r.Task == "Report");
 
-        vm.Rows.Single(r => r.Task == "Report").CanIncrease.Should().BeFalse("the walls did not move");
-        vm.Rows.Single(r => r.Task == "Deploy").CanIncrease.Should().BeTrue("Deploy can grow to 11:15");
-        vm.Increase(vm.Rows.Single(r => r.Task == "Deploy"));
-        vm.Rows.Single(r => r.Task == "Deploy").ShareText.Should().Be("+0:45");
-        vm.Remaining.Should().Be(TimeSpan.FromMinutes(30));
+        report.IncreaseCommand.CanExecute(null).Should().BeTrue("the boxed-in task can still grow");
+        vm.Increase(report);
+
+        report.ShareText.Should().Be("+0:45");
     }
 
     [Test]
@@ -183,7 +176,7 @@ public sealed class DistributeDayViewModelTests
         {
             missing = TimeSpan.Zero;
         }
-        var result = new DistributeDayViewModel("Mon 21.09.", missing, daySessions, sessions, null);
+        var result = new DistributeDayViewModel("Mon 21.09.", missing, daySessions);
         return result;
     }
 

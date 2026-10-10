@@ -163,10 +163,9 @@ public sealed class DistributeDayWindow : Window
         target.Bind(TextBlock.TextProperty, new Binding
         {
             Source = item,
-            Path = nameof(DistributeRowViewModel.TargetDisplayText),
+            Path = nameof(DistributeRowViewModel.TargetText),
         });
-        // When placed, the tooltip lists the row's planned session changes; blocked
-        // rows show their reason in the cell itself.
+        // The tooltip lists the row's planned session changes.
         var tip = new TextBlock();
         tip.Bind(TextBlock.TextProperty, new Binding
         {
