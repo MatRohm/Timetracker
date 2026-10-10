@@ -2,27 +2,6 @@ using Timetracker.Plugins.Contracts;
 
 namespace Timetracker.Plugins.WeekView.Services;
 
-/// <summary>A task whose day total grows by its proportional share of the day's missing time.</summary>
-public sealed record DistributedTask(string Name, TimeSpan Total, TimeSpan Share, IReadOnlyList<SessionChange> Changes);
-
-/// <summary>A task's hand-assigned share of the day's missing time, e.g. from the distribute dialog.</summary>
-public sealed record AssignedShare(string Task, TimeSpan Share);
-
-/// <summary>A day's tracked task: its grouped name, summed total and its sessions (earliest end last).</summary>
-internal readonly record struct DayTask(string Name, TimeSpan Total, IReadOnlyList<TrackedSession> Sessions);
-
-/// <summary>What distributing a day's missing time over its tasks would do.</summary>
-public sealed record DistributionPlan(IReadOnlyList<DistributedTask> Tasks)
-{
-    public static readonly DistributionPlan Empty = new([]);
-
-    /// <summary>Every session change of the distributed tasks, in task order.</summary>
-    public IReadOnlyList<SessionChange> Changes { get; } = [.. Tasks.SelectMany(t => t.Changes)];
-
-    /// <summary>True when some task of the day can take a share.</summary>
-    public bool HasWork => Tasks.Count > 0;
-}
-
 /// <summary>
 /// Plans distributing a day's missing (untracked) time over its tasks, in
 /// proportion to each task's current total. Each task's last session is grown

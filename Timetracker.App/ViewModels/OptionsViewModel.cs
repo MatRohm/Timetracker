@@ -6,9 +6,6 @@ using Timetracker.Plugins.Contracts.Interfaces;
 
 namespace Timetracker.App.ViewModels;
 
-/// <summary>A heading and its options in the options view.</summary>
-public sealed record OptionSection(string Title, IReadOnlyList<OptionRowViewModel> Rows);
-
 /// <summary>
 /// State of the options tab: one section per <see cref="IOptionDefinitionQuery"/> in
 /// registration order (the app's "General" section first), and saving the edited

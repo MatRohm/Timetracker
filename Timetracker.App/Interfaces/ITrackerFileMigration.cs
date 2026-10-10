@@ -21,13 +21,3 @@ public interface ITrackerFileMigration
     /// <summary>Reads a file of <see cref="FromVersion"/> and returns its text at <see cref="ToVersion"/>.</summary>
     string Read(string text);
 }
-
-/// <summary>Upgrades a tracker file to the current version by chaining migrations.</summary>
-public interface ITrackerFileMigrationRunner
-{
-    /// <summary>
-    /// Rewrites the file when it is older than the current version. Returns true
-    /// when the file was migrated. Safe to call when no file exists.
-    /// </summary>
-    bool MigrateIfNeeded();
-}
