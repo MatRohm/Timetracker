@@ -71,6 +71,11 @@ lost, with nothing replayed later. If Hindsight is unreachable, use `bd remember
 as the local backup — store the fact there so it survives the outage, then
 retain it into Hindsight once the server is back.
 
+Memory work is **not project work**: retaining, updating, mirroring or searching
+memory (Hindsight or `bd remember`) is not tracked in beads — do **not** create a
+beads issue for it. The usual "every task commit must have a beads issue" rule
+does not apply to memory-only work.
+
 ## Architecture
 
 The app follows a **Micro-Kernel Architecture**:
@@ -189,6 +194,9 @@ bd close <id>           # Complete work
   given, create the one suggested in the plan once the user has agreed to it
   (see Planning). Committing against a closed issue is allowed when a fix for
   that issue is needed.
+  - Exception: **memory-only tasks are not tracked in beads**. Retaining,
+    updating, mirroring or searching memory (Hindsight or `bd remember`) needs
+    no beads issue — see [Memory](#memory).
 
 ## Agent Context Profiles
 
