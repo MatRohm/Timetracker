@@ -3,6 +3,15 @@
   "permissions": [
     { "action": "shell", "resource": "git push *", "effect": "ask" }
   ],
+  "mcp": {
+    "servers": {
+      "hindsight": {
+        "type": "remote",
+        "url": "http://raspberrypi:8888/mcp/Timetracker/",
+        "oauth": false
+      }
+    }
+  },
   "agent": {
     "architecture-review": {
       "description": "Runs the architecture tests and reviews the code against SOLID; reports the findings as tables. Read-only.",

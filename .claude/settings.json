@@ -4,6 +4,9 @@
       "Bash(git push:*)"
     ]
   },
+  "enabledMcpjsonServers": [
+    "hindsight"
+  ],
   "hooks": {
     "SessionStart": [
       {
