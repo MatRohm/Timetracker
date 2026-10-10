@@ -55,14 +55,21 @@ This repository contains a .NET/C# application.
 
 ## Memory
 
-When a session produces a fact worth keeping across sessions — a persistent,
+Persistent memory is backed by the self-hosted **Hindsight** server, exposed to
+both agents as the `hindsight` MCP tools (`retain`, `recall`, `reflect`). When a
+session produces a fact worth keeping across sessions — a persistent,
 non-obvious configuration fact, a workflow decision, a rule the boss stated —
-retain it:
+retain it with Hindsight:
 
 - New persistent facts: add if they will still be relevant in a week; one-off
   session details stay out.
 - Facts that revoke or supersede an older fact: add the new fact and state
   which older fact it replaces, so the stale memory can be dropped.
+
+Hindsight has **no offline queue**: a `retain` that cannot reach the server is
+lost, with nothing replayed later. If Hindsight is unreachable, use `bd remember`
+as the local backup — store the fact there so it survives the outage, then
+retain it into Hindsight once the server is back.
 
 ## Architecture
 
@@ -176,8 +183,8 @@ bd close <id>           # Complete work
   hook; opencode does not).
 - Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown
   TODO lists.
-- Use `bd remember` for persistent knowledge — do NOT create ad hoc memory files
-  such as MEMORY.md.
+- Use `bd remember` as the local backup for persistent knowledge when Hindsight
+  is unreachable — do NOT create ad hoc memory files such as MEMORY.md.
 - Every task commit must have a beads issue associated with it; if none is
   given, create the one suggested in the plan once the user has agreed to it
   (see Planning). Committing against a closed issue is allowed when a fix for
