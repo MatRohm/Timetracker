@@ -48,6 +48,12 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
     /// <summary>Raised after the session log or the running state changed.</summary>
     public event EventHandler? SessionsChanged;
 
+    /// <summary>Raised when a session starts, with its provisional entry (not yet stored).</summary>
+    public event Action<TrackerEntry>? SessionStarted;
+
+    /// <summary>Raised when a running session is stopped and saved, with the stored entry.</summary>
+    public event Action<TrackerEntry>? SessionStopped;
+
     /// <param name="repository">Reads and writes the session log.</param>
     /// <param name="timer">Ticks on the UI thread while a session runs.</param>
     /// <param name="editor">Persists the session-log changes the view model drives.</param>
@@ -437,6 +443,18 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         // The preview is consumed with the next save (see BuildEntry).
         RefreshCommands();
         SessionsChanged?.Invoke(this, EventArgs.Empty);
+
+        var (taskId, bookingElement) = ResolveIdentity(task);
+        var started = new TrackerEntry
+        {
+            Task = task,
+            TaskId = taskId,
+            Start = _startedAt,
+            BookingElement = bookingElement,
+            Id = Guid.Empty,
+            Duration = "00:00:00",
+        };
+        SessionStarted?.Invoke(started);
     }
 
     private async Task StopAsync()
@@ -453,7 +471,9 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         IsRunning = false;
         Title = Strings.App_Title;
 
-        await SaveAsync(BuildEntry(endedAt, elapsed));
+        var entry = BuildEntry(endedAt, elapsed);
+        await SaveAsync(entry);
+        SessionStopped?.Invoke(entry);
 
         // Only now: before the save refresh the stopped session would briefly show as a gap.
         PreviewBookingElement = "";
@@ -462,20 +482,36 @@ public sealed class TrackerViewModel : ObservableObject, IDisposable
         SessionsChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private TrackerEntry BuildEntry(DateTimeOffset endedAt, TimeSpan elapsed) => new()
+    private TrackerEntry BuildEntry(DateTimeOffset endedAt, TimeSpan elapsed)
     {
-        Task = TaskName.Trim(),
-        TaskId = TrackerEntry.ResolveTaskId(_sessions, TaskName),
-        // An integration-provided element wins for this session; otherwise the new
-        // session inherits the task's latest booking element so grouping stays consistent.
-        BookingElement = PreviewBookingElement.Length > 0
+        var (taskId, bookingElement) = ResolveIdentity(TaskName.Trim());
+        var result = new TrackerEntry
+        {
+            Task = TaskName.Trim(),
+            TaskId = taskId,
+            // An integration-provided element wins for this session; otherwise the new
+            // session inherits the task's latest booking element so grouping stays consistent.
+            BookingElement = bookingElement,
+            Start = _startedAt,
+            End = endedAt,
+            Duration = elapsed.ToString(@"hh\:mm\:ss"),
+            DurationSeconds = Math.Round(elapsed.TotalSeconds, 1),
+        };
+        return result;
+    }
+
+    /// <summary>
+    /// The session's task id and booking element, resolved the same way for the
+    /// provisional started entry and the stored entry, so the two never drift.
+    /// </summary>
+    private (Guid TaskId, string BookingElement) ResolveIdentity(string task)
+    {
+        var taskId = TrackerEntry.ResolveTaskId(_sessions, task);
+        var bookingElement = PreviewBookingElement.Length > 0
             ? PreviewBookingElement
-            : TrackerEntry.LatestBookingElement(_sessions, TaskName),
-        Start = _startedAt,
-        End = endedAt,
-        Duration = elapsed.ToString(@"hh\:mm\:ss"),
-        DurationSeconds = Math.Round(elapsed.TotalSeconds, 1),
-    };
+            : TrackerEntry.LatestBookingElement(_sessions, task);
+        return (taskId, bookingElement);
+    }
 
     private async Task SaveAsync(TrackerEntry entry)
     {

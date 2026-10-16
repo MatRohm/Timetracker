@@ -1,5 +1,6 @@
 using Avalonia.Threading;
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
+using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Contracts.Interfaces;
 
 namespace Timetracker.Plugins.ActivityMonitor.Services;
@@ -13,7 +14,7 @@ namespace Timetracker.Plugins.ActivityMonitor.Services;
 /// <param name="now">Current time; replaceable so back-dating can be tested deterministically.</param>
 /// <param name="options">The user's options; null keeps the built-in threshold.</param>
 public sealed class IdleAutoStop(
-    ITrackerSessionQuery sessionQuery,
+    ITrackerStateQuery stateQuery,
     ITrackerSessionCommand sessionCommand,
     IIdleTimeProvider idleTime,
     Func<DateTimeOffset>? now = null,
@@ -25,7 +26,7 @@ public sealed class IdleAutoStop(
     /// <summary>How often the idle state is polled while the app runs.</summary>
     private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(5);
 
-    private readonly ITrackerSessionQuery _sessionQuery = sessionQuery;
+    private readonly ITrackerStateQuery _stateQuery = stateQuery;
     private readonly ITrackerSessionCommand _sessionCommand = sessionCommand;
     private readonly IIdleTimeProvider _idleTime = idleTime;
     private readonly IOptionQuery? _options = options;
@@ -50,7 +51,7 @@ public sealed class IdleAutoStop(
     /// </summary>
     public async Task PollAsync()
     {
-        if (!_sessionQuery.IsSessionRunning)
+        if (_stateQuery.State != TrackerState.Running)
         {
             return;
         }

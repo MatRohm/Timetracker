@@ -57,4 +57,14 @@ public sealed class HookRegistryTests
         var tabContributors = services.GetServices<IUiQuery>().Select(c => c.TargetTab);
         tabContributors.Should().Equal("Tracker");
     }
+
+    [Test]
+    public void BuildServiceProvider_WhenCalled_ShouldRegisterTheTrackingStateMachine()
+    {
+        var services = Timetracker.App.HookRegistry.BuildServiceProvider(NullLoggerFactory.Instance);
+
+        var machine = services.GetRequiredService<ITrackerStateQuery>();
+
+        machine.Should().BeOfType<TrackerStateMachine>();
+    }
 }

@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using NUnit.Framework;
 using Timetracker.Plugins.ActivityMonitor.Services;
+using Timetracker.Plugins.Contracts;
 
 namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit.Services;
 
@@ -15,9 +16,10 @@ public sealed class IdleAutoStopTests
     [Test]
     public async Task PollAsync_WhenIdleReachesTheThreshold_ShouldStopTheSession()
     {
-        var host = new FakeTrackerSessionHost { IsSessionRunning = true };
+        var host = new FakeTrackerSessionHost();
+        var machine = new FakeTrackerStateQuery { State = TrackerState.Running };
         var idle = new FakeIdleTimeProvider { CurrentIdleTime = IdleAutoStop.IdleStopThreshold };
-        var detector = new IdleAutoStop(host, host, idle);
+        var detector = new IdleAutoStop(machine, host, idle);
 
         await detector.PollAsync();
 
@@ -27,12 +29,13 @@ public sealed class IdleAutoStopTests
     [Test]
     public async Task PollAsync_WhenIdleIsBelowTheThreshold_ShouldKeepTheSessionRunning()
     {
-        var host = new FakeTrackerSessionHost { IsSessionRunning = true };
+        var host = new FakeTrackerSessionHost();
+        var machine = new FakeTrackerStateQuery { State = TrackerState.Running };
         var idle = new FakeIdleTimeProvider
         {
             CurrentIdleTime = IdleAutoStop.IdleStopThreshold - TimeSpan.FromSeconds(1),
         };
-        var detector = new IdleAutoStop(host, host, idle);
+        var detector = new IdleAutoStop(machine, host, idle);
 
         await detector.PollAsync();
 
@@ -42,9 +45,10 @@ public sealed class IdleAutoStopTests
     [Test]
     public async Task PollAsync_WhenIdleIsUnknown_ShouldNotStopTheSession()
     {
-        var host = new FakeTrackerSessionHost { IsSessionRunning = true };
+        var host = new FakeTrackerSessionHost();
+        var machine = new FakeTrackerStateQuery { State = TrackerState.Running };
         var idle = new FakeIdleTimeProvider { CurrentIdleTime = null };
-        var detector = new IdleAutoStop(host, host, idle);
+        var detector = new IdleAutoStop(machine, host, idle);
 
         await detector.PollAsync();
 
@@ -54,9 +58,10 @@ public sealed class IdleAutoStopTests
     [Test]
     public async Task PollAsync_WhenNoSessionIsRunning_ShouldNotStop()
     {
-        var host = new FakeTrackerSessionHost { IsSessionRunning = false };
+        var host = new FakeTrackerSessionHost();
+        var machine = new FakeTrackerStateQuery { State = TrackerState.Stopped };
         var idle = new FakeIdleTimeProvider { CurrentIdleTime = TimeSpan.FromHours(2) };
-        var detector = new IdleAutoStop(host, host, idle);
+        var detector = new IdleAutoStop(machine, host, idle);
 
         await detector.PollAsync();
 
@@ -67,9 +72,10 @@ public sealed class IdleAutoStopTests
     public async Task PollAsync_WhenItStops_ShouldBackDateTheEndToTheLastInput()
     {
         var now = new DateTimeOffset(2026, 9, 22, 9, 0, 0, TimeSpan.FromHours(2));
-        var host = new FakeTrackerSessionHost { IsSessionRunning = true };
+        var host = new FakeTrackerSessionHost();
+        var machine = new FakeTrackerStateQuery { State = TrackerState.Running };
         var idle = new FakeIdleTimeProvider { CurrentIdleTime = TimeSpan.FromMinutes(45) };
-        var detector = new IdleAutoStop(host, host, idle, now: () => now);
+        var detector = new IdleAutoStop(machine, host, idle, now: () => now);
 
         await detector.PollAsync();
 
@@ -80,9 +86,10 @@ public sealed class IdleAutoStopTests
     [Test]
     public async Task PollAsync_WhenItStops_ShouldExplainItInTheReason()
     {
-        var host = new FakeTrackerSessionHost { IsSessionRunning = true };
+        var host = new FakeTrackerSessionHost();
+        var machine = new FakeTrackerStateQuery { State = TrackerState.Running };
         var idle = new FakeIdleTimeProvider { CurrentIdleTime = TimeSpan.FromMinutes(40) };
-        var detector = new IdleAutoStop(host, host, idle);
+        var detector = new IdleAutoStop(machine, host, idle);
 
         await detector.PollAsync();
 
@@ -92,13 +99,14 @@ public sealed class IdleAutoStopTests
     [Test]
     public async Task PollAsync_WhenThresholdIsConfiguredLower_ShouldStopEarlier()
     {
-        var host = new FakeTrackerSessionHost { IsSessionRunning = true };
+        var host = new FakeTrackerSessionHost();
+        var machine = new FakeTrackerStateQuery { State = TrackerState.Running };
         var idle = new FakeIdleTimeProvider { CurrentIdleTime = TimeSpan.FromMinutes(20) };
         var options = new InMemoryOptionsStore
         {
             Values = { [IdleOptions.IdleStopThresholdKey] = "15" },
         };
-        var detector = new IdleAutoStop(host, host, idle, options: options);
+        var detector = new IdleAutoStop(machine, host, idle, options: options);
 
         await detector.PollAsync();
 
@@ -108,13 +116,14 @@ public sealed class IdleAutoStopTests
     [Test]
     public async Task PollAsync_WhenTheConfiguredValueChanges_ShouldUseTheNewValueOnTheNextPoll()
     {
-        var host = new FakeTrackerSessionHost { IsSessionRunning = true };
+        var host = new FakeTrackerSessionHost();
+        var machine = new FakeTrackerStateQuery { State = TrackerState.Running };
         var idle = new FakeIdleTimeProvider { CurrentIdleTime = TimeSpan.FromMinutes(50) };
         var options = new InMemoryOptionsStore
         {
             Values = { [IdleOptions.IdleStopThresholdKey] = "60" },
         };
-        var detector = new IdleAutoStop(host, host, idle, options: options);
+        var detector = new IdleAutoStop(machine, host, idle, options: options);
 
         await detector.PollAsync();
         host.StopCalls.Should().Be(0, "50 minutes idle is below the configured 60");
@@ -129,13 +138,14 @@ public sealed class IdleAutoStopTests
     [Test]
     public async Task PollAsync_WhenTheConfiguredValueIsInvalid_ShouldUseTheDefault()
     {
-        var host = new FakeTrackerSessionHost { IsSessionRunning = true };
+        var host = new FakeTrackerSessionHost();
+        var machine = new FakeTrackerStateQuery { State = TrackerState.Running };
         var idle = new FakeIdleTimeProvider { CurrentIdleTime = TimeSpan.FromMinutes(25) };
         var options = new InMemoryOptionsStore
         {
             Values = { [IdleOptions.IdleStopThresholdKey] = "often" },
         };
-        var detector = new IdleAutoStop(host, host, idle, options: options);
+        var detector = new IdleAutoStop(machine, host, idle, options: options);
 
         await detector.PollAsync();
 
