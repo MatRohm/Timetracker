@@ -89,8 +89,9 @@ public static class HookRegistry
         services.AddSingleton<ITrackerUiCommand, Services.TrackerUiHost>();
         // One session-host instance serves both its query and command surface.
         services.AddSingleton<Services.TrackerSessionHost>();
-        services.AddSingleton<ITrackerSessionQuery>(sp => sp.GetRequiredService<Services.TrackerSessionHost>());
         services.AddSingleton<ITrackerSessionCommand>(sp => sp.GetRequiredService<Services.TrackerSessionHost>());
+        // The tracking state machine: add-ins watch tracking state through this, not polling.
+        services.AddSingleton<ITrackerStateQuery, Services.TrackerStateMachine>();
         // One tracked-sessions instance serves both its query and command surface, so
         // the Changed event and the booked changes stay on the same object.
         services.AddSingleton<Services.TrackedSessionsHost>();
@@ -130,7 +131,7 @@ public static class HookRegistry
         // with the idle-stop threshold the user configured in the options tab.
         services.AddSingleton<Plugins.ActivityMonitor.Services.IdleAutoStop>(sp =>
             new Plugins.ActivityMonitor.Services.IdleAutoStop(
-                sp.GetRequiredService<ITrackerSessionQuery>(),
+                sp.GetRequiredService<ITrackerStateQuery>(),
                 sp.GetRequiredService<ITrackerSessionCommand>(),
                 sp.GetRequiredService<Plugins.ActivityMonitor.Interfaces.IIdleTimeProvider>(),
                 options: sp.GetRequiredService<IOptionQuery>()));

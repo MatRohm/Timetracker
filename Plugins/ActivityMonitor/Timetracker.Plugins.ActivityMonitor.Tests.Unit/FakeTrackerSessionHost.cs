@@ -3,10 +3,8 @@ using Timetracker.Plugins.Contracts.Interfaces;
 namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit;
 
 /// <summary>Session host for tests: records the stop request the idle detector issues.</summary>
-internal sealed class FakeTrackerSessionHost : ITrackerSessionQuery, ITrackerSessionCommand
+internal sealed class FakeTrackerSessionHost : ITrackerSessionCommand
 {
-    public bool IsSessionRunning { get; set; }
-
     public DateTimeOffset? StoppedEndedAt { get; private set; }
 
     public string? StoppedReason { get; private set; }

@@ -36,7 +36,7 @@ public sealed class TrackedSessionsHost : ITrackedSessionsQuery, ITrackedSession
     /// <summary>Raised after sessions are saved, started or stopped.</summary>
     public event EventHandler? Changed;
 
-    public IReadOnlyList<TrackedSession> Sessions => [.. _tracker.SessionLog.Select(ToTracked)];
+    public IReadOnlyList<TrackedSession> Sessions => [.. _tracker.SessionLog.Select(TrackedSessionMapper.ToTracked)];
 
     public DateTimeOffset? RunningSince => _tracker.RunningSince;
 
@@ -103,17 +103,6 @@ public sealed class TrackedSessionsHost : ITrackedSessionsQuery, ITrackedSession
     }
 
     private void OnSessionsChanged(object? sender, EventArgs e) => Changed?.Invoke(this, EventArgs.Empty);
-
-    private static TrackedSession ToTracked(TrackerEntry entry) => new()
-    {
-        Id = entry.Id,
-        Task = entry.Task,
-        BookingElement = entry.BookingElement,
-        Start = entry.Start,
-        End = entry.End,
-        Duration = entry.Duration,
-        DurationSeconds = entry.DurationSeconds,
-    };
 
     private static TrackerEntry FromTracked(TrackedSession session) => new()
     {

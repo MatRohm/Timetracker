@@ -9,11 +9,9 @@ namespace Timetracker.App.Services;
 /// start/stop path. The add-in resolves this through the DI container, so the
 /// view model stays the only place that owns the running session.
 /// </summary>
-public sealed class TrackerSessionHost(TrackerViewModel viewModel) : ITrackerSessionQuery, ITrackerSessionCommand
+public sealed class TrackerSessionHost(TrackerViewModel viewModel) : ITrackerSessionCommand
 {
     private readonly TrackerViewModel _viewModel = viewModel;
-
-    public bool IsSessionRunning => _viewModel.IsRunning;
 
     public Task<bool> StartSessionAsync(string taskName, string bookingElement = "",
         CancellationToken cancellationToken = default) =>
