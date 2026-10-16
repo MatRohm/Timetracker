@@ -7,7 +7,7 @@
     "servers": {
       "hindsight": {
         "type": "remote",
-        "url": "http://raspberrypi:8888/mcp/Timetracker/",
+        "url": "http://hindsight.home.arpa:8888/mcp/Timetracker/",
         "oauth": false
       }
     }
