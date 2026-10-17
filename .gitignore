@@ -3,6 +3,10 @@ obj/
 *.user
 .vs/
 
+# Generated at build time by Directory.Build.targets (resx is the source of
+# truth); visible in the IDE but never committed.
+**/Localization/Strings.Designer.cs
+
 # Beads workspace operation gate lock lives beside .beads/ (repo root), so it is
 # not covered by .beads/.gitignore. It is runtime-only and must not be committed.
 .beads.gate.lock
