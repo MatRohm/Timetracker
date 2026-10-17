@@ -1,4 +1,4 @@
-<Project>
+  <Project>
 
   <!--
     Generates the strongly-typed Strings accessor class from each project's
@@ -15,6 +15,11 @@
     used to hand commit. It is guarded by the presence of
     Localization/Strings.resx so the test projects (which have no resx) are
     skipped.
+
+    The accessor is written to Localization/Strings.Designer.cs in the source
+    tree (gitignored, not committed) rather than obj/ so it shows up in the
+    IDE's Solution Explorer, nested under Strings.resx via the DependentUpon
+    metadata on the Compile item below.
   -->
   <UsingTask TaskName="GenerateStringsAccessor"
              TaskFactory="RoslynCodeTaskFactory"
@@ -136,6 +141,17 @@
     </Task>
   </UsingTask>
 
+  <ItemGroup Condition="Exists('Localization/Strings.resx')">
+    <!-- Evaluated at load so the IDE nests the generated file under the resx
+         and it is in @(Compile) even on a fresh clone before first generation.
+         Remove+Include (rather than bare Include) avoids NETSDK1022, which
+         fires when an explicit Compile item duplicates the default **/*.cs glob. -->
+    <Compile Remove="Localization/Strings.Designer.cs" />
+    <Compile Include="Localization/Strings.Designer.cs">
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
   <Target Name="GenerateStringsDesigner"
           BeforeTargets="CoreCompile"
           Condition="Exists('Localization/Strings.resx')">
@@ -143,12 +159,7 @@
     <GenerateStringsAccessor
       ResxPath="Localization/Strings.resx"
       NamespaceName="$(RootNamespace).Localization"
-      OutputPath="$(IntermediateOutputPath)Strings.Designer.cs" />
-
-    <ItemGroup>
-      <Compile Include="$(IntermediateOutputPath)Strings.Designer.cs" />
-      <FileWrites Include="$(IntermediateOutputPath)Strings.Designer.cs" />
-    </ItemGroup>
+      OutputPath="Localization/Strings.Designer.cs" />
   </Target>
 
 </Project>
