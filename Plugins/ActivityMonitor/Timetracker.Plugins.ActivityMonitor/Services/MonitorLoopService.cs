@@ -21,8 +21,11 @@ public sealed class MonitorLoopService(ILogger<ActivityTracker> logger) : Backgr
         var log = new ActivityLog(Path.Combine(folder, "timetracker-activity.json"));
         var idleSpanThreshold = IdleOptions.IdleSpanThreshold(
             IdleOptions.ReadValueFromOptionsFile(IdleOptions.OptionsFilePath, IdleOptions.IdleSpanThresholdKey));
-        var tracker = new ActivityTracker(log, logger: _logger, idleSpanThreshold: idleSpanThreshold);
-        tracker.UseStateFile(Path.Combine(folder, "timetracker-activity.state.json"));
+        var tracker = new ActivityTracker(
+            log,
+            logger: _logger,
+            idleSpanThreshold: idleSpanThreshold,
+            statePath: Path.Combine(folder, "timetracker-activity.state.json"));
         tracker.Start();
 
         try

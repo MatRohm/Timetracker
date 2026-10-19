@@ -1,4 +1,6 @@
 using Avalonia.Threading;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Timetracker.Plugins.ActivityMonitor.Interfaces;
 using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Contracts.Interfaces;
@@ -13,12 +15,14 @@ namespace Timetracker.Plugins.ActivityMonitor.Services;
 /// </summary>
 /// <param name="now">Current time; replaceable so back-dating can be tested deterministically.</param>
 /// <param name="options">The user's options; null keeps the built-in threshold.</param>
+/// <param name="logger">Receives failures from the polling timer.</param>
 public sealed class IdleAutoStop(
     ITrackerStateQuery stateQuery,
     ITrackerSessionCommand sessionCommand,
     IIdleTimeProvider idleTime,
     Func<DateTimeOffset>? now = null,
-    IOptionQuery? options = null) : IAppCommand, IDisposable
+    IOptionQuery? options = null,
+    ILogger<IdleAutoStop>? logger = null) : IAppCommand, IDisposable
 {
     /// <summary>No keyboard/mouse input for this long stops the running session.</summary>
     public static readonly TimeSpan IdleStopThreshold = TimeSpan.FromMinutes(30);
@@ -31,14 +35,34 @@ public sealed class IdleAutoStop(
     private readonly IIdleTimeProvider _idleTime = idleTime;
     private readonly IOptionQuery? _options = options;
     private readonly Func<DateTimeOffset> _now = now ?? (() => DateTimeOffset.Now);
+    private readonly ILogger<IdleAutoStop> _logger = logger ?? NullLogger<IdleAutoStop>.Instance;
 
     private DispatcherTimer? _timer;
 
     public void OnAppStarted()
     {
         _timer = new DispatcherTimer { Interval = PollInterval };
-        _timer.Tick += async (_, _) => await PollAsync();
+        _timer.Tick += OnTimerTick;
         _timer.Start();
+    }
+
+    /// <summary>
+    /// Timer handler. The event signature requires async void, so every failure
+    /// is caught in <see cref="PollSafelyAsync"/> instead of escaping unobserved.
+    /// </summary>
+    private async void OnTimerTick(object? sender, EventArgs e) => await PollSafelyAsync();
+
+    /// <summary>Polls the idle state and logs failures, so a timer tick cannot crash the app.</summary>
+    internal async Task PollSafelyAsync()
+    {
+        try
+        {
+            await PollAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Idle auto-stop poll failed.");
+        }
     }
 
     public void OnAppClosing() => Dispose();

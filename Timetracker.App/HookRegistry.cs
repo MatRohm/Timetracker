@@ -134,7 +134,8 @@ public static class HookRegistry
                 sp.GetRequiredService<ITrackerStateQuery>(),
                 sp.GetRequiredService<ITrackerSessionCommand>(),
                 sp.GetRequiredService<Plugins.ActivityMonitor.Interfaces.IIdleTimeProvider>(),
-                options: sp.GetRequiredService<IOptionQuery>()));
+                options: sp.GetRequiredService<IOptionQuery>(),
+                logger: sp.GetRequiredService<ILogger<Plugins.ActivityMonitor.Services.IdleAutoStop>>()));
         services.AddSingleton<IAppCommand>(sp =>
             sp.GetRequiredService<Plugins.ActivityMonitor.Services.IdleAutoStop>());
         // One contributor instance serves the per-day line and the day's active time.

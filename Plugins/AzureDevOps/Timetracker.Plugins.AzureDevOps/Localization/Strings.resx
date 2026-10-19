@@ -88,9 +88,6 @@
   <data name="AzureDevOps_NotConfigured" xml:space="preserve">
     <value>Azure DevOps is not configured. Enter the organization URL, project and personal access token in the Azure DevOps section of the Options tab.</value>
   </data>
-  <data name="AzureDevOps_NumericFirst" xml:space="preserve">
-    <value>Please enter a numeric issue number first.</value>
-  </data>
   <data name="AzureDevOps_RequestFailed" xml:space="preserve">
     <value>Azure DevOps request failed: {0}</value>
   </data>

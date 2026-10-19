@@ -6,11 +6,11 @@ using Timetracker.Plugins.Contracts;
 namespace Timetracker.Plugins.ActivityMonitor.Services;
 
 /// <summary>
-/// Tracks the machine state (active/idle/off) and writes one span per state
-/// change to the <see cref="ActivityLog"/>: "active" spans cover user-present
-/// periods, "idle" spans only periods of at least the configured idle span
-/// threshold (default one hour; shorter breaks are ignored). Survives process
-/// restarts via a small state file, so logoff/shutdown
+/// Tracks the machine state (active/idle/off/unknown) and writes one span per
+/// state change to the <see cref="ActivityLog"/>: "active" spans cover
+/// user-present periods, "idle" spans only periods of at least the configured
+/// idle span threshold (default one hour; shorter breaks are ignored). Survives
+/// process restarts via a small state file, so logoff/shutdown
 /// ends the open span correctly on the next start.
 /// </summary>
 public class ActivityTracker(
@@ -18,7 +18,8 @@ public class ActivityTracker(
     Func<DateTimeOffset>? now = null,
     IIdleTimeProvider? idleTime = null,
     ILogger<ActivityTracker>? logger = null,
-    TimeSpan? idleSpanThreshold = null)
+    TimeSpan? idleSpanThreshold = null,
+    string? statePath = null)
 {
     /// <summary>Idle periods shorter than the configured threshold are not logged; the default.</summary>
     public static readonly TimeSpan DefaultIdleThreshold = TimeSpan.FromHours(1);
@@ -29,7 +30,8 @@ public class ActivityTracker(
     private readonly ActivityLog _log = log;
     private readonly IIdleTimeProvider _idleTime = idleTime ?? IdleTimeProvider.CreateForCurrentPlatform();
     private readonly ILogger<ActivityTracker> _logger = logger ?? NullLogger<ActivityTracker>.Instance;
-    private Func<DateTimeOffset> _now = now ?? (() => DateTimeOffset.Now);
+    private readonly Func<DateTimeOffset> _now = now ?? (() => DateTimeOffset.Now);
+    private readonly string _statePath = statePath ?? StateFilePath;
 
     /// <summary>Idle stretches shorter than this are not logged; the option may lower or raise it.</summary>
     private TimeSpan _idleSpanThreshold = idleSpanThreshold ?? DefaultIdleThreshold;
@@ -37,60 +39,50 @@ public class ActivityTracker(
     /// <summary>Moment of the last polling log entry; throttles it to <see cref="PollLogInterval"/>.</summary>
     private DateTimeOffset _lastPollLog;
 
-    private string _state = "active";
+    private ActivityState _state = ActivityState.Active;
     private DateTimeOffset _stateStart;
 
-    /// <summary>The configured shortest logged idle stretch; tests set it directly.</summary>
-    internal TimeSpan IdleSpanThreshold
+    /// <summary>The state machine the tracker cycles through.</summary>
+    private enum ActivityState
     {
-        get => _idleSpanThreshold;
-        set => _idleSpanThreshold = value;
+        Active,
+        Idle,
+        Off,
+        Unknown,
     }
 
     /// <summary>Path of the state file used to recover across restarts.</summary>
     public static string StateFilePath => TimetrackerPaths.ActivityStateFile;
-
-    /// <summary>Overrides the state file path (tests use per-test files).</summary>
-    /// <remarks>Set right after construction, before Start/Poll.</remarks>
-    public void UseStateFile(string path) => _statePath = path;
-
-    private string _statePath = StateFilePath;
-
-    /// <summary>Replaces the clock (tests inject fixed moments).</summary>
-    protected void SetNow(Func<DateTimeOffset> now) => _now = now;
-
-    /// <summary>Test seam: polls with an injected idle duration instead of the platform.</summary>
-    protected void PollIdleForTest(TimeSpan? idle) => PollWithIdle(idle);
 
     private void PollWithIdle(TimeSpan? idle)
     {
         if (idle is null)
         {
             // Idle cannot be measured: record "unknown" rather than "active".
-            if (_state != "unknown")
+            if (_state != ActivityState.Unknown)
             {
-                CloseAndOpen("unknown", _now());
+                CloseAndOpen(ActivityState.Unknown, _now());
             }
             return;
         }
 
         var known = idle.Value;
-        if (_state == "unknown")
+        if (_state == ActivityState.Unknown)
         {
             // Idle is measurable again: resume classification from now.
-            CloseAndOpen(known >= _idleSpanThreshold ? "idle" : "active",
-                known >= _idleSpanThreshold ? _now() - known : _now());
+            var resumed = known >= _idleSpanThreshold ? ActivityState.Idle : ActivityState.Active;
+            CloseAndOpen(resumed, known >= _idleSpanThreshold ? _now() - known : _now());
             return;
         }
 
-        if (_state == "active" && known >= _idleSpanThreshold)
+        if (_state == ActivityState.Active && known >= _idleSpanThreshold)
         {
             var idleStart = _now() - known;
-            CloseAndOpen("idle", idleStart);
+            CloseAndOpen(ActivityState.Idle, idleStart);
         }
-        else if (_state == "idle" && known < _idleSpanThreshold)
+        else if (_state == ActivityState.Idle && known < _idleSpanThreshold)
         {
-            CloseAndOpen("active", _now());
+            CloseAndOpen(ActivityState.Active, _now());
         }
     }
 
@@ -110,14 +102,14 @@ public class ActivityTracker(
             CloseSpan(state, start.Value, now);
         }
 
-        _state = "active";
+        _state = ActivityState.Active;
         _stateStart = now;
         _lastPollLog = now;
         SaveState(_state, _stateStart);
 
         _logger.LogInformation(
             "Started; resumed state \"{State}\", current span \"{Span}\" from {SpanStart:O}.",
-            state, _state, _stateStart);
+            ToText(state), ToText(_state), _stateStart);
         return _stateStart;
     }
 
@@ -133,14 +125,14 @@ public class ActivityTracker(
         {
             _lastPollLog = now;
             var idleText = idle is null ? "unknown" : idle.Value.ToString(@"hh\:mm\:ss");
-            _logger.LogInformation("Poll; state \"{State}\", idle {Idle}.", _state, idleText);
+            _logger.LogInformation("Poll; state \"{State}\", idle {Idle}.", ToText(_state), idleText);
         }
     }
 
     /// <summary>Ends the open span (logoff/shutdown); called on session end.</summary>
     public void Stop()
     {
-        if (_state == "off")
+        if (_state == ActivityState.Off)
         {
             return; // Already stopped; avoids writing a duplicate span.
         }
@@ -148,13 +140,14 @@ public class ActivityTracker(
         var stoppedState = _state;
         var endedAt = _now();
         CloseSpan(stoppedState, _stateStart, endedAt);
-        _state = "off";
+        _state = ActivityState.Off;
         SaveState(_state, null);
 
-        _logger.LogInformation("Stopped; closed \"{Span}\" span at {EndedAt:O}.", stoppedState, endedAt);
+        _logger.LogInformation(
+            "Stopped; closed \"{Span}\" span at {EndedAt:O}.", ToText(stoppedState), endedAt);
     }
 
-    private void CloseAndOpen(string newState, DateTimeOffset newStateStart)
+    private void CloseAndOpen(ActivityState newState, DateTimeOffset newStateStart)
     {
         CloseSpan(_state, _stateStart, newStateStart);
         _state = newState;
@@ -166,33 +159,33 @@ public class ActivityTracker(
     /// Writes the finished span if it is worth logging: active spans always, idle
     /// spans only when they reached the one-hour threshold.
     /// </summary>
-    private void CloseSpan(string state, DateTimeOffset start, DateTimeOffset end)
+    private void CloseSpan(ActivityState state, DateTimeOffset start, DateTimeOffset end)
     {
         if (end <= start)
         {
             return;
         }
 
-        if (state == "idle" && end - start < _idleSpanThreshold)
+        if (state == ActivityState.Idle && end - start < _idleSpanThreshold)
         {
             return; // Short break: ignore entirely.
         }
 
-        _log.Add(state, start, end);
+        _log.Add(ToText(state), start, end);
     }
 
-    private (string State, DateTimeOffset? Start) LoadState()
+    private (ActivityState State, DateTimeOffset? Start) LoadState()
     {
         try
         {
             if (!File.Exists(_statePath))
             {
                 _logger.LogInformation("No state file at \"{Path}\"; starting fresh.", _statePath);
-                return ("active", null);
+                return (ActivityState.Active, null);
             }
 
             var lines = File.ReadAllText(_statePath).Split('\n', 2);
-            var state = lines[0].Trim();
+            var state = ParseState(lines[0].Trim());
             DateTimeOffset? start = null;
             var startText = lines.Length > 1 ? lines[1].Trim() : "";
             if (startText.Length > 0)
@@ -213,19 +206,37 @@ public class ActivityTracker(
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             _logger.LogError(ex, "Could not read the state file \"{Path}\"; starting fresh.", _statePath);
-            return ("active", null);
+            return (ActivityState.Active, null);
         }
     }
 
-    private void SaveState(string state, DateTimeOffset? start)
+    private void SaveState(ActivityState state, DateTimeOffset? start)
     {
         try
         {
-            File.WriteAllText(_statePath, state + "\n" + (start?.ToString("O") ?? ""));
+            File.WriteAllText(_statePath, ToText(state) + "\n" + (start?.ToString("O") ?? ""));
         }
         catch (IOException)
         {
             // Never crash the monitor over state persistence.
         }
+    }
+
+    /// <summary>Keeps the on-disk format lowercase and unchanged from earlier versions.</summary>
+    private static string ToText(ActivityState state) => state.ToString().ToLowerInvariant();
+
+    /// <summary>Reads a persisted state; unknown text falls back to active as before.</summary>
+    private static ActivityState ParseState(string text)
+    {
+        // Match the names explicitly: Enum.TryParse would also accept numeric
+        // values ("1" is Idle), which no version ever wrote to the file.
+        var result = text.ToLowerInvariant() switch
+        {
+            "idle" => ActivityState.Idle,
+            "off" => ActivityState.Off,
+            "unknown" => ActivityState.Unknown,
+            _ => ActivityState.Active,
+        };
+        return result;
     }
 }

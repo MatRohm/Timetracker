@@ -6,30 +6,43 @@ namespace Timetracker.Plugins.ActivityMonitor.Tests.Unit;
 /// <summary>Test seam: idle time is injected instead of read from Win32.</summary>
 internal sealed class TrackerForTests : ActivityTracker
 {
+    private readonly FakeIdleTimeProvider _idle;
+
     public TrackerForTests(
-        ActivityLog log, Func<DateTimeOffset> now, string statePath, ILogger<ActivityTracker>? logger = null)
-        : base(log, now, new NullIdleTimeProvider(), logger)
+        ActivityLog log,
+        Func<DateTimeOffset> now,
+        string statePath,
+        ILogger<ActivityTracker>? logger = null,
+        TimeSpan? idleSpanThreshold = null)
+        : this(log, now, new FakeIdleTimeProvider(), statePath, logger, idleSpanThreshold)
     {
-        UseStateFile(statePath);
     }
 
-    public void PollWithDuration(TimeSpan idle, DateTimeOffset at)
+    private TrackerForTests(
+        ActivityLog log,
+        Func<DateTimeOffset> now,
+        FakeIdleTimeProvider idle,
+        string statePath,
+        ILogger<ActivityTracker>? logger,
+        TimeSpan? idleSpanThreshold)
+        : base(log, now, idle, logger, idleSpanThreshold, statePath)
     {
-        SetNow(() => at);
-        PollIdleForTest(idle);
+        _idle = idle;
+    }
+
+    public void PollWithDuration(TimeSpan idle)
+    {
+        _idle.CurrentIdleTime = idle;
+        Poll();
     }
 
     /// <summary>Polls with idle reported as unknown, to exercise the unknown path.</summary>
-    public void PollWithUnknown(DateTimeOffset at)
+    public void PollWithUnknown()
     {
-        SetNow(() => at);
-        PollIdleForTest(null);
-    }
-
-    /// <summary>Polls at a given moment with no idle, to exercise the log heartbeat.</summary>
-    public void PollAt(DateTimeOffset at)
-    {
-        SetNow(() => at);
+        _idle.CurrentIdleTime = null;
         Poll();
     }
+
+    /// <summary>Polls at the current clock time, to exercise the log heartbeat.</summary>
+    public void PollAt() => Poll();
 }

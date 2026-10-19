@@ -1,4 +1,6 @@
 using AwesomeAssertions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Testing;
 using NUnit.Framework;
 using Timetracker.Plugins.ActivityMonitor.Services;
 using Timetracker.Plugins.Contracts;
@@ -94,6 +96,39 @@ public sealed class IdleAutoStopTests
         await detector.PollAsync();
 
         host.StoppedReason.Should().Contain("40 min", "the idle duration is reported");
+    }
+
+    [Test]
+    public async Task PollSafelyAsync_WhenPollingFails_ShouldLogTheErrorInsteadOfThrowing()
+    {
+        // The timer handler is async void: an escaping exception would be unobserved.
+        var host = new FakeTrackerSessionHost { StopThrows = new InvalidOperationException("boom") };
+        var machine = new FakeTrackerStateQuery { State = TrackerState.Running };
+        var idle = new FakeIdleTimeProvider { CurrentIdleTime = IdleAutoStop.IdleStopThreshold };
+        var logger = new FakeLogger<IdleAutoStop>();
+        var detector = new IdleAutoStop(machine, host, idle, logger: logger);
+
+        await detector.PollSafelyAsync();
+
+        logger.Collector.GetSnapshot().Should().Contain(r =>
+            r.Level == LogLevel.Error && r.Exception is InvalidOperationException);
+    }
+
+    [Test]
+    public async Task PollSafelyAsync_WhenPollingIsCancelled_ShouldLogTheErrorInsteadOfThrowing()
+    {
+        // Nothing cancels this poll on purpose; a cancellation is still a failure
+        // that must not escape the async void timer handler.
+        var host = new FakeTrackerSessionHost { StopThrows = new OperationCanceledException("cancelled") };
+        var machine = new FakeTrackerStateQuery { State = TrackerState.Running };
+        var idle = new FakeIdleTimeProvider { CurrentIdleTime = IdleAutoStop.IdleStopThreshold };
+        var logger = new FakeLogger<IdleAutoStop>();
+        var detector = new IdleAutoStop(machine, host, idle, logger: logger);
+
+        await detector.PollSafelyAsync();
+
+        logger.Collector.GetSnapshot().Should().Contain(r =>
+            r.Level == LogLevel.Error && r.Exception is OperationCanceledException);
     }
 
     [Test]
