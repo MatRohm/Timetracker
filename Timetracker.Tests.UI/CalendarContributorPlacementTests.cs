@@ -11,7 +11,7 @@ namespace Timetracker.Tests.UI;
 /// <summary>
 /// Add-in controls contributed to the calendar (e.g. the PC activity monitor
 /// install/remove buttons) sit at the bottom of the view, directly above the
-/// shared status line, instead of in the week navigation toolbar.
+/// shared status line, instead of in the calendar toolbar.
 /// </summary>
 public sealed class CalendarContributorPlacementTests
 {
@@ -33,11 +33,11 @@ public sealed class CalendarContributorPlacementTests
         bottomPanel.Children[0].Should().BeSameAs(contributorRow);
         bottomPanel.Children[1].Should().BeOfType<TextBlock>("the status label sits after the controls");
 
-        // It is laid out below the week tree, i.e. at the bottom of the view.
-        var tree = view.GetVisualDescendants().OfType<CalendarTrackingTree>().Single();
+        // It is laid out below the calendar grid, i.e. at the bottom of the view.
+        var calendar = view.GetVisualDescendants().OfType<CalendarWeekView>().Single();
         var controlTop = control.TranslatePoint(default, view)!.Value.Y;
-        var gridTop = tree.TranslatePoint(default, view)!.Value.Y;
-        controlTop.Should().BeGreaterThan(gridTop, "add-in controls are at the bottom, below the tree");
+        var calendarTop = calendar.TranslatePoint(default, view)!.Value.Y;
+        controlTop.Should().BeGreaterThan(calendarTop, "add-in controls are at the bottom, below the calendar");
     }
 
     private static void Realize(Control root)

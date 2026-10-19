@@ -4,8 +4,8 @@ using Timetracker.Plugins.Calendar.Localization;
 namespace Timetracker.Plugins.Calendar.ViewModels;
 
 /// <summary>
-/// One untracked gap inside an expanded day of the week tree, e.g.
-/// "⚠ 10:15–11:05 untracked (0:50)"; the view offers to book it as a session.
+/// One untracked gap in a day column, e.g. "⚠ 10:15–11:05 untracked (0:50)";
+/// the view draws it as a band and offers to book it as a session.
 /// </summary>
 public sealed class CalendarGapViewModel(TimeRange range)
 {

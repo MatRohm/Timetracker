@@ -11,9 +11,9 @@ namespace Timetracker.Plugins.Calendar;
 /// Contributes the calendar as a tab between the tracker and the options tab.
 /// The shell places the tab and passes the add-in controls targeted at it.
 /// </summary>
-public sealed class CalendarTabContributor(CalendarViewModel week) : ITabQuery
+public sealed class CalendarTabContributor(CalendarViewModel calendar) : ITabQuery
 {
-    private readonly CalendarViewModel _week = week;
+    private readonly CalendarViewModel _calendar = calendar;
 
     public string TabKey => TabKeys.WeekView;
 
@@ -21,5 +21,5 @@ public sealed class CalendarTabContributor(CalendarViewModel week) : ITabQuery
 
     public int Order => 1;
 
-    public Control CreateView(IReadOnlyList<Control> contributors) => new CalendarTabView(_week, contributors);
+    public Control CreateView(IReadOnlyList<Control> contributors) => new CalendarTabView(_calendar, contributors);
 }

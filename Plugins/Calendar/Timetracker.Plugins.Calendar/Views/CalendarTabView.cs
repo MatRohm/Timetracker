@@ -1,22 +1,24 @@
 using System.ComponentModel;
-using Timetracker.Plugins.Calendar.Localization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Timetracker.Plugins.Contracts.Ui;
+using Timetracker.Plugins.Calendar.Localization;
 using Timetracker.Plugins.Calendar.ViewModels;
+using Timetracker.Plugins.Contracts;
+using Timetracker.Plugins.Contracts.Ui;
 
 namespace Timetracker.Plugins.Calendar.Views;
 
 /// <summary>
-/// Calendar tab: composes the week header/toolbar, the seven day columns and the
-/// status line. View-only; state lives in <see cref="CalendarViewModel"/>. Add-in UI
-/// bands are passed in pre-built by the shell and placed above the status line.
+/// Calendar tab: composes the header, the mode selector, the week or month view
+/// and the status line. View-only; state lives in <see cref="CalendarViewModel"/>.
+/// Add-in UI bands are passed in pre-built by the shell and placed above the
+/// status line.
 /// </summary>
 public sealed class CalendarTabView : UserControl
 {
-    private readonly CalendarViewModel _week;
+    private readonly CalendarViewModel _calendar;
     private readonly IReadOnlyList<Control> _contributorControls;
 
     private readonly TextBlock _titleLabel = new();
@@ -24,16 +26,21 @@ public sealed class CalendarTabView : UserControl
     private readonly Button _prevButton = new();
     private readonly Button _nextButton = new();
     private readonly Button _currentButton = new();
+    private readonly Button _workweekButton = new();
+    private readonly Button _weekButton = new();
+    private readonly Button _monthButton = new();
     private readonly TextBlock _statusLabel = new();
 
-    private readonly CalendarTrackingTree _tree;
+    private readonly CalendarWeekView _weekView;
+    private readonly CalendarMonthView _monthView;
 
-    public CalendarTabView(CalendarViewModel week, IReadOnlyList<Control> contributorControls)
+    public CalendarTabView(CalendarViewModel calendar, IReadOnlyList<Control> contributorControls)
     {
-        _week = week;
+        _calendar = calendar;
         _contributorControls = contributorControls;
 
-        _tree = new CalendarTrackingTree(_week);
+        _weekView = new CalendarWeekView(_calendar);
+        _monthView = new CalendarMonthView(_calendar);
 
         BuildUi();
         BindViewModel();
@@ -60,18 +67,35 @@ public sealed class CalendarTabView : UserControl
         _nextButton.Content = Strings.Calendar_NextWeek;
         _currentButton.Content = Strings.Calendar_CurrentWeek;
 
-        var buttonRow = new StackPanel
+        _workweekButton.Content = Strings.Calendar_ModeWorkweek;
+        _weekButton.Content = Strings.Calendar_ModeWeek;
+        _monthButton.Content = Strings.Calendar_ModeMonth;
+
+        var modeRow = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 4,
+        };
+        modeRow.Children.Add(_workweekButton);
+        modeRow.Children.Add(_weekButton);
+        modeRow.Children.Add(_monthButton);
+
+        var buttonRow = new DockPanel { Margin = new Thickness(0, 0, 0, 6) };
+        var navigationRow = new StackPanel
         {
             Orientation = Orientation.Horizontal,
             Spacing = 8,
-            Margin = new Thickness(0, 0, 0, 6),
+            HorizontalAlignment = HorizontalAlignment.Left,
         };
-        buttonRow.Children.Add(_prevButton);
-        buttonRow.Children.Add(_currentButton);
-        buttonRow.Children.Add(_nextButton);
+        navigationRow.Children.Add(_prevButton);
+        navigationRow.Children.Add(_currentButton);
+        navigationRow.Children.Add(_nextButton);
+        DockPanel.SetDock(modeRow, Dock.Right);
+        buttonRow.Children.Add(modeRow);
+        buttonRow.Children.Add(navigationRow);
 
         // Add-in controls sit at the bottom of the view, directly above the status
-        // line, so they do not mix with the week navigation toolbar.
+        // line, so they do not mix with the calendar toolbar.
         var contributorRow = new StackPanel
         {
             Orientation = Orientation.Horizontal,
@@ -88,6 +112,10 @@ public sealed class CalendarTabView : UserControl
         _statusLabel.Foreground = ViewBrushes.Info;
         _statusLabel.Margin = new Thickness(0, 4, 0, 0);
 
+        var content = new Grid();
+        content.Children.Add(_weekView);
+        content.Children.Add(_monthView);
+
         var root = new DockPanel { Margin = new Thickness(12, 10, 12, 10) };
 
         var topPanel = new StackPanel { Spacing = 4 };
@@ -102,22 +130,26 @@ public sealed class CalendarTabView : UserControl
         DockPanel.SetDock(bottomPanel, Dock.Bottom);
         root.Children.Add(bottomPanel);
 
-        root.Children.Add(_tree);
+        root.Children.Add(content);
         Content = root;
     }
 
     private void BindViewModel()
     {
-        _prevButton.Command = _week.PreviousWeekCommand;
-        _nextButton.Command = _week.NextWeekCommand;
-        _currentButton.Command = _week.CurrentWeekCommand;
+        _prevButton.Command = _calendar.PreviousCommand;
+        _nextButton.Command = _calendar.NextCommand;
+        _currentButton.Command = _calendar.CurrentCommand;
+        _workweekButton.Command = _calendar.WorkweekCommand;
+        _weekButton.Command = _calendar.WeekCommand;
+        _monthButton.Command = _calendar.MonthCommand;
 
-        _week.PropertyChanged += OnWeekPropertyChanged;
+        _calendar.PropertyChanged += OnCalendarPropertyChanged;
         UpdateHeader();
         UpdateStatus();
+        UpdateMode();
     }
 
-    private void OnWeekPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    private void OnCalendarPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(CalendarViewModel.CalendarTitle) or nameof(CalendarViewModel.CalendarTotalText))
         {
@@ -127,22 +159,47 @@ public sealed class CalendarTabView : UserControl
         {
             UpdateStatus();
         }
+        else if (e.PropertyName is nameof(CalendarViewModel.Mode))
+        {
+            UpdateMode();
+        }
     }
 
     private void UpdateHeader()
     {
-        _titleLabel.Text = _week.CalendarTitle;
-        _totalLabel.Text = _week.CalendarTotalText;
+        _titleLabel.Text = _calendar.CalendarTitle;
+        _totalLabel.Text = _calendar.CalendarTotalText;
     }
 
     private void UpdateStatus()
     {
-        _statusLabel.Text = _week.StatusText;
-        _statusLabel.Foreground = _week.Status switch
+        _statusLabel.Text = _calendar.StatusText;
+        _statusLabel.Foreground = _calendar.Status switch
         {
-            CalendarStatus.Success => ViewBrushes.Success,
-            CalendarStatus.Error => ViewBrushes.Error,
+            WeekStatusKind.Success => ViewBrushes.Success,
+            WeekStatusKind.Error => ViewBrushes.Error,
             _ => ViewBrushes.Info,
         };
+    }
+
+    private void UpdateMode()
+    {
+        var month = _calendar.Mode == CalendarViewMode.Month;
+        _weekView.IsVisible = !month;
+        _monthView.IsVisible = month;
+
+        _prevButton.Content = month ? Strings.Calendar_PreviousMonth : Strings.Calendar_PreviousWeek;
+        _nextButton.Content = month ? Strings.Calendar_NextMonth : Strings.Calendar_NextWeek;
+        _currentButton.Content = month ? Strings.Calendar_CurrentMonth : Strings.Calendar_CurrentWeek;
+
+        Highlight(_workweekButton, _calendar.Mode == CalendarViewMode.Workweek);
+        Highlight(_weekButton, _calendar.Mode == CalendarViewMode.Week);
+        Highlight(_monthButton, month);
+    }
+
+    private static void Highlight(Button button, bool active)
+    {
+        button.FontWeight = active ? FontWeight.Bold : FontWeight.Normal;
+        button.Background = active ? ViewBrushes.Today : ViewBrushes.Surface;
     }
 }

@@ -1,103 +1,66 @@
 using AwesomeAssertions;
 using Avalonia.Controls;
 using Avalonia.Headless.NUnit;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-using Timetracker.Plugins.Calendar.ViewModels;
 using Timetracker.Plugins.Calendar.Views;
 
 namespace Timetracker.Tests.UI;
 
 /// <summary>
-/// In the week tree, each booking element row and each task row has a copy button
-/// that copies the task names of that node, never its time.
+/// Every session block in the calendar has a copy button that copies the task
+/// name, never its time or booking element.
 /// </summary>
 public sealed class CalendarCopyButtonTests
 {
+    private static readonly DateTimeOffset MondayNoon = new(2026, 9, 21, 12, 0, 0, TimeSpan.FromHours(2));
+
     [AvaloniaTest]
-    public void CalendarTrackingTree_WhenRendered_ShouldShowCopyButtonsOnElementAndTaskRows()
+    public void CalendarWeekView_WhenRendered_ShouldShowOneCopyButtonPerBlock()
     {
-        var (view, week) = Build(Session(9, "Report", "Project X"), Session(12, "Meeting", "Project Y"));
-        ExpandToday(week);
+        var view = Build(Session(9, "Report", "Project X"), Session(12, "Meeting", "Project Y"));
         Realize(view);
 
-        // One task row per entry plus one element row per element.
-        CopyButtons(view).Should().HaveCount(4, "two elements and their two tasks");
+        CopyButtons(view).Should().HaveCount(2, "one per session block");
     }
 
     [AvaloniaTest]
-    public void CalendarTrackingTree_WhenClickingElementCopyButton_ShouldCopyItsTaskNames()
+    public async Task CalendarWeekView_WhenClickingABlockCopyButton_ShouldCopyOnlyTheTaskName()
     {
-        var (view, week) = Build(
-            Session(9, "Report", "Project X"),
-            Session(14, "Review", "Project X"));
-        ExpandToday(week);
+        var view = Build(Session(9, "Report", "Project X"), Session(14, "Review", "Project X"));
 
         var window = Realize(view);
-        // Rows are ordered oldest first: element "Project X", then its tasks.
-        var elementCopy = CopyButtons(view)[0];
-
-        Click(elementCopy);
-
-        window.Clipboard!.GetTextAsync().GetAwaiter().GetResult()
-            .Should().Be("Report" + Environment.NewLine + "Review",
-                "the element's copy button copies the task names inside it, not the element name");
-    }
-
-    [AvaloniaTest]
-    public void CalendarTrackingTree_WhenClickingTaskCopyButton_ShouldCopyOnlyTheTaskName()
-    {
-        var (view, week) = Build(Session(9, "Report", "Project X"), Session(14, "Review", "Project X"));
-        ExpandToday(week);
-
-        var window = Realize(view);
-        // Index 1 is the first task row under the element.
-        var taskCopy = CopyButtons(view)[1];
-
-        Click(taskCopy);
-
-        window.Clipboard!.GetTextAsync().GetAwaiter().GetResult()
-            .Should().Be("Report", "the task's copy button copies the name without its time");
-    }
-
-    [AvaloniaTest]
-    public void CalendarTrackingTree_WhenTheNoneGroupIsCopied_ShouldCopyItsTaskNames()
-    {
-        var (view, week) = Build(Session(9, "Adhoc"), Session(12, "Meeting", "Project Y"));
-        ExpandToday(week);
-
-        var window = Realize(view);
-        // The row whose own child text starts with "<None>"; its copy button is the ⧉.
-        var noneLabel = FindAll<TextBlock>(view)
-            .First(t => t.Text?.StartsWith(CalendarDayViewModel.NoBookingElementLabel) == true);
-        var noneRow = noneLabel.Parent.Should().BeOfType<StackPanel>().Subject;
-        var copy = noneRow.GetVisualDescendants().OfType<Button>()
-            .First(b => b.Content?.ToString() == "⧉");
+        var copy = CopyButtons(view)[0];
 
         Click(copy);
 
-        window.Clipboard!.GetTextAsync().GetAwaiter().GetResult().Should().Be("Adhoc");
+        var text = await window.Clipboard!.TryGetTextAsync();
+        text.Should().Be("Report", "the block's copy button copies the name without its time or element");
+    }
+
+    [AvaloniaTest]
+    public async Task CalendarWeekView_WhenABlockHasNoBookingElement_ShouldStillCopyItsTaskName()
+    {
+        var view = Build(Session(9, "Adhoc"));
+
+        var window = Realize(view);
+        Click(CopyButtons(view)[0]);
+
+        var text = await window.Clipboard!.TryGetTextAsync();
+        text.Should().Be("Adhoc");
     }
 
     private static (DateTimeOffset Start, string Task, string Booking) Session(
         int hour, string task, string booking = "") =>
-        (DateTimeOffset.Now.Date.AddHours(hour), task, booking);
+        (MondayNoon.Date.AddHours(hour), task, booking);
 
-    /// <summary>Expands today's day and its groups so the rows below become visible.</summary>
-    private static void ExpandToday(CalendarViewModel week)
-    {
-        var today = week.Days.Single(d => d.IsToday);
-        today.IsExpanded = true;
-        foreach (var group in today.Groups)
-        {
-            group.IsExpanded = true;
-        }
-    }
-
-    private static (CalendarTabView View, CalendarViewModel Week) Build(
+    private static CalendarTabView Build(
         params (DateTimeOffset Start, string Task, string Booking)[] sessions) =>
-        CalendarTestSupport.Build(sessions.Select(s => CalendarTestSupport.Session(s.Start, s.Task, s.Booking)));
+        CalendarTestSupport.Build(
+            sessions.Select(s => CalendarTestSupport.Session(s.Start, s.Task, s.Booking)),
+            now: () => MondayNoon).View;
 
     private static Window Realize(Control root)
     {
@@ -116,8 +79,5 @@ public sealed class CalendarCopyButtonTests
     }
 
     private static IReadOnlyList<Button> CopyButtons(Control view) =>
-        [.. FindAll<Button>(view).Where(b => b.Content?.ToString() == "⧉")];
-
-    private static IEnumerable<T> FindAll<T>(Control root) where T : Control =>
-        root.GetVisualDescendants().OfType<T>();
+        [.. view.GetVisualDescendants().OfType<Button>().Where(b => b.Content?.ToString() == "⧉")];
 }

@@ -115,6 +115,9 @@
   <data name="Calendar_HeaderTitle" xml:space="preserve">
     <value>Week {0} · {1}</value>
   </data>
+  <data name="Calendar_WorkweekTitle" xml:space="preserve">
+    <value>Workweek {0} · {1}</value>
+  </data>
   <data name="Calendar_UntrackedToolTip" xml:space="preserve">
     <value>PC active time that no tracked session covers</value>
   </data>
@@ -141,9 +144,6 @@
   </data>
   <data name="Calendar_ChangeRemovedFormat" xml:space="preserve">
     <value>{0} removed</value>
-  </data>
-  <data name="Calendar_NoBookingElement" xml:space="preserve">
-    <value>&lt;None&gt;</value>
   </data>
   <data name="Calendar_GapWarning" xml:space="preserve">
     <value>⚠ {0} untracked ({1})</value>
@@ -181,7 +181,31 @@
   <data name="BookGap_Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
-  <data name="Calendar_NodeCaption" xml:space="preserve">
-    <value>{0} ({1})</value>
+  <data name="Calendar_ModeWorkweek" xml:space="preserve">
+    <value>Workweek</value>
+  </data>
+  <data name="Calendar_ModeWeek" xml:space="preserve">
+    <value>Week</value>
+  </data>
+  <data name="Calendar_ModeMonth" xml:space="preserve">
+    <value>Month</value>
+  </data>
+  <data name="Calendar_MonthTitle" xml:space="preserve">
+    <value>{0} {1}</value>
+  </data>
+  <data name="Calendar_MoreChips" xml:space="preserve">
+    <value>+{0} more</value>
+  </data>
+  <data name="Calendar_ModeSaveFailed" xml:space="preserve">
+    <value>Could not save the calendar view mode.</value>
+  </data>
+  <data name="Calendar_PreviousMonth" xml:space="preserve">
+    <value>‹ Previous month</value>
+  </data>
+  <data name="Calendar_NextMonth" xml:space="preserve">
+    <value>Next month ›</value>
+  </data>
+  <data name="Calendar_CurrentMonth" xml:space="preserve">
+    <value>Current month</value>
   </data>
 </root>

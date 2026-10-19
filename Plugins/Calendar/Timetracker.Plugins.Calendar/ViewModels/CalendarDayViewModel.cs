@@ -1,6 +1,5 @@
 using System.Globalization;
 using Timetracker.Plugins.Calendar.Localization;
-using System.Windows.Input;
 using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Contracts.ViewModels.Mvvm;
 using Timetracker.Plugins.Calendar.Services;
@@ -8,43 +7,32 @@ using Timetracker.Plugins.Calendar.Services;
 namespace Timetracker.Plugins.Calendar.ViewModels;
 
 /// <summary>
-/// One day node in the week tree: the weekday caption, the day's summed time and
-/// its booking element groups (one per element, plus a "&lt;None&gt;" group for
-/// entries without one). The instance is updated in place on rebuild, and the
-/// user's expansion state is kept across those updates.
+/// One day column of the calendar: the weekday caption, the day's summed time,
+/// its clipped session blocks, the activity strip spans and the untracked gaps.
+/// The instance is updated in place on rebuild, so the view can observe it.
 /// </summary>
-public sealed class CalendarDayViewModel : ObservableObject
+public sealed class CalendarDayViewModel(Func<DateTimeOffset>? now = null) : ObservableObject
 {
-    /// <summary>Group name used for entries that carry no booking element.</summary>
-    public static readonly string NoBookingElementLabel = Strings.Calendar_NoBookingElement;
-
-    /// <summary>Untracked time from which the day row warns (highlighted, "⚠").</summary>
+    /// <summary>Untracked time from which the day header warns (highlighted, "⚠").</summary>
     public static readonly TimeSpan UntrackedWarningThreshold = TimeSpan.FromMinutes(15);
 
-    /// <summary>Shortest untracked stretch listed as a gap row in the expanded day.</summary>
+    /// <summary>Shortest untracked stretch listed as a gap in the day column.</summary>
     public static readonly TimeSpan MinimumGapDuration = TimeSpan.FromMinutes(15);
 
     /// <summary>Gaps shorter than this are rounding noise and not shown at all.</summary>
     private static readonly TimeSpan MinimumUntrackedTime = TimeSpan.FromMinutes(1);
 
-    private readonly Func<DateTimeOffset> _now;
+    private readonly Func<DateTimeOffset> _now = now ?? (() => DateTimeOffset.Now);
 
     private string _header = "";
     private string _totalText = "";
     private bool _isToday;
-    private bool _isExpanded;
     private string _contributorText = "";
     private double _bookedSeconds;
     private TimeSpan _activeTime;
     private TimeSpan _untrackedTime;
     private string _untrackedText = "";
     private bool _isUntrackedWarning;
-
-    public CalendarDayViewModel(Func<DateTimeOffset>? now = null)
-    {
-        _now = now ?? (() => DateTimeOffset.Now);
-        ToggleCommand = new RelayCommand(() => IsExpanded = !IsExpanded);
-    }
 
     public DateTimeOffset Date { get; private set; }
 
@@ -55,7 +43,7 @@ public sealed class CalendarDayViewModel : ObservableObject
         private set => SetProperty(ref _header, value);
     }
 
-    /// <summary>Sum of the day's durations, e.g. "Σ 2:30".</summary>
+    /// <summary>Sum of the day's clipped durations, e.g. "Σ 2:30".</summary>
     public string TotalText
     {
         get => _totalText;
@@ -67,13 +55,6 @@ public sealed class CalendarDayViewModel : ObservableObject
     {
         get => _isToday;
         private set => SetProperty(ref _isToday, value);
-    }
-
-    /// <summary>True while the day shows its booking element groups.</summary>
-    public bool IsExpanded
-    {
-        get => _isExpanded;
-        set => SetProperty(ref _isExpanded, value);
     }
 
     /// <summary>Per-day contributor line (e.g. "PC 7:15 active · 1:20 idle"); empty when none.</summary>
@@ -122,18 +103,21 @@ public sealed class CalendarDayViewModel : ObservableObject
         private set => SetProperty(ref _isUntrackedWarning, value);
     }
 
-    /// <summary>Expands or collapses the day.</summary>
-    public ICommand ToggleCommand { get; }
+    /// <summary>
+    /// The day's session blocks, clipped to this day and ordered by start; a
+    /// session crossing midnight appears in both days.
+    /// </summary>
+    public IReadOnlyList<CalendarSessionViewModel> Sessions { get; private set; } = [];
 
     /// <summary>
-    /// The day's booking element groups, ordered by earliest start. Each carries
-    /// the element's summed time and its merged tasks. Empty when the day has none.
+    /// Active stretches of this day, clipped to the day and ordered by start;
+    /// the view draws one green strip segment per span.
     /// </summary>
-    public IReadOnlyList<CalendarElementGroupViewModel> Groups { get; private set; } = [];
+    public IReadOnlyList<TimeRange> ActiveSpans { get; private set; } = [];
 
     /// <summary>
     /// The day's untracked gaps (at least <see cref="MinimumGapDuration"/>), ordered
-    /// by start; shown below the groups when the day is expanded.
+    /// by start; the view draws them as bands with a Book button.
     /// </summary>
     public IReadOnlyList<CalendarGapViewModel> Gaps { get; private set; } = [];
 
@@ -156,31 +140,36 @@ public sealed class CalendarDayViewModel : ObservableObject
         OnPropertyChanged(nameof(CanDistribute));
     }
 
-    /// <summary>
-    /// Replaces the day's gap rows, ordered by start; shown below the groups when
-    /// the day is expanded.
-    /// </summary>
+    /// <summary>Replaces the day's gap bands, ordered by start.</summary>
     public void SetGaps(IEnumerable<TimeRange> gaps)
     {
         Gaps = [.. gaps.Select(g => new CalendarGapViewModel(g))];
         OnPropertyChanged(nameof(Gaps));
     }
 
-    public void Update(DateTimeOffset date, IEnumerable<TrackedSession> sessions)
+    /// <summary>Replaces the day's activity strip spans, clipped to the day.</summary>
+    public void SetActiveSpans(IEnumerable<TimeRange> spans)
     {
-        var items = sessions.OrderBy(e => e.Start).ToList();
+        ActiveSpans = [.. spans.Where(s => s.Duration > TimeSpan.Zero).OrderBy(s => s.Start)];
+        OnPropertyChanged(nameof(ActiveSpans));
+    }
+
+    /// <summary>Replaces the day's clipped session blocks.</summary>
+    public void Update(DateTimeOffset date, IEnumerable<CalendarSessionViewModel> sessions)
+    {
+        var items = sessions.OrderBy(s => s.Start).ToList();
 
         Date = date;
         Header = $"{date.ToString("ddd", CultureInfo.InvariantCulture)} {date.Day:00}.{date.Month:00}.";
 
-        Groups = BuildGroups(items);
-        _bookedSeconds = items.Sum(e => e.DurationSeconds);
+        Sessions = items;
+        _bookedSeconds = items.Sum(s => s.Duration.TotalSeconds);
         TotalText = items.Count > 0 ? $"Σ {CalendarTimeFormat.HoursMinutes(_bookedSeconds)}" : "";
         IsToday = date.Date == _now().Date;
         RefreshUntracked();
 
         OnPropertyChanged(nameof(Date));
-        OnPropertyChanged(nameof(Groups));
+        OnPropertyChanged(nameof(Sessions));
     }
 
     /// <summary>Recomputes the untracked time from the active time and the booked sessions.</summary>
@@ -197,58 +186,6 @@ public sealed class CalendarDayViewModel : ObservableObject
 
         IsUntrackedWarning = untracked >= UntrackedWarningThreshold;
         var prefix = IsUntrackedWarning ? "⚠ " : "";
-        UntrackedText = $"{prefix}{CalendarTimeFormat.HoursMinutes(untracked.TotalSeconds)} untracked";
+        UntrackedText = prefix + string.Format(Strings.Calendar_DistributeUntracked, CalendarTimeFormat.HoursMinutes(untracked.TotalSeconds));
     }
-
-    /// <summary>Collapses the day and every group below it.</summary>
-    public void CollapseAll()
-    {
-        IsExpanded = false;
-        foreach (var group in Groups)
-        {
-            group.IsExpanded = false;
-        }
-    }
-
-    /// <summary>
-    /// One group per booking element (case-insensitive; entries without one form
-    /// the "&lt;None&gt;" group), each holding its tasks merged by name. Groups and
-    /// tasks are ordered by earliest start, tie-broken by name.
-    /// </summary>
-    private IReadOnlyList<CalendarElementGroupViewModel> BuildGroups(IReadOnlyList<TrackedSession> items)
-    {
-        // Keep the expansion of elements that are still present.
-        var expanded = Groups.Where(g => g.IsExpanded).Select(g => g.Name).ToHashSet(StringComparer.Ordinal);
-
-        return [.. items
-            .GroupBy(ElementKey, StringComparer.CurrentCultureIgnoreCase)
-            .OrderBy(g => g.Min(e => e.Start))
-            .ThenBy(g => ElementLabel(g.Key), StringComparer.CurrentCultureIgnoreCase)
-            .Select(g => Observe(new CalendarElementGroupViewModel(ElementLabel(g.Key), BuildEntries(g))
-            {
-                IsExpanded = expanded.Contains(ElementLabel(g.Key)),
-            }))];
-    }
-
-    /// <summary>
-    /// Re-raises a group's changes as a change of <see cref="Groups"/>, so the view
-    /// only has to observe the day node to repaint the whole subtree.
-    /// </summary>
-    private CalendarElementGroupViewModel Observe(CalendarElementGroupViewModel group)
-    {
-        group.PropertyChanged += (_, _) => OnPropertyChanged(nameof(Groups));
-        return group;
-    }
-
-    private static IReadOnlyList<CalendarEntryViewModel> BuildEntries(IEnumerable<TrackedSession> sessions) =>
-        [.. sessions
-            .GroupBy(e => e.Task.Trim(), StringComparer.CurrentCultureIgnoreCase)
-            .OrderBy(g => g.Min(e => e.Start))
-            .ThenBy(g => g.Key, StringComparer.CurrentCultureIgnoreCase)
-            .Select(g => new CalendarEntryViewModel(g.Key, g.Sum(e => e.DurationSeconds)))];
-
-    private static string ElementKey(TrackedSession entry) => entry.BookingElement.Trim();
-
-    private static string ElementLabel(string element) =>
-        element.Length > 0 ? element : NoBookingElementLabel;
 }

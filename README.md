@@ -10,9 +10,9 @@ press **Stop** — the session is saved to a JSON file in your user folder.
 - **Idle auto-stop** after 30 minutes without input; the session ends at the last input.
 - **Suggestions** while typing: known task names with their accumulated time.
 - **History grid:** one row per task — sorting, column filters, paging, inline editing (**F2**), multi-select delete (**Del**), per-task session editor.
-- **Week view:** collapsible day → booking element → task tree with daily totals and copy buttons.
+- **Calendar:** Workweek, Week and Month views; Outlook-style time grid with time-proportional blocks, a green activity strip, untracked gap bands, a now line and per-day totals/Distribute. The selected mode is remembered.
 - **Azure DevOps import:** enter a work-item number to fill task name and booking element.
-- **PC activity monitor:** optional background process recording active/idle time; the week view shows it per day plus the **untracked time**.
+- **PC activity monitor:** optional background process recording active/idle time; the calendar shows it per day plus the **untracked time**.
 - **Options** tab: file and log locations plus plugin settings.
 
 ## Getting started
@@ -53,7 +53,7 @@ scope) in the **Options** tab; applies without restart; task name becomes
 `<id> <title>`, booking element from the **AZE-Element** field. Without a
 connection the tracker works normally.
 
-**Activity monitor:** the week view's **⏻ Install PC activity monitor** button
+**Activity monitor:** the calendar's **⏻ Install PC activity monitor** button
 registers a per-user autostart; no admin rights.
 
 ## Architecture

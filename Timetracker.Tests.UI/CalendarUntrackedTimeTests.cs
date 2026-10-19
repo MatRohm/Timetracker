@@ -8,56 +8,55 @@ using Timetracker.Plugins.Contracts;
 namespace Timetracker.Tests.UI;
 
 /// <summary>
-/// The day row of the week tree shows the PC active time that no tracked session
-/// covers, next to the day's booked total and the PC activity line.
+/// The day header of the calendar shows the PC active time that no tracked
+/// session covers, next to the day's booked total, and untracked gaps are warning
+/// bands with a Book button.
 /// </summary>
 public sealed class CalendarUntrackedTimeTests
 {
+    private static readonly DateTimeOffset MondayNoon = new(2026, 9, 21, 12, 0, 0, TimeSpan.FromHours(2));
+    private static readonly DateOnly Monday = DateOnly.FromDateTime(MondayNoon.Date);
+
     [AvaloniaTest]
-    public void CalendarTrackingTree_WhenActiveTimeExceedsTheBookedTime_ShouldShowTheUntrackedTimeInTheDayRow()
+    public void CalendarWeekView_WhenActiveTimeExceedsTheBookedTime_ShouldShowTheUntrackedTimeInTheDayHeader()
     {
-        var today = DateOnly.FromDateTime(DateTimeOffset.Now.Date);
         var view = CalendarTestSupport.Build(
-            [CalendarTestSupport.Session(DateTimeOffset.Now.Date.AddHours(9), "Report")],
-            activeTime: day => day == today ? TimeSpan.FromMinutes(150) : TimeSpan.Zero).View;
+            [CalendarTestSupport.Session(MondayNoon.Date.AddHours(9), "Report")],
+            activeTime: day => day == Monday ? TimeSpan.FromMinutes(150) : TimeSpan.Zero,
+            now: () => MondayNoon).View;
 
         Realize(view);
 
         var labels = view.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
         labels.Should().Contain("⚠ 1:30 untracked");
         labels.Count(text => text?.EndsWith(" untracked", StringComparison.Ordinal) == true)
-            .Should().Be(1, "only today has recorded activity");
+            .Should().Be(1, "only Monday has recorded activity");
     }
 
     [AvaloniaTest]
-    public void CalendarTrackingTree_WhenADayWithAGapIsExpanded_ShouldShowTheGapRowWithABookButton()
+    public void CalendarWeekView_WhenADayHasAGap_ShouldShowABookButtonOnTheGapBand()
     {
-        var midnight = DateTimeOffset.Now.Date;
-        var offset = DateTimeOffset.Now.Offset;
-        var (view, week) = CalendarTestSupport.Build(
-            [CalendarTestSupport.Session(new DateTimeOffset(midnight.AddHours(9), offset), "Report")],
-            activeSpans: day => day == DateOnly.FromDateTime(midnight)
-                ? [new ActiveSpan(new DateTimeOffset(midnight.AddHours(9), offset), new DateTimeOffset(midnight.AddHours(12), offset))]
-                : []);
-        week.Days.Single(d => d.IsToday).IsExpanded = true;
+        var view = CalendarTestSupport.Build(
+            [CalendarTestSupport.Session(MondayNoon.Date.AddHours(9), "Report")],
+            activeSpans: day => day == Monday
+                ? [new ActiveSpan(MondayNoon.Date.AddHours(9), MondayNoon.Date.AddHours(12))]
+                : [],
+            now: () => MondayNoon).View;
 
         Realize(view);
 
-        var gapRow = view.GetVisualDescendants().OfType<TextBlock>()
-            .Single(t => t.Text == "⚠ 10:00–12:00 untracked (2:00)");
-        var buttons = gapRow.Parent.Should().BeOfType<StackPanel>().Which.Children.OfType<Button>().ToList();
-        buttons.Should().ContainSingle(b => b.Content as string == "Book…");
-        buttons.Should().NotContain(b => b.Content as string == "Distribute",
-            "distribute moved to the day row");
+        var book = view.GetVisualDescendants().OfType<Button>()
+            .Single(b => b.Content as string == "Book…");
+        ToolTip.GetTip(book).Should().Be("⚠ 10:00–12:00 untracked (2:00)");
     }
 
     [AvaloniaTest]
-    public void CalendarTrackingTree_WhenADayHasUntrackedTime_ShouldShowAnEnabledDistributeButtonInTheDayRow()
+    public void CalendarWeekView_WhenADayHasUntrackedTime_ShouldShowAnEnabledDistributeButton()
     {
-        var today = DateOnly.FromDateTime(DateTimeOffset.Now.Date);
         var view = CalendarTestSupport.Build(
-            [CalendarTestSupport.Session(DateTimeOffset.Now.Date.AddHours(9), "Report")],
-            activeTime: day => day == today ? TimeSpan.FromMinutes(150) : TimeSpan.Zero).View;
+            [CalendarTestSupport.Session(MondayNoon.Date.AddHours(9), "Report")],
+            activeTime: day => day == Monday ? TimeSpan.FromMinutes(150) : TimeSpan.Zero,
+            now: () => MondayNoon).View;
 
         Realize(view);
 
@@ -67,11 +66,12 @@ public sealed class CalendarUntrackedTimeTests
     }
 
     [AvaloniaTest]
-    public void CalendarTrackingTree_WhenADayIsFullyBooked_ShouldDisableTheDistributeButton()
+    public void CalendarWeekView_WhenADayIsFullyBooked_ShouldDisableTheDistributeButton()
     {
         var view = CalendarTestSupport.Build(
-            [CalendarTestSupport.Session(DateTimeOffset.Now.Date.AddHours(9), "Report")],
-            activeTime: _ => TimeSpan.Zero).View;
+            [CalendarTestSupport.Session(MondayNoon.Date.AddHours(9), "Report")],
+            activeTime: _ => TimeSpan.Zero,
+            now: () => MondayNoon).View;
 
         Realize(view);
 

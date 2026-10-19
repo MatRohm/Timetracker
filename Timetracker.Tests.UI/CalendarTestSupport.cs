@@ -1,22 +1,26 @@
 using Avalonia.Controls;
-using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Calendar.Tests.Unit;
 using Timetracker.Plugins.Calendar.ViewModels;
 using Timetracker.Plugins.Calendar.Views;
+using Timetracker.Plugins.Contracts;
 
 namespace Timetracker.Tests.UI;
 
 /// <summary>
 /// Builds the calendar (its tab and view model) from plain sessions, wiring the
-/// fakes the UI tests need instead of a full application container.
+/// fakes the UI tests need instead of a full application container. Defaults to
+/// Week mode so all seven days, including the current one on a weekend, are
+/// rendered; pass another stored mode for mode-specific tests.
 /// </summary>
 internal static class CalendarTestSupport
 {
-    public static (CalendarTabView View, CalendarViewModel Week) Build(
+    public static (CalendarTabView View, CalendarViewModel Calendar) Build(
         IEnumerable<TrackedSession> sessions,
         Func<DateOnly, TimeSpan>? activeTime = null,
         Func<DateOnly, IReadOnlyList<ActiveSpan>>? activeSpans = null,
-        IReadOnlyList<Control>? contributors = null)
+        IReadOnlyList<Control>? contributors = null,
+        string? storedMode = nameof(CalendarViewMode.Week),
+        Func<DateTimeOffset>? now = null)
     {
         var activity = new FakeDayActivitySource
         {
@@ -24,12 +28,18 @@ internal static class CalendarTestSupport
             ActiveSpans = activeSpans ?? (_ => []),
         };
         var tracked = new FakeTrackedSessions();
-        var week = new CalendarViewModel(tracked, tracked, [], [activity]);
+        var options = new FakeOptions();
+        if (storedMode is not null)
+        {
+            options.Set(CalendarOptions.ViewModeKey, storedMode);
+        }
+
+        var calendar = new CalendarViewModel(tracked, tracked, [], [activity], options, options, now);
         tracked.SetSessions([.. sessions]);
-        return (new CalendarTabView(week, contributors ?? []), week);
+        return (new CalendarTabView(calendar, contributors ?? []), calendar);
     }
 
-    /// <summary>A one-hour session starting at <paramref name="start"/>.</summary>
+    /// <summary>A session starting at <paramref name="start"/>.</summary>
     public static TrackedSession Session(
         DateTimeOffset start, string task, string bookingElement = "", int minutes = 60) => new()
         {
