@@ -52,6 +52,26 @@ public sealed class AzureDevOpsService : IDisposable
     public bool IsConfigured => _config().IsUsable;
 
     /// <summary>
+    /// Parses the issue-number input shared by the service and the import popup:
+    /// a positive whole number after trimming. <paramref name="error"/> holds the
+    /// canonical message when the text is invalid.
+    /// </summary>
+    public static bool TryParseIssueNumber(string text, out int id, out string? error)
+    {
+        var numberText = text.Trim();
+        if (numberText.Length == 0 || !int.TryParse(numberText, out var parsed) || parsed <= 0)
+        {
+            id = 0;
+            error = Strings.AzureDevOps_NumericRequired;
+            return false;
+        }
+
+        id = parsed;
+        error = null;
+        return true;
+    }
+
+    /// <summary>
     /// Looks up the work item and fills the host inputs. Returns false when the
     /// issue number is invalid, the config is missing, or the request failed.
     /// The view model is not touched from here; the host decides what to do with
@@ -60,10 +80,9 @@ public sealed class AzureDevOpsService : IDisposable
     public async Task<ApplyResult> ApplyIssueAsync(
         string issueNumberText, ITrackerUiCommand host, CancellationToken cancellationToken = default)
     {
-        var numberText = issueNumberText.Trim();
-        if (numberText.Length == 0 || !int.TryParse(numberText, out var id) || id <= 0)
+        if (!TryParseIssueNumber(issueNumberText, out var id, out var numberError))
         {
-            return ApplyResult.Failure(Strings.AzureDevOps_NumericFirst);
+            return ApplyResult.Failure(numberError!);
         }
 
         var config = _config();

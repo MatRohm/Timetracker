@@ -3,6 +3,7 @@ using AwesomeAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Testing;
 using NUnit.Framework;
+using Timetracker.Plugins.AzureDevOps.Localization;
 using Timetracker.Plugins.Contracts;
 
 namespace Timetracker.Plugins.AzureDevOps.Tests.Unit;
@@ -149,9 +150,33 @@ public sealed class AzureDevOpsServiceTests
         var service = new AzureDevOpsService(AzureDevOpsTestHelpers.Config(), () => throw new InvalidOperationException());
         var host = new FakeHost();
 
-        (await service.ApplyIssueAsync("abc", host)).Success.Should().BeFalse();
+        (await service.ApplyIssueAsync("abc", host)).Error.Should().Be(Strings.AzureDevOps_NumericRequired);
         (await service.ApplyIssueAsync("0", host)).Success.Should().BeFalse();
         (await service.ApplyIssueAsync("  ", host)).Success.Should().BeFalse();
+    }
+
+    [Test]
+    public void TryParseIssueNumber_WhenTheTextIsAPositiveNumber_ShouldReturnIt()
+    {
+        var parsed = AzureDevOpsService.TryParseIssueNumber(" 42 ", out var id, out var error);
+
+        parsed.Should().BeTrue();
+        id.Should().Be(42);
+        error.Should().BeNull();
+    }
+
+    [TestCase("abc")]
+    [TestCase("0")]
+    [TestCase("-1")]
+    [TestCase("  ")]
+    public void TryParseIssueNumber_WhenTheTextIsNotAPositiveNumber_ShouldReportTheCanonicalMessage(string text)
+    {
+        var parsed = AzureDevOpsService.TryParseIssueNumber(text, out var id, out var error);
+
+        parsed.Should().BeFalse();
+        id.Should().Be(0);
+        error.Should().Be(Strings.AzureDevOps_NumericRequired,
+            "the service and the import popup share one message");
     }
 
     [Test]

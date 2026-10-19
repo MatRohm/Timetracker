@@ -199,13 +199,13 @@ public sealed class AzureDevOpsPanel : UserControl
         /// <summary>Closes with the entered number, or keeps the dialog open when invalid.</summary>
         private void Submit()
         {
-            var text = _issueBox.Text?.Trim() ?? "";
-            if (text.Length == 0 || !int.TryParse(text, out var id) || id <= 0)
+            var text = _issueBox.Text ?? "";
+            if (!AzureDevOpsService.TryParseIssueNumber(text, out _, out var error))
             {
-                _errorText.Text = Strings.AzureDevOps_NumericRequired;
+                _errorText.Text = error;
                 return;
             }
-            Close(text);
+            Close(text.Trim());
         }
     }
 }
