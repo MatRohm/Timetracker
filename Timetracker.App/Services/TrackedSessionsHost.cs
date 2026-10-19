@@ -8,7 +8,7 @@ using Timetracker.Plugins.Contracts.Interfaces;
 namespace Timetracker.App.Services;
 
 /// <summary>
-/// Host implementation that lets add-ins (e.g. the week view) read and change the
+/// Host implementation that lets add-ins (e.g. the calendar) read and change the
 /// stored sessions. It reuses the tracker view model's session log and its editor,
 /// so the session data stays in one place while add-ins only see the contract.
 /// </summary>

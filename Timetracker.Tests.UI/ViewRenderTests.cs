@@ -12,7 +12,7 @@ using Timetracker.App.ViewModels;
 using Timetracker.App.Views;
 using Timetracker.App.Views.Components;
 using Timetracker.Plugins.Contracts.ViewModels;
-using Timetracker.Plugins.WeekView.Views;
+using Timetracker.Plugins.Calendar.Views;
 
 namespace Timetracker.Tests.UI;
 
@@ -177,11 +177,11 @@ public sealed class ViewRenderTests
     }
 
     [AvaloniaTest]
-    public void WeekTabView_WhenRendered_ShouldShowSevenDayNodesWithBookings()
+    public void CalendarTabView_WhenRendered_ShouldShowSevenDayNodesWithBookings()
     {
-        var (view, week) = WeekViewTestSupport.Build(
+        var (view, week) = CalendarTestSupport.Build(
         [
-            WeekViewTestSupport.Session(DateTimeOffset.Now.Date.AddHours(9), "Meeting", "Project X"),
+            CalendarTestSupport.Session(DateTimeOffset.Now.Date.AddHours(9), "Meeting", "Project X"),
         ]);
         // Days start collapsed; expand today to reveal its booking element node.
         var today = week.Days.Single(d => d.IsToday);
@@ -193,7 +193,7 @@ public sealed class ViewRenderTests
         texts.Should().Contain(t => t.StartsWith("Week "), "the week title is shown");
 
         week.Days.Should().HaveCount(7, "Monday through Sunday");
-        FindAllControls<WeekTrackingTree>(view).Should().ContainSingle("the week tree is hosted");
+        FindAllControls<CalendarTrackingTree>(view).Should().ContainSingle("the week tree is hosted");
     }
 
     private static TrackerEntry Entry(string task, string bookingElement) => new()

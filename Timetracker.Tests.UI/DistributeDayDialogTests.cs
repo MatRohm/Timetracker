@@ -6,7 +6,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using NUnit.Framework;
 using Timetracker.Plugins.Contracts;
-using Timetracker.Plugins.WeekView.Views;
+using Timetracker.Plugins.Calendar.Views;
 
 namespace Timetracker.Tests.UI;
 
@@ -22,8 +22,8 @@ public sealed class DistributeDayDialogTests
     {
         var dialog = Build(
             TimeSpan.FromMinutes(135),
-            WeekViewTestSupport.Session(At(9, 0), "Report"),
-            WeekViewTestSupport.Session(At(12, 0), "Review", minutes: 30));
+            CalendarTestSupport.Session(At(9, 0), "Report"),
+            CalendarTestSupport.Session(At(12, 0), "Review", minutes: 30));
 
         var texts = DialogTexts(dialog);
         texts.Should().Contain("Report");
@@ -43,8 +43,8 @@ public sealed class DistributeDayDialogTests
     {
         var dialog = Build(
             TimeSpan.FromMinutes(135),
-            WeekViewTestSupport.Session(At(9, 0), "Report"),
-            WeekViewTestSupport.Session(At(12, 0), "Review", minutes: 30));
+            CalendarTestSupport.Session(At(9, 0), "Report"),
+            CalendarTestSupport.Session(At(12, 0), "Review", minutes: 30));
 
         // Report's prefill is +1:00: hand 15 back and give it to Review.
         var reviewRow = dialog.ViewModel.Rows.Single(r => r.Task == "Review");
@@ -69,9 +69,9 @@ public sealed class DistributeDayDialogTests
         // Report 09:00–10:00 is boxed in by Meeting 08:30–09:00 and Deploy 10:00–11:00.
         var dialog = Build(
             TimeSpan.FromHours(4),
-            WeekViewTestSupport.Session(At(8, 30), "Meeting", minutes: 30),
-            WeekViewTestSupport.Session(At(9, 0), "Report"),
-            WeekViewTestSupport.Session(At(10, 0), "Deploy"));
+            CalendarTestSupport.Session(At(8, 30), "Meeting", minutes: 30),
+            CalendarTestSupport.Session(At(9, 0), "Report"),
+            CalendarTestSupport.Session(At(10, 0), "Deploy"));
 
         var reportRow = dialog.ViewModel.Rows.Single(r => r.Task == "Report");
         reportRow.ShareText.Should().Be("+0:30");
@@ -85,8 +85,8 @@ public sealed class DistributeDayDialogTests
     {
         var dialog = Build(
             TimeSpan.FromMinutes(135),
-            WeekViewTestSupport.Session(At(9, 0), "Report"),
-            WeekViewTestSupport.Session(At(12, 0), "Review", minutes: 30));
+            CalendarTestSupport.Session(At(9, 0), "Report"),
+            CalendarTestSupport.Session(At(12, 0), "Review", minutes: 30));
 
         dialog.ViewModel.Rows.Single(r => r.Task == "Review").DecreaseCommand.Execute(null);
         var distribute = FindButtonsByContent(dialog, "Distribute").Single();
@@ -101,7 +101,7 @@ public sealed class DistributeDayDialogTests
 
     private static DistributeDayWindow Build(TimeSpan active, params TrackedSession[] sessions)
     {
-        var (view, week) = WeekViewTestSupport.Build(
+        var (view, week) = CalendarTestSupport.Build(
             sessions,
             activeTime: day => day == DateOnly.FromDateTime(DateTimeOffset.Now.Date) ? active : TimeSpan.Zero);
         _ = view;

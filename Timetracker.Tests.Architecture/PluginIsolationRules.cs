@@ -6,7 +6,7 @@ namespace Timetracker.Tests.Architecture;
 
 /// <summary>
 /// Plugin isolation: only the composition root (<c>Timetracker.App.HookRegistry</c>)
-/// may reference the concrete plugin projects (AzureDevOps, ActivityMonitor, WeekView).
+/// may reference the concrete plugin projects (AzureDevOps, ActivityMonitor, Calendar).
 /// Every other app type goes through the shared <c>Timetracker.Plugins.Contracts</c>.
 /// Checked on the dependency targets directly, so generic-type arguments and method
 /// bodies are seen and the "plugins except Contracts" scope stays precise.
