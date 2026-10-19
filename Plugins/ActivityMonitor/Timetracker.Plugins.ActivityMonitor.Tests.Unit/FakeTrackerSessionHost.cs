@@ -11,6 +11,9 @@ internal sealed class FakeTrackerSessionHost : ITrackerSessionCommand
 
     public int StopCalls { get; private set; }
 
+    /// <summary>When set, a stop request fails with this exception.</summary>
+    public Exception? StopThrows { get; set; }
+
     public Task<bool> StartSessionAsync(string taskName, string bookingElement, CancellationToken cancellationToken) =>
         Task.FromResult(true);
 
@@ -19,6 +22,10 @@ internal sealed class FakeTrackerSessionHost : ITrackerSessionCommand
         StopCalls++;
         StoppedEndedAt = endedAt;
         StoppedReason = reason;
+        if (StopThrows is not null)
+        {
+            throw StopThrows;
+        }
         return Task.FromResult(true);
     }
 }
