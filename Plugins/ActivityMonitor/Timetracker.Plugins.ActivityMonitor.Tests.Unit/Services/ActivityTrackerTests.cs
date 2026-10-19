@@ -17,11 +17,14 @@ public sealed class ActivityTrackerTests
         var path = TempPath("log-short-idle.json");
         File.Delete(path);
         var log = new ActivityLog(path);
-        var tracker = new TrackerForTests(log, () => At(9, 0), path + ".state.json");
+        var now = At(9, 0);
+        var tracker = new TrackerForTests(log, () => now, path + ".state.json");
 
         // 30 minutes idle: below the one-hour threshold, nothing is logged.
-        tracker.PollWithDuration(TimeSpan.FromMinutes(30), At(9, 30));
-        tracker.PollWithDuration(TimeSpan.FromMinutes(1), At(10, 0));
+        now = At(9, 30);
+        tracker.PollWithDuration(TimeSpan.FromMinutes(30));
+        now = At(10, 0);
+        tracker.PollWithDuration(TimeSpan.FromMinutes(1));
 
         log.GetAll().Should().BeEmpty("short breaks are ignored entirely");
     }
@@ -32,11 +35,14 @@ public sealed class ActivityTrackerTests
         var path = TempPath("log-long-idle.json");
         File.Delete(path);
         var log = new ActivityLog(path);
-        var tracker = new TrackerForTests(log, () => At(9, 0), path + ".state.json");
+        var now = At(9, 0);
+        var tracker = new TrackerForTests(log, () => now, path + ".state.json");
 
         // 90 minutes without input: the idle span is recorded once input resumes.
-        tracker.PollWithDuration(TimeSpan.FromMinutes(90), At(10, 30));
-        tracker.PollWithDuration(TimeSpan.FromSeconds(5), At(10, 31));
+        now = At(10, 30);
+        tracker.PollWithDuration(TimeSpan.FromMinutes(90));
+        now = At(10, 31);
+        tracker.PollWithDuration(TimeSpan.FromSeconds(5));
 
         var spans = log.GetAll();
         spans.Should().HaveCount(2, "the active span and the idle span are recorded");
@@ -52,14 +58,15 @@ public sealed class ActivityTrackerTests
         var path = TempPath("log-configured-span.json");
         File.Delete(path);
         var log = new ActivityLog(path);
-        var tracker = new TrackerForTests(log, () => At(9, 0), path + ".state.json")
-        {
-            IdleSpanThreshold = TimeSpan.FromMinutes(20),
-        };
+        var now = At(9, 0);
+        var tracker = new TrackerForTests(
+            log, () => now, path + ".state.json", idleSpanThreshold: TimeSpan.FromMinutes(20));
 
         // 30 minutes without input: below the default hour, above the configured threshold.
-        tracker.PollWithDuration(TimeSpan.FromMinutes(30), At(9, 30));
-        tracker.PollWithDuration(TimeSpan.FromSeconds(5), At(9, 31));
+        now = At(9, 30);
+        tracker.PollWithDuration(TimeSpan.FromMinutes(30));
+        now = At(9, 31);
+        tracker.PollWithDuration(TimeSpan.FromSeconds(5));
 
         var spans = log.GetAll();
         spans.Select(s => s.Kind).Should().Equal("active", "idle");
@@ -72,14 +79,15 @@ public sealed class ActivityTrackerTests
         var path = TempPath("log-configured-span-high.json");
         File.Delete(path);
         var log = new ActivityLog(path);
-        var tracker = new TrackerForTests(log, () => At(9, 0), path + ".state.json")
-        {
-            IdleSpanThreshold = TimeSpan.FromMinutes(90),
-        };
+        var now = At(9, 0);
+        var tracker = new TrackerForTests(
+            log, () => now, path + ".state.json", idleSpanThreshold: TimeSpan.FromMinutes(90));
 
         // 45 minutes without input: below the configured 90-minute threshold.
-        tracker.PollWithDuration(TimeSpan.FromMinutes(45), At(9, 45));
-        tracker.PollWithDuration(TimeSpan.FromSeconds(5), At(9, 46));
+        now = At(9, 45);
+        tracker.PollWithDuration(TimeSpan.FromMinutes(45));
+        now = At(9, 46);
+        tracker.PollWithDuration(TimeSpan.FromSeconds(5));
 
         log.GetAll().Should().BeEmpty("45 idle minutes are below the configured threshold");
     }
@@ -90,11 +98,14 @@ public sealed class ActivityTrackerTests
         var path = TempPath("log-unknown.json");
         File.Delete(path);
         var log = new ActivityLog(path);
-        var tracker = new TrackerForTests(log, () => At(9, 0), path + ".state.json");
+        var now = At(9, 0);
+        var tracker = new TrackerForTests(log, () => now, path + ".state.json");
 
         tracker.Start();
-        tracker.PollWithUnknown(At(9, 30));
-        tracker.PollWithDuration(TimeSpan.FromSeconds(5), At(10, 0));
+        now = At(9, 30);
+        tracker.PollWithUnknown();
+        now = At(10, 0);
+        tracker.PollWithDuration(TimeSpan.FromSeconds(5));
 
         var spans = log.GetAll();
         spans.Should().HaveCount(2, "the active stretch and the unknown stretch are recorded");
@@ -110,11 +121,14 @@ public sealed class ActivityTrackerTests
         var path = TempPath("log-default-span.json");
         File.Delete(path);
         var log = new ActivityLog(path);
-        var tracker = new TrackerForTests(log, () => At(9, 0), path + ".state.json");
+        var now = At(9, 0);
+        var tracker = new TrackerForTests(log, () => now, path + ".state.json");
 
         // 45 minutes without input: below the default one-hour threshold.
-        tracker.PollWithDuration(TimeSpan.FromMinutes(45), At(9, 45));
-        tracker.PollWithDuration(TimeSpan.FromSeconds(5), At(9, 46));
+        now = At(9, 45);
+        tracker.PollWithDuration(TimeSpan.FromMinutes(45));
+        now = At(9, 46);
+        tracker.PollWithDuration(TimeSpan.FromSeconds(5));
 
         log.GetAll().Should().BeEmpty("the fallback is the built-in one hour");
     }
@@ -176,6 +190,38 @@ public sealed class ActivityTrackerTests
     }
 
     [Test]
+    public void Start_WhenStateFileHoldsLegacyIdleState_ShouldStillCloseAnIdleSpan()
+    {
+        // Older versions wrote the lowercase state name to disk; it must keep parsing.
+        var path = TempPath($"log-legacy-idle-{Guid.NewGuid():N}.json");
+        var statePath = path + ".state.json";
+        File.WriteAllText(statePath, "idle\n" + At(8, 0).ToString("O"));
+        var log = new ActivityLog(path);
+        var tracker = new TrackerForTests(log, () => At(9, 15), statePath);
+
+        tracker.Start();
+
+        log.GetAll().Should().ContainSingle().Which.Should().Match<ActivitySpan>(s =>
+            s.Kind == "idle" && s.Start == At(8, 0) && s.End == At(9, 15));
+    }
+
+    [Test]
+    public void Start_WhenStateFileHoldsNumericGarbage_ShouldFallBackToActive()
+    {
+        // "1" parses as the enum's numeric value (Idle); only the state names are valid.
+        var path = TempPath($"log-numeric-state-{Guid.NewGuid():N}.json");
+        var statePath = path + ".state.json";
+        File.WriteAllText(statePath, "1\n" + At(8, 0).ToString("O"));
+        var log = new ActivityLog(path);
+        var tracker = new TrackerForTests(log, () => At(9, 15), statePath);
+
+        tracker.Start();
+
+        log.GetAll().Should().ContainSingle().Which.Kind.Should().Be(
+            "active", "unrecognised state text falls back to active");
+    }
+
+    [Test]
     public void Start_WhenStarted_ShouldLogAStartupMessage()
     {
         var (tracker, logger) = TrackerWithLog("log-start");
@@ -214,15 +260,23 @@ public sealed class ActivityTrackerTests
     [Test]
     public void Poll_WhenPolledPastInterval_ShouldLogOnePollingMessage()
     {
-        var (tracker, logger) = TrackerWithLog("log-poll");
+        var logger = new FakeLogger<ActivityTracker>();
+        var now = At(9, 0);
+        var tracker = new TrackerForTests(
+            new ActivityLog(TempPath($"log-poll-activity-{Guid.NewGuid():N}.json")),
+            () => now,
+            TempPath($"log-poll-state-{Guid.NewGuid():N}.json"),
+            logger);
         tracker.Start();
 
         // Within the interval: no extra polling entry.
-        tracker.PollAt(At(9, 1));
+        now = At(9, 1);
+        tracker.PollAt();
         Messages(logger).Should().NotContain(m => m.StartsWith("Poll;"), "the heartbeat is throttled");
 
         // Past the interval: one polling entry.
-        tracker.PollAt(At(9, 6));
+        now = At(9, 6);
+        tracker.PollAt();
         Messages(logger).Should().ContainSingle(m => m.StartsWith("Poll;"));
     }
 
