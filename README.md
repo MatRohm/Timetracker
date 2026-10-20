@@ -32,7 +32,7 @@ dotnet publish Timetracker.App/Timetracker.App.csproj -c Release -r win-x64 --se
   -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
 ```
 
-CI builds and tests every push on Windows and Linux; the manual **Release** workflow publishes both binaries.
+CI builds and tests every push on the Gitea Linux runner; the manual **Release** workflow cross-publishes the Linux and Windows single-file executables. Native Windows testing is not part of the pipeline.
 
 ## Configuration and data files
 
