@@ -15,7 +15,7 @@ public sealed class CalendarTabContributor(CalendarViewModel calendar) : ITabQue
 {
     private readonly CalendarViewModel _calendar = calendar;
 
-    public string TabKey => TabKeys.WeekView;
+    public string TabKey => TabKeys.Calendar;
 
     public string Header => Strings.Tab_Calendar;
 

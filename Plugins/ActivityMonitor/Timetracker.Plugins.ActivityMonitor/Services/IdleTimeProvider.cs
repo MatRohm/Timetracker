@@ -9,7 +9,7 @@ public static class IdleTimeProvider
     /// Windows uses the Win32 last-input timestamp; Linux uses the X11
     /// XScreenSaver extension. On any platform where neither is available the
     /// provider reports idle as unknown (null), so the monitor records "unknown"
-    /// spans that the week view omits rather than misreporting the time as active.
+    /// spans that the calendar omits rather than misreporting the time as active.
     /// </summary>
     public static IIdleTimeProvider CreateForCurrentPlatform()
     {

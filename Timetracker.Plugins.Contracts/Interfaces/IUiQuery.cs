@@ -9,7 +9,7 @@ namespace Timetracker.Plugins.Contracts.Interfaces;
 /// </summary>
 public interface IUiQuery
 {
-    /// <summary>Stable key of the tab to place the control on ("Tracker", "Week view").</summary>
+    /// <summary>Stable key of the tab to place the control on ("Tracker", "Calendar").</summary>
     string TargetTab { get; }
 
     /// <summary>

@@ -176,8 +176,8 @@ public sealed class CalendarTabView : UserControl
         _statusLabel.Text = _calendar.StatusText;
         _statusLabel.Foreground = _calendar.Status switch
         {
-            WeekStatusKind.Success => ViewBrushes.Success,
-            WeekStatusKind.Error => ViewBrushes.Error,
+            CalendarStatusKind.Success => ViewBrushes.Success,
+            CalendarStatusKind.Error => ViewBrushes.Error,
             _ => ViewBrushes.Info,
         };
     }

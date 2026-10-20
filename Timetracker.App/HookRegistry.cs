@@ -100,7 +100,7 @@ public static class HookRegistry
 
         // Calendar plugin: its tab, its status line, and its view model.
         services.AddSingleton<Plugins.Calendar.ViewModels.CalendarViewModel>();
-        services.AddSingleton<IWeekStatusCommand, Plugins.Calendar.Services.CalendarStatusHost>();
+        services.AddSingleton<ICalendarStatusCommand, Plugins.Calendar.Services.CalendarStatusHost>();
         services.AddSingleton<ITabQuery, Plugins.Calendar.CalendarTabContributor>();
 
         // Azure DevOps import: the connection is edited in the options tab.
@@ -140,7 +140,7 @@ public static class HookRegistry
             sp.GetRequiredService<Plugins.ActivityMonitor.Services.IdleAutoStop>());
         // One contributor instance serves the per-day line and the day's active time.
         services.AddSingleton<Plugins.ActivityMonitor.Services.ActivityWeekDayContributor>();
-        services.AddSingleton<IWeekDayQuery>(
+        services.AddSingleton<ICalendarDayQuery>(
             sp => sp.GetRequiredService<Plugins.ActivityMonitor.Services.ActivityWeekDayContributor>());
         services.AddSingleton<IDayActivityQuery>(
             sp => sp.GetRequiredService<Plugins.ActivityMonitor.Services.ActivityWeekDayContributor>());

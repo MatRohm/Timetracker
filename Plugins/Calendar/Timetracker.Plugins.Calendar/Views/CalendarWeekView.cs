@@ -412,18 +412,18 @@ public sealed class CalendarWeekView : UserControl
     {
         if (TopLevel.GetTopLevel(this)?.Clipboard is not { } clipboard)
         {
-            _calendar.ShowStatus(Strings.Calendar_ClipboardError, WeekStatusKind.Error);
+            _calendar.ShowStatus(Strings.Calendar_ClipboardError, CalendarStatusKind.Error);
             return;
         }
 
         try
         {
             await clipboard.SetTextAsync(copyText);
-            _calendar.ShowStatus(Strings.Calendar_Copied, WeekStatusKind.Success);
+            _calendar.ShowStatus(Strings.Calendar_Copied, CalendarStatusKind.Success);
         }
         catch (Exception ex)
         {
-            _calendar.ShowStatus(string.Format(Strings.Calendar_CopyFailed, ex.Message), WeekStatusKind.Error);
+            _calendar.ShowStatus(string.Format(Strings.Calendar_CopyFailed, ex.Message), CalendarStatusKind.Error);
         }
     }
 }

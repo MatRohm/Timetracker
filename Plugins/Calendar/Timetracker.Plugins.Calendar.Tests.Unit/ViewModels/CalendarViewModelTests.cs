@@ -183,7 +183,7 @@ public sealed class CalendarViewModelTests
         await calendar.ChangeModeAsync(CalendarViewMode.Month);
 
         calendar.Mode.Should().Be(CalendarViewMode.Month);
-        calendar.Status.Should().Be(WeekStatusKind.Error);
+        calendar.Status.Should().Be(CalendarStatusKind.Error);
         calendar.StatusText.Should().Be("Could not save the calendar view mode.");
     }
 
@@ -394,7 +394,7 @@ public sealed class CalendarViewModelTests
 
         result.Should().BeTrue();
         applied.Should().BeSameAs(dialog.Plan.Changes);
-        calendar.Status.Should().Be(WeekStatusKind.Success);
+        calendar.Status.Should().Be(CalendarStatusKind.Success);
         calendar.StatusText.Should().StartWith("✓ Distributed");
     }
 
@@ -414,7 +414,7 @@ public sealed class CalendarViewModelTests
 
         result.Should().BeFalse();
         applied.Should().BeFalse();
-        calendar.Status.Should().Be(WeekStatusKind.Info);
+        calendar.Status.Should().Be(CalendarStatusKind.Info);
         calendar.StatusText.Should().Contain("Nothing could be distributed");
     }
 

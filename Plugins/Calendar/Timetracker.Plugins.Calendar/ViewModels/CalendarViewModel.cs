@@ -18,10 +18,9 @@ public sealed class CalendarViewModel : ObservableObject
 {
     private readonly ITrackedSessionsQuery _sessions;
     private readonly ITrackedSessionsCommand _sessionCommands;
-    private readonly IReadOnlyList<IWeekDayQuery> _dayContributors;
-    private readonly IReadOnlyList<IDayActivityQuery> _activitySources;
     private readonly IOptionQuery _options;
     private readonly IOptionCommand _optionCommands;
+    private readonly CalendarBuilder _builder;
 
     /// <summary>Current time; replaceable so the now line and today's column are testable.</summary>
     private readonly Func<DateTimeOffset> _now;
@@ -43,12 +42,12 @@ public sealed class CalendarViewModel : ObservableObject
     private string _calendarTitle = "";
     private string _calendarTotalText = "";
     private string _statusText = "";
-    private WeekStatusKind _status = WeekStatusKind.Info;
+    private CalendarStatusKind _status = CalendarStatusKind.Info;
 
     public CalendarViewModel(
         ITrackedSessionsQuery sessions,
         ITrackedSessionsCommand sessionCommands,
-        IEnumerable<IWeekDayQuery> dayContributors,
+        IEnumerable<ICalendarDayQuery> dayContributors,
         IEnumerable<IDayActivityQuery> activitySources,
         IOptionQuery options,
         IOptionCommand optionCommands,
@@ -56,11 +55,10 @@ public sealed class CalendarViewModel : ObservableObject
     {
         _sessions = sessions;
         _sessionCommands = sessionCommands;
-        _dayContributors = dayContributors.ToList();
-        _activitySources = activitySources.ToList();
         _options = options;
         _optionCommands = optionCommands;
         _now = now ?? (() => DateTimeOffset.Now);
+        _builder = new CalendarBuilder(dayContributors.ToList(), activitySources.ToList(), _now);
         _mode = ReadMode(_options);
 
         for (var i = 0; i < 7; i++)
@@ -145,14 +143,14 @@ public sealed class CalendarViewModel : ObservableObject
     }
 
     /// <summary>Kind of the current status message; the view maps it to a color.</summary>
-    public WeekStatusKind Status
+    public CalendarStatusKind Status
     {
         get => _status;
         private set => SetProperty(ref _status, value);
     }
 
     /// <summary>Shows a status message (from the app or an add-in) in the shared status line.</summary>
-    public void ShowStatus(string message, WeekStatusKind kind)
+    public void ShowStatus(string message, CalendarStatusKind kind)
     {
         Status = kind;
         StatusText = message;
@@ -193,7 +191,7 @@ public sealed class CalendarViewModel : ObservableObject
     {
         if (plan.Changes.Count == 0)
         {
-            ShowStatus(Strings.Calendar_NothingToDistribute, WeekStatusKind.Info);
+            ShowStatus(Strings.Calendar_NothingToDistribute, CalendarStatusKind.Info);
             return false;
         }
 
@@ -205,7 +203,7 @@ public sealed class CalendarViewModel : ObservableObject
             {
                 assigned += task.Share;
             }
-            ShowStatus(string.Format(Strings.Calendar_Distributed, CalendarTimeFormat.HoursMinutes(assigned), plan.Tasks.Count, day.Header), WeekStatusKind.Success);
+            ShowStatus(string.Format(Strings.Calendar_Distributed, CalendarTimeFormat.HoursMinutes(assigned), plan.Tasks.Count, day.Header), CalendarStatusKind.Success);
         }
 
         return saved;
@@ -301,78 +299,31 @@ public sealed class CalendarViewModel : ObservableObject
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            ShowStatus(Strings.Calendar_ModeSaveFailed, WeekStatusKind.Error);
+            ShowStatus(Strings.Calendar_ModeSaveFailed, CalendarStatusKind.Error);
         }
     }
 
     private void Rebuild()
     {
-        var now = _now();
-        var sessions = _sessions.Sessions;
-        var running = _sessions.RunningSince;
+        var content = _builder.Build(
+            _weekStart,
+            _monthStart,
+            Mode,
+            _sessions.Sessions,
+            _sessions.RunningSince);
 
-        for (var i = 0; i < 7; i++)
+        for (var i = 0; i < _days.Count; i++)
         {
-            var day = _weekStart.AddDays(i);
-            var dayStart = new DateTimeOffset(day.Date, day.Offset);
-            var dayEnd = dayStart.AddDays(1);
-
-            var blocks = new List<CalendarSessionViewModel>();
-            foreach (var session in sessions)
-            {
-                var end = session.End > session.Start ? session.End : now;
-                if (session.Start < dayEnd && end > dayStart)
-                {
-                    var isRunning = running is { } since && since == session.Start;
-                    blocks.Add(CalendarSessionViewModel.FromSession(session, now, dayStart, dayEnd, isRunning));
-                }
-            }
-
-            _days[i].Update(day, blocks);
-            var date = DateOnly.FromDateTime(day.Date);
-            _days[i].ContributorText = string.Join(" · ",
-                _dayContributors.Select(c => c.GetDayText(date)).Where(text => text.Length > 0));
-            _days[i].ActiveTime = _activitySources
-                .Select(s => s.GetActiveTime(date))
-                .DefaultIfEmpty(TimeSpan.Zero)
-                .Max();
-            _days[i].SetDistribution(DayDistribution.Plan(
-                sessions.Where(s => s.Start.Date == day.Date).ToList(),
-                _days[i].UntrackedTime));
-            _days[i].SetActiveSpans(
-                [.. _activitySources
-                    .SelectMany(s => s.GetActiveSpans(date))
-                    .Select(span => new TimeRange(
-                        span.Start > dayStart ? span.Start : dayStart,
-                        span.End < dayEnd ? span.End : dayEnd))
-                    .Where(range => range.Duration > TimeSpan.Zero)]);
-
-            // Every session counts, not only the day's: one started the evening before
-            // can cover the early hours of this day.
-            _days[i].SetGaps(
-                UntrackedGaps.Find(
-                    [.. _activitySources
-                        .SelectMany(s => s.GetActiveSpans(date))
-                        .Select(span => new TimeRange(span.Start, span.End))],
-                    sessions,
-                    running is { } runningStart ? new TimeRange(runningStart, DateTimeOffset.MaxValue) : null,
-                    CalendarDayViewModel.MinimumGapDuration));
+            _days[i].Apply(content.Days[i]);
         }
 
-        var visible = VisibleDays;
-        var visibleToday = visible.Any(d => d.IsToday);
-        var ranges = visible
-            .SelectMany(d => d.Sessions)
-            .Select(s => new TimeRange(s.Start, s.End))
-            .ToList();
-        Axis = CalendarLayout.FitAxis(ranges, visibleToday ? now.TimeOfDay : null);
-        NowLineMinutes = visibleToday && Axis.Contains(now.TimeOfDay)
-            ? (now.TimeOfDay - Axis.Start).TotalMinutes
-            : null;
+        Axis = content.Axis;
+        NowLineMinutes = content.NowLineMinutes;
+        MonthDays = content.MonthDays;
 
-        MonthDays = MonthGridBuilder.Build(_monthStart, sessions, now);
-
-        CalendarTotalText = FormatTotal(visible);
+        CalendarTotalText = content.VisibleSeconds > 0
+            ? string.Format(Strings.Calendar_TotalText, CalendarTimeFormat.HoursMinutes(content.VisibleSeconds))
+            : "";
         CalendarTitle = Mode == CalendarViewMode.Month
             ? string.Format(
                 Strings.Calendar_MonthTitle,
@@ -386,16 +337,6 @@ public sealed class CalendarViewModel : ObservableObject
         // One signal at the end of a rebuild: the day view models change many
         // properties in a row, and the view only needs to repaint once.
         OnPropertyChanged(nameof(Days));
-    }
-
-    private string FormatTotal(IReadOnlyList<CalendarDayViewModel> visible)
-    {
-        var seconds = Mode == CalendarViewMode.Month
-            ? MonthDays.Where(d => d.IsInMonth).Sum(d => d.TotalSeconds)
-            : visible.Sum(d => d.Sessions.Sum(s => s.Duration.TotalSeconds));
-
-        var result = seconds > 0 ? string.Format(Strings.Calendar_TotalText, CalendarTimeFormat.HoursMinutes(seconds)) : "";
-        return result;
     }
 
     private static CalendarViewMode ReadMode(IOptionQuery options)

@@ -91,7 +91,7 @@ The app follows a **Micro-Kernel Architecture**:
   shell.
 - Feature areas are plugins that extend the kernel through the contract
   interfaces in `Timetracker.Plugins.Contracts` (hooks the kernel calls:
-  `IUiQuery`, `IWeekDayQuery`, `IDayActivityQuery`, `ITabQuery`, `IAppCommand`,
+  `IUiQuery`, `ICalendarDayQuery`, `IDayActivityQuery`, `ITabQuery`, `IAppCommand`,
   `IOptionDefinitionQuery`; hosts plugins call back into:
   `ITrackerSessionQuery/Command`, `ITrackedSessionsQuery/Command`,
   `IOptionQuery/Command`, `IUiTimer`, `IFileExplorer`).

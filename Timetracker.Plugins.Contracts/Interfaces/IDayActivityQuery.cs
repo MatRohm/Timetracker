@@ -2,7 +2,7 @@ namespace Timetracker.Plugins.Contracts.Interfaces;
 
 /// <summary>
 /// Supplies how long the computer was actively used on a day (e.g. from the PC
-/// activity monitor). The week view compares it with the booked time to show how
+/// activity monitor). The calendar compares it with the booked time to show how
 /// much of the day was not tracked.
 /// </summary>
 public interface IDayActivityQuery
@@ -12,7 +12,7 @@ public interface IDayActivityQuery
 
     /// <summary>
     /// The day's active stretches, clipped to the day and ordered by start; empty
-    /// when nothing was recorded. Lets the week view show when time went untracked.
+    /// when nothing was recorded. Lets the calendar show when time went untracked.
     /// </summary>
     IReadOnlyList<ActiveSpan> GetActiveSpans(DateOnly day);
 }

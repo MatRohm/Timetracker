@@ -16,7 +16,7 @@ public sealed class CalendarTabContributorTests
     {
         var contributor = new CalendarTabContributor(new CalendarViewModel(new FakeTrackedSessions(), new FakeTrackedSessions(), [], [], new FakeOptions(), new FakeOptions()));
 
-        contributor.TabKey.Should().Be(TabKeys.WeekView);
+        contributor.TabKey.Should().Be(TabKeys.Calendar);
     }
 
     [Test]
