@@ -9,8 +9,8 @@ public static class TabKeys
     /// <summary>The tracker tab (start/stop and the session history).</summary>
     public const string Tracker = "Tracker";
 
-    /// <summary>The week view tab.</summary>
-    public const string WeekView = "Week view";
+    /// <summary>The calendar tab.</summary>
+    public const string Calendar = "Calendar";
 
     /// <summary>The options tab.</summary>
     public const string Options = "Options";

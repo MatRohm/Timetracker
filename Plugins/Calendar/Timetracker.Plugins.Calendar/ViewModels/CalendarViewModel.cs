@@ -42,12 +42,12 @@ public sealed class CalendarViewModel : ObservableObject
     private string _calendarTitle = "";
     private string _calendarTotalText = "";
     private string _statusText = "";
-    private WeekStatusKind _status = WeekStatusKind.Info;
+    private CalendarStatusKind _status = CalendarStatusKind.Info;
 
     public CalendarViewModel(
         ITrackedSessionsQuery sessions,
         ITrackedSessionsCommand sessionCommands,
-        IEnumerable<IWeekDayQuery> dayContributors,
+        IEnumerable<ICalendarDayQuery> dayContributors,
         IEnumerable<IDayActivityQuery> activitySources,
         IOptionQuery options,
         IOptionCommand optionCommands,
@@ -143,14 +143,14 @@ public sealed class CalendarViewModel : ObservableObject
     }
 
     /// <summary>Kind of the current status message; the view maps it to a color.</summary>
-    public WeekStatusKind Status
+    public CalendarStatusKind Status
     {
         get => _status;
         private set => SetProperty(ref _status, value);
     }
 
     /// <summary>Shows a status message (from the app or an add-in) in the shared status line.</summary>
-    public void ShowStatus(string message, WeekStatusKind kind)
+    public void ShowStatus(string message, CalendarStatusKind kind)
     {
         Status = kind;
         StatusText = message;
@@ -191,7 +191,7 @@ public sealed class CalendarViewModel : ObservableObject
     {
         if (plan.Changes.Count == 0)
         {
-            ShowStatus(Strings.Calendar_NothingToDistribute, WeekStatusKind.Info);
+            ShowStatus(Strings.Calendar_NothingToDistribute, CalendarStatusKind.Info);
             return false;
         }
 
@@ -203,7 +203,7 @@ public sealed class CalendarViewModel : ObservableObject
             {
                 assigned += task.Share;
             }
-            ShowStatus(string.Format(Strings.Calendar_Distributed, CalendarTimeFormat.HoursMinutes(assigned), plan.Tasks.Count, day.Header), WeekStatusKind.Success);
+            ShowStatus(string.Format(Strings.Calendar_Distributed, CalendarTimeFormat.HoursMinutes(assigned), plan.Tasks.Count, day.Header), CalendarStatusKind.Success);
         }
 
         return saved;
@@ -299,7 +299,7 @@ public sealed class CalendarViewModel : ObservableObject
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            ShowStatus(Strings.Calendar_ModeSaveFailed, WeekStatusKind.Error);
+            ShowStatus(Strings.Calendar_ModeSaveFailed, CalendarStatusKind.Error);
         }
     }
 

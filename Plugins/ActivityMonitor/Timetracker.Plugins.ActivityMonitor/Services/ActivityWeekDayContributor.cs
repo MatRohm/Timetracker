@@ -6,13 +6,13 @@ using Timetracker.Plugins.Contracts.Interfaces;
 namespace Timetracker.Plugins.ActivityMonitor.Services;
 
 /// <summary>
-/// Feeds the week view from the activity log: the PC activity line per day (e.g.
-/// "PC 7:15 active · 1:20 idle") and the day's active time, which the week view
+/// Feeds the calendar from the activity log: the PC activity line per day (e.g.
+/// "PC 7:15 active · 1:20 idle") and the day's active time, which the calendar
 /// compares with the booked time. Both come from the same per-day sum of the
 /// log's active/idle spans; the active stretches themselves are exposed too, so
-/// the week view can show when time went untracked.
+/// the calendar can show when time went untracked.
 /// </summary>
-public sealed class ActivityWeekDayContributor(ActivityLog log) : IWeekDayQuery, IDayActivityQuery
+public sealed class ActivityWeekDayContributor(ActivityLog log) : ICalendarDayQuery, IDayActivityQuery
 {
     /// <summary>Span kind the activity log uses for periods with user input.</summary>
     private const string ActiveKind = "active";

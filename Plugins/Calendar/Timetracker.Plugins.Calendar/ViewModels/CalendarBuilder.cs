@@ -11,7 +11,7 @@ namespace Timetracker.Plugins.Calendar.ViewModels;
 /// the view model only publishes the result.
 /// </summary>
 internal sealed class CalendarBuilder(
-    IReadOnlyList<IWeekDayQuery> dayContributors,
+    IReadOnlyList<ICalendarDayQuery> dayContributors,
     IReadOnlyList<IDayActivityQuery> activitySources,
     Func<DateTimeOffset> now)
 {

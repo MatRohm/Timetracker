@@ -7,7 +7,7 @@ using Timetracker.Plugins.Contracts.Localization;
 namespace Timetracker.Plugins.Contracts.Ui;
 
 /// <summary>
-/// Modal confirmations shared by the app and the week view, so the same dialog
+/// Modal confirmations shared by the app and the calendar, so the same dialog
 /// style is used wherever stored sessions are deleted.
 /// </summary>
 public static class Confirmations

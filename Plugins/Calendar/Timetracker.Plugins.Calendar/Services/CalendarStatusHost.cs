@@ -9,10 +9,10 @@ namespace Timetracker.Plugins.Calendar.Services;
 /// status message to the calendar model. The calendar owns its status line now
 /// that it lives in this plugin.
 /// </summary>
-public sealed class CalendarStatusHost(CalendarViewModel calendar) : IWeekStatusCommand
+public sealed class CalendarStatusHost(CalendarViewModel calendar) : ICalendarStatusCommand
 {
     private readonly CalendarViewModel _calendar = calendar;
 
-    public void ShowStatus(string message, WeekStatusKind kind) =>
+    public void ShowStatus(string message, CalendarStatusKind kind) =>
         _calendar.ShowStatus(message, kind);
 }

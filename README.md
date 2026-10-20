@@ -64,7 +64,7 @@ through the contract interfaces in `Timetracker.Plugins.Contracts` — the
 kernel never references plugin concrete types.
 
 - **Kernel** (`Timetracker.App`): view models, views, JSON persistence, DI wiring; discovers plugins via `GetServices<IUiQuery>`, `GetServices<ITabQuery>`, `GetServices<IAppCommand>`, …
-- **Contracts** (`Timetracker.Plugins.Contracts`): the plug-in seam — hook interfaces the kernel calls (`IUiQuery`, `IWeekDayQuery`, `IAppCommand`, …) and host interfaces plugins call into (`ITrackerSessionQuery/Command`, `IOptionQuery`, `IUiTimer`, …). No plugin logic.
+- **Contracts** (`Timetracker.Plugins.Contracts`): the plug-in seam — hook interfaces the kernel calls (`IUiQuery`, `ICalendarDayQuery`, `IAppCommand`, …) and host interfaces plugins call into (`ITrackerSessionQuery/Command`, `IOptionQuery`, `IUiTimer`, …). No plugin logic.
 - **Plugins** (Calendar, AzureDevOps, ActivityMonitor): implement hooks, self-register in `Timetracker.App/HookRegistry.cs`. Adding a feature = implement a hook + register. MVVM throughout: view models know nothing about Avalonia.
 
 Each plugin lives under `Plugins/<Name>/`, with its `.Tests.Unit` project beside it; `Timetracker.Plugins.Contracts` stays at the repository root.

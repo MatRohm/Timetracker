@@ -2,7 +2,7 @@ namespace Timetracker.Plugins.Contracts;
 
 /// <summary>
 /// A stretch of time between two instants, e.g. a period of PC activity or an
-/// untracked gap in the week view.
+/// untracked gap in the calendar.
 /// </summary>
 public sealed record TimeRange(DateTimeOffset Start, DateTimeOffset End)
 {

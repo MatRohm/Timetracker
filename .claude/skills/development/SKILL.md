@@ -55,7 +55,7 @@ begin a phase until the user has said to move on.
    tests report violations.
 6. **Match the architecture** — MVVM (view models know nothing about Avalonia,
    views hold no logic); new plugin behavior via `IUiQuery`,
-   `IWeekDayQuery` / `IAppCommand`; register in `HookRegistry.cs`.
+   `ICalendarDayQuery` / `IAppCommand`; register in `HookRegistry.cs`.
 7. **Keep changes minimal** — smallest change; no new NuGet packages; no public
    API changes; no unrelated files.
 8. **Commit as you go** — one of the three types (`feat`, `fix`, `technical`)

@@ -3,7 +3,7 @@ namespace Timetracker.Plugins.Contracts.Interfaces;
 /// <summary>
 /// Reads the stored sessions and the running timer, separate from the start/stop
 /// surface of <see cref="ITrackerSessionCommand"/>. Implemented by the main app;
-/// add-in components (e.g. the week view) resolve it via the DI container.
+/// add-in components (e.g. the calendar) resolve it via the DI container.
 /// </summary>
 public interface ITrackedSessionsQuery
 {

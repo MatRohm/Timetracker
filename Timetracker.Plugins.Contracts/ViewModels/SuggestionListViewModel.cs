@@ -6,7 +6,7 @@ namespace Timetracker.Plugins.Contracts.ViewModels;
 /// <summary>
 /// Autocomplete suggestions for the task-name input: builds the list shown below
 /// the field from the known task names and their accumulated time. Shared by the
-/// tracker's task input and the week view's booking dialog.
+/// tracker's task input and the calendar's booking dialog.
 /// </summary>
 public sealed class SuggestionListViewModel : ObservableObject
 {
