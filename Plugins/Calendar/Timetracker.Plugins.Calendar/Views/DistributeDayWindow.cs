@@ -5,6 +5,7 @@ using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Timetracker.Plugins.Calendar.ViewModels;
+using Timetracker.Plugins.Contracts.Ui;
 
 namespace Timetracker.Plugins.Calendar.Views;
 
@@ -40,7 +41,7 @@ public sealed class DistributeDayWindow : Window
     {
         var summary = new TextBlock
         {
-            Foreground = Brushes.Gray,
+            Foreground = ViewBrushes.Info,
             TextWrapping = TextWrapping.Wrap,
         };
         summary.Bind(TextBlock.TextProperty, new Binding
@@ -158,7 +159,7 @@ public sealed class DistributeDayWindow : Window
         var target = new TextBlock
         {
             VerticalAlignment = VerticalAlignment.Center,
-            Foreground = Brushes.Gray,
+            Foreground = ViewBrushes.Info,
         };
         target.Bind(TextBlock.TextProperty, new Binding
         {

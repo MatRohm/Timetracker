@@ -5,6 +5,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Timetracker.App.Localization;
 using Timetracker.App.ViewModels;
+using Timetracker.Plugins.Contracts.Ui;
 
 namespace Timetracker.App.Views.Components;
 
@@ -74,7 +75,7 @@ public sealed class ColumnFilterHeader : UserControl
     private static Control BuildFunnelIcon() => new Avalonia.Controls.Shapes.Path
     {
         Data = Geometry.Parse("M0,0 L12,0 L7.5,5.5 L7.5,10 L4.5,11.5 L4.5,5.5 Z"),
-        Fill = Brushes.Black,
+        Fill = ViewBrushes.Text,
         Width = 12,
         Height = 12,
         VerticalAlignment = VerticalAlignment.Center,

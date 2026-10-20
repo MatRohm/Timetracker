@@ -8,6 +8,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml.Styling;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Timetracker.App.Services;
 using Timetracker.App.Views;
 using Timetracker.Plugins.Contracts.Logging;
 
@@ -30,7 +31,9 @@ public sealed class App : Application
 
     public override void Initialize()
     {
-        Styles.Add(new Avalonia.Themes.Fluent.FluentTheme());
+        // The app's own Dracula/Alucard palettes; the user's Light/Dark setting is
+        // applied once the options store is available.
+        Styles.Add(ThemeSwitcher.CreateTheme());
 
         // The DataGrid ships its theme separately from the core controls.
         Styles.Add(new StyleInclude(new Uri("avares://Avalonia.Controls.DataGrid/"))
@@ -69,6 +72,11 @@ public sealed class App : Application
 
             // Upgrade an older tracker file to the current format before the first read.
             RunStartupMigrations(_services, logger);
+
+            // The stored appearance setting decides the variant before any view is built.
+            var storedTheme = _services.GetRequiredService<IOptionQuery>()
+                .GetValue(AppearanceOptions.ThemeKey);
+            _services.GetRequiredService<IThemeSwitcher>().Apply(storedTheme);
 
             var viewModel = _services.GetRequiredService<ViewModels.TrackerViewModel>();
 

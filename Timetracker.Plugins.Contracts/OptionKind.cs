@@ -11,4 +11,7 @@ public enum OptionKind
 
     /// <summary>Text that is masked on screen, such as a token.</summary>
     Secret,
+
+    /// <summary>One of a fixed list of choices; the options view shows a dropdown.</summary>
+    Choice,
 }

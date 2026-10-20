@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.Layout;
 using Avalonia.Media;
@@ -117,20 +118,10 @@ public sealed class OptionsTabView : UserControl
             Grid.SetRow(labelContent, i);
             grid.Children.Add(labelContent);
 
-            var valueBox = new TextBox
-            {
-                IsReadOnly = row.IsReadOnly,
-                PasswordChar = row.IsSecret ? '•' : default,
-            };
-            valueBox.Bind(TextBox.TextProperty, new Binding
-            {
-                Source = row,
-                Path = nameof(OptionRowViewModel.Value),
-                Mode = BindingMode.TwoWay,
-            });
-            Grid.SetRow(valueBox, i);
-            Grid.SetColumn(valueBox, 1);
-            grid.Children.Add(valueBox);
+            var valueEditor = row.IsChoice ? BuildChoiceBox(row) : BuildTextBox(row);
+            Grid.SetRow(valueEditor, i);
+            Grid.SetColumn(valueEditor, 1);
+            grid.Children.Add(valueEditor);
 
             if (row.IsPath)
             {
@@ -185,11 +176,50 @@ public sealed class OptionsTabView : UserControl
         }
     }
 
+    private static Control BuildTextBox(OptionRowViewModel row)
+    {
+        var valueBox = new TextBox
+        {
+            IsReadOnly = row.IsReadOnly,
+            PasswordChar = row.IsSecret ? '•' : default,
+        };
+        valueBox.Bind(TextBox.TextProperty, new Binding
+        {
+            Source = row,
+            Path = nameof(OptionRowViewModel.Value),
+            Mode = BindingMode.TwoWay,
+        });
+        return valueBox;
+    }
+
+    /// <summary>A dropdown for a fixed set of choices, such as the Light/Dark theme.</summary>
+    private static Control BuildChoiceBox(OptionRowViewModel row)
+    {
+        var choiceBox = new ComboBox
+        {
+            ItemsSource = row.ChoiceLabels,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            IsEnabled = !row.IsReadOnly,
+        };
+
+        // Only the user changes a choice; a one-way-to-source binding keeps the
+        // dropdown from being reset while the theme switch re-evaluates resources.
+        choiceBox.SelectedIndex = row.SelectedChoiceIndex;
+        choiceBox.Bind(SelectingItemsControl.SelectedIndexProperty, new Binding
+        {
+            Source = row,
+            Path = nameof(OptionRowViewModel.SelectedChoiceIndex),
+            Mode = BindingMode.OneWayToSource,
+        });
+        AutomationProperties.SetName(choiceBox, row.Label);
+        return choiceBox;
+    }
+
     /// <summary>A small flat amber folder, the file-explorer symbol; drawn so it needs no icon font.</summary>
     private static Control BuildExplorerIcon() => new Avalonia.Controls.Shapes.Path
     {
         Data = Geometry.Parse("M2,4 L6,4 L8,6 L14,6 L14,13 L2,13 Z"),
-        Fill = new SolidColorBrush(Color.FromRgb(0xFF, 0xC1, 0x07)),
+        Fill = ViewBrushes.Folder,
         Width = 16,
         Height = 16,
         VerticalAlignment = VerticalAlignment.Center,

@@ -16,4 +16,8 @@ public sealed record OptionDefinition(
     OptionKind Kind,
     string DefaultValue = "",
     bool IsReadOnly = false,
-    string HintText = "");
+    string HintText = "")
+{
+    /// <summary>The allowed values of a <see cref="OptionKind.Choice"/> option; null for other kinds.</summary>
+    public IReadOnlyList<OptionChoice>? Choices { get; init; }
+}

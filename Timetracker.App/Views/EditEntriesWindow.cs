@@ -21,8 +21,6 @@ namespace Timetracker.App.Views;
 /// </summary>
 public sealed class EditEntriesWindow : Window
 {
-    private static readonly IBrush ErrorBrush = new SolidColorBrush(Color.FromRgb(0xB2, 0x22, 0x22));
-
     private readonly EditEntriesViewModel _viewModel;
 
     /// <summary>True once the user saved; false when the dialog was cancelled.</summary>
@@ -60,7 +58,7 @@ public sealed class EditEntriesWindow : Window
         var hint = new TextBlock
         {
             Text = Strings.EditEntries_Hint,
-            Foreground = Brushes.Gray,
+            Foreground = ViewBrushes.Info,
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 0, 0, 8),
         };
@@ -90,7 +88,7 @@ public sealed class EditEntriesWindow : Window
 
         var error = new TextBlock
         {
-            Foreground = ErrorBrush,
+            Foreground = ViewBrushes.Error,
             VerticalAlignment = VerticalAlignment.Center,
             Text = Strings.EditEntries_EndBeforeStart,
         };
