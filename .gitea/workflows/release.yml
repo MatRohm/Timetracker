@@ -13,12 +13,12 @@ permissions:
 
 jobs:
   release:
-    name: Release ${{ github.event.inputs.version }}
+    name: Release ${{ inputs.version }}
     runs-on: ubuntu-latest
 
     env:
       # Tag as entered (e.g. v1.0.0), used for the release and the archives.
-      RELEASE_VERSION: ${{ github.event.inputs.version }}
+      RELEASE_VERSION: ${{ inputs.version }}
 
     steps:
       - name: Checkout
@@ -63,6 +63,7 @@ jobs:
       - name: Package (tar.gz / zip)
         shell: bash
         run: |
+          set -euo pipefail
           VERSION="$RELEASE_VERSION"
           LINUX_DIR="Timetracker.App/bin/Release/net10.0/linux-x64/publish"
           WIN_DIR="Timetracker.App/bin/Release/net10.0/win-x64/publish"
@@ -70,12 +71,16 @@ jobs:
           WIN_ARCHIVE="Timetracker-$VERSION-win-x64.zip"
 
           # Both archives are written to the workspace root, where the release step
-          # below (and gh) expects to find them. Running zip from $WIN_DIR would
-          # otherwise drop the zip next to the publish folder and break the release.
+          # expects to find them. Running zip from $WIN_DIR would otherwise drop the
+          # zip next to the publish folder and break the release.
+          if ! command -v zip >/dev/null 2>&1; then
+            echo "zip is required to build the Windows release archive" >&2
+            exit 1
+          fi
+
           tar -czf "$LINUX_ARCHIVE" \
             -C "$LINUX_DIR" Timetracker Timetracker.Plugins.ActivityMonitor
-          (cd "$WIN_DIR" && zip -q "$OLDPWD/$WIN_ARCHIVE" Timetracker.exe Timetracker.Plugins.ActivityMonitor.exe) || \
-            (cd "$WIN_DIR" && tar -acf "$OLDPWD/$WIN_ARCHIVE" Timetracker.exe Timetracker.Plugins.ActivityMonitor.exe)
+          (cd "$WIN_DIR" && zip -q "$OLDPWD/$WIN_ARCHIVE" Timetracker.exe Timetracker.Plugins.ActivityMonitor.exe)
 
       - name: Generate release notes
         shell: bash
@@ -152,21 +157,22 @@ jobs:
             printf 'Data file: timetracker.json in your user folder.\n'
           } > release-notes.md
 
-      - name: Create GitHub Release
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          VERSION="$RELEASE_VERSION"
-          gh release create "$VERSION" \
-            --title "Timetracker $VERSION" \
-            --notes-file release-notes.md \
-            "Timetracker-$VERSION-linux-x64.tar.gz" \
-            "Timetracker-$VERSION-win-x64.zip"
+      - name: Create Gitea release
+        uses: https://gitea.com/actions/gitea-release-action@5a83c90484ef4355121df5eb60558c8ce66e81ac # v1
+        with:
+          server_url: ${{ gitea.server_url }}
+          repository: ${{ gitea.repository }}
+          token: ${{ secrets.GITEA_TOKEN }}
+          tag_name: ${{ inputs.version }}
+          name: Timetracker ${{ inputs.version }}
+          body_path: release-notes.md
+          files: |
+            Timetracker-${{ inputs.version }}-linux-x64.tar.gz
+            Timetracker-${{ inputs.version }}-win-x64.zip
 
       - name: Summary
         shell: bash
         run: |
-          echo "### Release $RELEASE_VERSION created" >> $GITHUB_STEP_SUMMARY
-          echo "- linux-x64 archive: attached" >> $GITHUB_STEP_SUMMARY
-          echo "- win-x64 zip: attached" >> $GITHUB_STEP_SUMMARY
+          echo "Release $RELEASE_VERSION created"
+          echo "linux-x64 archive: attached"
+          echo "win-x64 zip: attached"

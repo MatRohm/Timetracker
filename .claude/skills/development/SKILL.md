@@ -120,8 +120,9 @@ begin a phase until the user has said to move on.
    permission.
 6. **Hand off** — summarize changes, validation results, issue status, merged
    branch, and any blocked commit/push step.
-7. **Note the CI gate** — every push builds & tests on Windows and Linux; the
-   manual **Release** workflow publishes both single-file executables.
+7. **Note the CI gate** — every push builds & tests on the Gitea Linux runner;
+   the manual **Release** workflow cross-publishes both single-file executables.
+   Native Windows testing is not part of the pipeline.
 
 ## Memory
 
