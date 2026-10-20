@@ -17,11 +17,11 @@ public sealed class AnalysedAssemblyRules
         "Timetracker.Plugins.AzureDevOps.dll",
         "Timetracker.Plugins.ActivityMonitor.dll",
         "Timetracker.Plugins.ActivityMonitor.App.dll",
-        "Timetracker.Plugins.WeekView.dll",
+        "Timetracker.Plugins.Calendar.dll",
         "Timetracker.App.Tests.Unit.dll",
         "Timetracker.Plugins.AzureDevOps.Tests.Unit.dll",
         "Timetracker.Plugins.ActivityMonitor.Tests.Unit.dll",
-        "Timetracker.Plugins.WeekView.Tests.Unit.dll",
+        "Timetracker.Plugins.Calendar.Tests.Unit.dll",
         "Timetracker.Tests.UI.dll",
     ];
 

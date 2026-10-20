@@ -12,7 +12,7 @@ using Timetracker.App.ViewModels;
 using Timetracker.App.Views;
 using Timetracker.App.Views.Components;
 using Timetracker.Plugins.Contracts.ViewModels;
-using Timetracker.Plugins.WeekView.Views;
+using Timetracker.Plugins.Calendar.Views;
 
 namespace Timetracker.Tests.UI;
 
@@ -177,23 +177,22 @@ public sealed class ViewRenderTests
     }
 
     [AvaloniaTest]
-    public void WeekTabView_WhenRendered_ShouldShowSevenDayNodesWithBookings()
+    public void CalendarTabView_WhenRendered_ShouldShowTheWeekGridWithBookings()
     {
-        var (view, week) = WeekViewTestSupport.Build(
+        var (view, calendar) = CalendarTestSupport.Build(
         [
-            WeekViewTestSupport.Session(DateTimeOffset.Now.Date.AddHours(9), "Meeting", "Project X"),
+            CalendarTestSupport.Session(DateTimeOffset.Now.Date.AddHours(9), "Meeting", "Project X"),
         ]);
-        // Days start collapsed; expand today to reveal its booking element node.
-        var today = week.Days.Single(d => d.IsToday);
-        today.IsExpanded = true;
 
-        // The tree holds all seven day nodes, and today's element node shows its name.
         var texts = FindAllControls<TextBlock>(view).Select(t => t.Text ?? "").ToList();
-        texts.Should().Contain("Project X (1:00)");
+        texts.Should().Contain("Meeting", "today's session renders as a block");
         texts.Should().Contain(t => t.StartsWith("Week "), "the week title is shown");
 
-        week.Days.Should().HaveCount(7, "Monday through Sunday");
-        FindAllControls<WeekTrackingTree>(view).Should().ContainSingle("the week tree is hosted");
+        calendar.Days.Should().HaveCount(7, "Monday through Sunday");
+        calendar.VisibleDays.Should().HaveCount(7, "the test opens in Week mode");
+        FindAllControls<CalendarWeekView>(view).Should().ContainSingle("the week grid is hosted");
+        FindAllControls<CalendarMonthView>(view).Should().ContainSingle("the month grid is hosted but hidden")
+            .Which.IsVisible.Should().BeFalse();
     }
 
     private static TrackerEntry Entry(string task, string bookingElement) => new()

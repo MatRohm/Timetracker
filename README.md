@@ -10,9 +10,9 @@ press **Stop** — the session is saved to a JSON file in your user folder.
 - **Idle auto-stop** after 30 minutes without input; the session ends at the last input.
 - **Suggestions** while typing: known task names with their accumulated time.
 - **History grid:** one row per task — sorting, column filters, paging, inline editing (**F2**), multi-select delete (**Del**), per-task session editor.
-- **Week view:** collapsible day → booking element → task tree with daily totals and copy buttons.
+- **Calendar:** Workweek, Week and Month views; Outlook-style time grid with time-proportional blocks, a green activity strip, untracked gap bands, a now line and per-day totals/Distribute. The selected mode is remembered.
 - **Azure DevOps import:** enter a work-item number to fill task name and booking element.
-- **PC activity monitor:** optional background process recording active/idle time; the week view shows it per day plus the **untracked time**.
+- **PC activity monitor:** optional background process recording active/idle time; the calendar shows it per day plus the **untracked time**.
 - **Options** tab: file and log locations plus plugin settings.
 
 ## Getting started
@@ -53,7 +53,7 @@ scope) in the **Options** tab; applies without restart; task name becomes
 `<id> <title>`, booking element from the **AZE-Element** field. Without a
 connection the tracker works normally.
 
-**Activity monitor:** the week view's **⏻ Install PC activity monitor** button
+**Activity monitor:** the calendar's **⏻ Install PC activity monitor** button
 registers a per-user autostart; no admin rights.
 
 ## Architecture
@@ -65,7 +65,7 @@ kernel never references plugin concrete types.
 
 - **Kernel** (`Timetracker.App`): view models, views, JSON persistence, DI wiring; discovers plugins via `GetServices<IUiQuery>`, `GetServices<ITabQuery>`, `GetServices<IAppCommand>`, …
 - **Contracts** (`Timetracker.Plugins.Contracts`): the plug-in seam — hook interfaces the kernel calls (`IUiQuery`, `IWeekDayQuery`, `IAppCommand`, …) and host interfaces plugins call into (`ITrackerSessionQuery/Command`, `IOptionQuery`, `IUiTimer`, …). No plugin logic.
-- **Plugins** (WeekView, AzureDevOps, ActivityMonitor): implement hooks, self-register in `Timetracker.App/HookRegistry.cs`. Adding a feature = implement a hook + register. MVVM throughout: view models know nothing about Avalonia.
+- **Plugins** (Calendar, AzureDevOps, ActivityMonitor): implement hooks, self-register in `Timetracker.App/HookRegistry.cs`. Adding a feature = implement a hook + register. MVVM throughout: view models know nothing about Avalonia.
 
 Each plugin lives under `Plugins/<Name>/`, with its `.Tests.Unit` project beside it; `Timetracker.Plugins.Contracts` stays at the repository root.
 
@@ -73,7 +73,7 @@ Each plugin lives under `Plugins/<Name>/`, with its `.Tests.Unit` project beside
 |---|---|
 | `Timetracker.App` | Micro-kernel (ships as `Timetracker.exe`) |
 | `Timetracker.Plugins.Contracts` | Hook + host interfaces, no logic |
-| `Timetracker.Plugins.WeekView` / `.AzureDevOps` / `.ActivityMonitor` | Plugins |
+| `Timetracker.Plugins.Calendar` / `.AzureDevOps` / `.ActivityMonitor` | Plugins |
 | `*.Tests.Unit`, `Timetracker.Tests.UI` | Unit and headless UI tests |
 | `Timetracker.Tests.Architecture` | Enforces project references, MVVM layering, naming |
 

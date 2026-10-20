@@ -98,10 +98,10 @@ public static class HookRegistry
         services.AddSingleton<ITrackedSessionsQuery>(sp => sp.GetRequiredService<Services.TrackedSessionsHost>());
         services.AddSingleton<ITrackedSessionsCommand>(sp => sp.GetRequiredService<Services.TrackedSessionsHost>());
 
-        // Week view plugin: its tab, its status line, and its view model.
-        services.AddSingleton<Plugins.WeekView.ViewModels.WeekViewModel>();
-        services.AddSingleton<IWeekStatusCommand, Plugins.WeekView.Services.WeekStatusHost>();
-        services.AddSingleton<ITabQuery, Plugins.WeekView.WeekTabContributor>();
+        // Calendar plugin: its tab, its status line, and its view model.
+        services.AddSingleton<Plugins.Calendar.ViewModels.CalendarViewModel>();
+        services.AddSingleton<IWeekStatusCommand, Plugins.Calendar.Services.CalendarStatusHost>();
+        services.AddSingleton<ITabQuery, Plugins.Calendar.CalendarTabContributor>();
 
         // Azure DevOps import: the connection is edited in the options tab.
         services.AddSingleton<Plugins.AzureDevOps.AzureDevOpsSettings>();
