@@ -39,6 +39,41 @@ public sealed class OptionRowViewModel : ObservableObject
 
     public bool IsSecret => Definition.Kind == OptionKind.Secret;
 
+    /// <summary>True when the option is edited with a dropdown of fixed choices.</summary>
+    public bool IsChoice => Definition.Kind == OptionKind.Choice;
+
+    /// <summary>The allowed choices; empty for other option kinds.</summary>
+    public IReadOnlyList<OptionChoice> Choices => Definition.Choices ?? [];
+
+    /// <summary>The labels of <see cref="Choices"/>, in the same order.</summary>
+    public IReadOnlyList<string> ChoiceLabels => [.. Choices.Select(choice => choice.Label)];
+
+    /// <summary>
+    /// Index of the selected choice, or -1 when the stored value matches none.
+    /// Setting a valid index stores that choice's value.
+    /// </summary>
+    public int SelectedChoiceIndex
+    {
+        get
+        {
+            for (var index = 0; index < Choices.Count; index++)
+            {
+                if (string.Equals(Choices[index].Value, Value, StringComparison.OrdinalIgnoreCase))
+                {
+                    return index;
+                }
+            }
+            return -1;
+        }
+        set
+        {
+            if (value >= 0 && value < Choices.Count)
+            {
+                Value = Choices[value].Value;
+            }
+        }
+    }
+
     public string HintText => Definition.HintText;
 
     public bool HasHint => Definition.HintText.Length > 0;
@@ -54,6 +89,7 @@ public sealed class OptionRowViewModel : ObservableObject
                 return;
             }
             OnPropertyChanged(nameof(IsChanged));
+            OnPropertyChanged(nameof(SelectedChoiceIndex));
         }
     }
 

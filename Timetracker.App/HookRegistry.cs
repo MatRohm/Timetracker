@@ -67,6 +67,7 @@ public static class HookRegistry
         services.AddSingleton<IOptionDefinitionQuery>(sp => new Services.GeneralOptionsContributor(
             sp.GetRequiredService<Services.JsonTrackerRepository>(),
             sp.GetRequiredService<Services.JsonOptionsStore>()));
+        services.AddSingleton<IThemeSwitcher, Services.ThemeSwitcher>();
         services.AddSingleton<IFileExplorer, Services.FileExplorer>();
         services.AddSingleton<ViewModels.OptionsViewModel>();
 

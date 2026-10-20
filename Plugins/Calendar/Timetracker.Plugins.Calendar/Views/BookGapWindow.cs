@@ -7,6 +7,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Timetracker.Plugins.Contracts.ViewModels;
+using Timetracker.Plugins.Contracts.Ui;
 using Timetracker.Plugins.Calendar.ViewModels;
 
 namespace Timetracker.Plugins.Calendar.Views;
@@ -41,7 +42,7 @@ public sealed class BookGapWindow : Window
         var hint = new TextBlock
         {
             Text = Strings.BookGap_Hint,
-            Foreground = Brushes.Gray,
+            Foreground = ViewBrushes.Info,
             TextWrapping = TextWrapping.Wrap,
         };
 

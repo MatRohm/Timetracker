@@ -9,20 +9,36 @@ namespace Timetracker.App.Tests.Unit.Services;
 public sealed class GeneralOptionsContributorTests
 {
     [Test]
-    public void Options_WhenCreated_ShouldShowConfigFolderThenTheThreeReadOnlyPaths()
+    public void Options_WhenCreated_ShouldShowTheThemeThenConfigFolderThenTheThreeReadOnlyPaths()
     {
         var contributor = new GeneralOptionsContributor("C:/data/timetracker.json", "C:/data/options.json", "C:/logs");
 
         var options = contributor.Options;
 
         options.Select(o => (o.Label, o.DefaultValue)).Should().Equal(
+            ("Theme", "Light"),
             ("Config folder", ""),
             ("Tracking file", "C:/data/timetracker.json"),
             ("Options file", "C:/data/options.json"),
             ("Log folder", "C:/logs"));
-        options[0].Kind.Should().Be(OptionKind.Path);
-        options[0].IsReadOnly.Should().BeFalse("the config folder is editable");
-        options.Skip(1).Should().OnlyContain(o => o.Kind == OptionKind.Path && o.IsReadOnly);
+        options[0].Kind.Should().Be(OptionKind.Choice);
+        options[1].Kind.Should().Be(OptionKind.Path);
+        options[1].IsReadOnly.Should().BeFalse("the config folder is editable");
+        options.Skip(2).Should().OnlyContain(o => o.Kind == OptionKind.Path && o.IsReadOnly);
+    }
+
+    [Test]
+    public void Options_WhenCreated_ShouldOfferLightAndDarkThemes()
+    {
+        var contributor = new GeneralOptionsContributor("a", "b", "c");
+
+        var theme = contributor.Options[0];
+
+        theme.Key.Should().Be(AppearanceOptions.ThemeKey);
+        theme.DefaultValue.Should().Be(AppearanceOptions.Light);
+        theme.Choices.Should().Equal(
+            new OptionChoice(AppearanceOptions.Light, "Light"),
+            new OptionChoice(AppearanceOptions.Dark, "Dark"));
     }
 
     [Test]

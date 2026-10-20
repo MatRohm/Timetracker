@@ -6,9 +6,9 @@ using Timetracker.Plugins.Contracts.Logging;
 namespace Timetracker.App.Services;
 
 /// <summary>
-/// The app's own section of the options view: the editable config folder that
-/// relocates the data files, and the read-only tracked-sessions, options and log
-/// locations.
+/// The app's own section of the options view: the Light/Dark theme, the editable
+/// config folder that relocates the data files, and the read-only tracked-sessions,
+/// options and log locations.
 /// </summary>
 public sealed class GeneralOptionsContributor(string trackingFilePath, string optionsFilePath, string logDirectory)
     : IOptionDefinitionQuery
@@ -22,6 +22,19 @@ public sealed class GeneralOptionsContributor(string trackingFilePath, string op
 
     public IReadOnlyList<OptionDefinition> Options { get; } =
     [
+        new(
+            AppearanceOptions.ThemeKey,
+            Strings.Options_Theme,
+            OptionKind.Choice,
+            AppearanceOptions.Light,
+            HintText: Strings.Options_ThemeHint)
+        {
+            Choices =
+            [
+                new(AppearanceOptions.Light, Strings.Options_ThemeLight),
+                new(AppearanceOptions.Dark, Strings.Options_ThemeDark),
+            ],
+        },
         new(
             TimetrackerPaths.ConfigFolderKey,
             Strings.Options_ConfigFolder,

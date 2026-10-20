@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Timetracker.App.Interfaces;
 using Timetracker.App.Localization;
+using Timetracker.App.Services;
 using Timetracker.Plugins.Contracts.ViewModels.Mvvm;
 using Timetracker.Plugins.Contracts.Interfaces;
 
@@ -15,13 +16,19 @@ public sealed class OptionsViewModel : ObservableObject
 {
     private readonly IOptionQuery _query;
     private readonly IOptionCommand _command;
+    private readonly IThemeSwitcher _theme;
     private string _statusText = "";
 
     public OptionsViewModel(
-        IOptionQuery query, IOptionCommand command, IEnumerable<IOptionDefinitionQuery> contributors, IFileExplorer explorer)
+        IOptionQuery query,
+        IOptionCommand command,
+        IEnumerable<IOptionDefinitionQuery> contributors,
+        IFileExplorer explorer,
+        IThemeSwitcher theme)
     {
         _query = query;
         _command = command;
+        _theme = theme;
         Sections =
         [
             .. contributors.Select(contributor => new OptionSection(
@@ -62,6 +69,7 @@ public sealed class OptionsViewModel : ObservableObject
                 await _command.SetValueAsync(row.Definition.Key, row.Value, cancellationToken);
                 row.AcceptValue();
             }
+
             StatusText = Strings.Options_Saved;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -72,6 +80,14 @@ public sealed class OptionsViewModel : ObservableObject
 
     private void OnRowChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (sender is OptionRowViewModel row
+            && e.PropertyName == nameof(OptionRowViewModel.Value)
+            && row.Definition.Key == AppearanceOptions.ThemeKey)
+        {
+            // Preview the new theme immediately; the Save button persists the choice.
+            _theme.Apply(row.Value);
+        }
+
         if (e.PropertyName != nameof(OptionRowViewModel.IsChanged))
         {
             return;

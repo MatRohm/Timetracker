@@ -16,10 +16,6 @@ namespace Timetracker.Plugins.Calendar.Views;
 /// </summary>
 public sealed class CalendarMonthView : UserControl
 {
-    private static readonly IBrush CellBackground = new SolidColorBrush(Color.FromRgb(0xFA, 0xFA, 0xFA));
-    private static readonly IBrush GridLine = new SolidColorBrush(Color.FromArgb(0x30, 0x69, 0x69, 0x69));
-    private static readonly IBrush ChipBackground = new SolidColorBrush(Color.FromRgb(0xD9, 0xE7, 0xF7));
-
     private readonly CalendarViewModel _calendar;
     private readonly Grid _grid = new();
 
@@ -109,7 +105,7 @@ public sealed class CalendarMonthView : UserControl
         {
             panel.Children.Add(new Border
             {
-                Background = ChipBackground,
+                Background = ViewBrushes.CalendarChip,
                 CornerRadius = new CornerRadius(2),
                 Padding = new Thickness(3, 0),
                 Child = new TextBlock
@@ -147,8 +143,8 @@ public sealed class CalendarMonthView : UserControl
 
         var cell = new Border
         {
-            Background = day.IsToday ? ViewBrushes.Today : CellBackground,
-            BorderBrush = GridLine,
+            Background = day.IsToday ? ViewBrushes.Today : ViewBrushes.CalendarCell,
+            BorderBrush = ViewBrushes.CalendarGridLine,
             BorderThickness = new Thickness(0, 0, 1, 1),
             Child = button,
         };

@@ -3,9 +3,9 @@ using Timetracker.Plugins.Contracts.Interfaces;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
-using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Timetracker.Plugins.Contracts;
+using Timetracker.Plugins.Contracts.Ui;
 
 namespace Timetracker.Plugins.AzureDevOps.Views;
 
@@ -156,7 +156,7 @@ public sealed class AzureDevOpsPanel : UserControl
             var cancelButton = new Button { Content = Strings.AzureDevOps_Cancel };
             cancelButton.Click += (_, _) => Close(null);
 
-            _errorText.Foreground = Brushes.Firebrick;
+            _errorText.Foreground = ViewBrushes.Error;
 
             Content = new StackPanel
             {

@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using FakeItEasy;
 using NUnit.Framework;
 using Timetracker.App.Interfaces;
+using Timetracker.App.Services;
 using Timetracker.App.ViewModels;
 using Timetracker.Plugins.Contracts;
 using Timetracker.Plugins.Contracts.Interfaces;
@@ -97,6 +98,56 @@ public sealed class OptionsViewModelTests
         A.CallTo(() => explorer.Show("C:/logs")).MustHaveHappenedOnceExactly();
     }
 
+    [Test]
+    public async Task SaveAsync_WhenTheThemeChanged_ShouldStoreIt()
+    {
+        var theme = ThemeOption();
+        var store = EmptyStore();
+        var viewModel = Create(store, out _, out _, Contributor("General", theme));
+        viewModel.Sections[0].Rows[0].SelectedChoiceIndex = 1;
+
+        await viewModel.SaveAsync();
+
+        A.CallTo(() => store.Command.SetValueAsync(
+                AppearanceOptions.ThemeKey, AppearanceOptions.Dark, A<CancellationToken>._))
+            .MustHaveHappenedOnceExactly();
+    }
+
+    [Test]
+    public void Sections_WhenTheThemeSelectionChanges_ShouldApplyItImmediately()
+    {
+        var theme = ThemeOption();
+        var viewModel = Create(EmptyStore(), out _, out var switcher, Contributor("General", theme));
+
+        viewModel.Sections[0].Rows[0].SelectedChoiceIndex = 1;
+
+        A.CallTo(() => switcher.Apply(AppearanceOptions.Dark)).MustHaveHappenedOnceExactly();
+    }
+
+    [Test]
+    public async Task SaveAsync_WhenAnotherOptionChanged_ShouldNotApplyATheme()
+    {
+        var viewModel = Create(EmptyStore(), out _, out var switcher, Contributor("Azure DevOps", Url));
+        viewModel.Sections[0].Rows[0].Value = "https://dev.azure.com/other";
+
+        await viewModel.SaveAsync();
+
+        A.CallTo(() => switcher.Apply(A<string?>._)).MustNotHaveHappened();
+    }
+
+    private static OptionDefinition ThemeOption() => new(
+        AppearanceOptions.ThemeKey,
+        "Theme",
+        OptionKind.Choice,
+        AppearanceOptions.Light)
+    {
+        Choices =
+        [
+            new OptionChoice(AppearanceOptions.Light, "Light"),
+            new OptionChoice(AppearanceOptions.Dark, "Dark"),
+        ],
+    };
+
     /// <summary>A store without values; FakeItEasy would return "" instead of null.</summary>
     private static (IOptionQuery Query, IOptionCommand Command) EmptyStore()
     {
@@ -108,10 +159,16 @@ public sealed class OptionsViewModelTests
 
     private static OptionsViewModel Create(
         (IOptionQuery Query, IOptionCommand Command) store, out IFileExplorer explorer,
-        params IOptionDefinitionQuery[] contributors)
+        params IOptionDefinitionQuery[] contributors) =>
+        Create(store, out explorer, out _, contributors);
+
+    private static OptionsViewModel Create(
+        (IOptionQuery Query, IOptionCommand Command) store, out IFileExplorer explorer,
+        out IThemeSwitcher theme, params IOptionDefinitionQuery[] contributors)
     {
         explorer = A.Fake<IFileExplorer>();
-        var result = new OptionsViewModel(store.Query, store.Command, contributors, explorer);
+        theme = A.Fake<IThemeSwitcher>();
+        var result = new OptionsViewModel(store.Query, store.Command, contributors, explorer, theme);
         return result;
     }
 

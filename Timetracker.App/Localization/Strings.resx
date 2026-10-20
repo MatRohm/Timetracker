@@ -239,6 +239,18 @@
   <data name="Options_SectionGeneral" xml:space="preserve">
     <value>General</value>
   </data>
+  <data name="Options_Theme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="Options_ThemeHint" xml:space="preserve">
+    <value>Light and dark color scheme.</value>
+  </data>
+  <data name="Options_ThemeLight" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="Options_ThemeDark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
   <data name="Options_TrackingFile" xml:space="preserve">
     <value>Tracking file</value>
   </data>

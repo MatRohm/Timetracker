@@ -143,7 +143,8 @@ public sealed class OptionsTabViewRenderTests
                     new OptionDefinition("General.Short", "Short", OptionKind.Text, "v", HintText: "h"),
                     new OptionDefinition("General.AMuchLongerLabel", "A much longer label", OptionKind.Text, "v", HintText: "h")),
             ],
-            new RecordingExplorer());
+            new RecordingExplorer(),
+            new RecordingThemeSwitcher());
         var view = new OptionsTabView(viewModel, []);
         var window = new Window { Content = view, Width = 900, Height = 500 };
         window.Show();
@@ -176,9 +177,47 @@ public sealed class OptionsTabViewRenderTests
                         "https://dev.azure.com/my-org", HintText: hint ?? ""),
                     new OptionDefinition("AzureDevOps.Pat", "Personal access token", OptionKind.Secret, "token")),
             ],
-            explorer);
+            explorer,
+            new RecordingThemeSwitcher());
         var result = new OptionsTabView(viewModel, contributions ?? []);
         return result;
+    }
+
+    [AvaloniaTest]
+    public void OptionsTabView_WhenAnOptionIsAChoice_ShouldRenderADropdownAndStoreTheSelection()
+    {
+        var definition = new OptionDefinition(
+            "General.Theme",
+            "Theme",
+            OptionKind.Choice,
+            "Light")
+        {
+            Choices =
+            [
+                new OptionChoice("Light", "Light"),
+                new OptionChoice("Dark", "Dark"),
+            ],
+        };
+        var viewModel = new OptionsViewModel(
+            new EmptyStore(),
+            new EmptyStore(),
+            [new Contributor("General", definition)],
+            new RecordingExplorer(),
+            new RecordingThemeSwitcher());
+        var view = new OptionsTabView(viewModel, []);
+        var window = new Window { Content = view };
+        window.Show();
+
+        var combo = view.GetLogicalDescendants().OfType<ComboBox>().Should().ContainSingle().Subject;
+        combo.ItemCount.Should().Be(2, "both theme choices are offered");
+        combo.SelectedIndex.Should().Be(0, "Light is the default");
+        combo.SelectedItem.Should().Be("Light");
+
+        combo.SelectedIndex = 1;
+        Dispatcher.UIThread.RunJobs();
+
+        viewModel.Sections[0].Rows[0].Value.Should().Be("Dark");
+        viewModel.HasChanges.Should().BeTrue();
     }
 
     private sealed class Contributor(string section, params OptionDefinition[] options) : IOptionDefinitionQuery
@@ -201,5 +240,12 @@ public sealed class OptionsTabViewRenderTests
         public List<string> Shown { get; } = [];
 
         public void Show(string path) => Shown.Add(path);
+    }
+
+    private sealed class RecordingThemeSwitcher : IThemeSwitcher
+    {
+        public List<string?> Applied { get; } = [];
+
+        public void Apply(string? theme) => Applied.Add(theme);
     }
 }

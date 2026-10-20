@@ -72,4 +72,43 @@ public sealed class OptionRowViewModelTests
 
         row.HintText.Should().Be("e.g. https://dev.azure.com/your-org");
     }
+
+    [Test]
+    public void SelectedChoiceIndex_WhenAChoiceIsPicked_ShouldStoreItsValueAndReportTheChange()
+    {
+        var definition = ThemeOption();
+        var row = new OptionRowViewModel(definition, null, A.Fake<IFileExplorer>());
+
+        row.IsChoice.Should().BeTrue();
+        row.SelectedChoiceIndex.Should().Be(0, "the default value is selected");
+
+        row.SelectedChoiceIndex = 1;
+
+        row.Value.Should().Be("Dark");
+        row.IsChanged.Should().BeTrue();
+        row.SelectedChoiceIndex.Should().Be(1);
+    }
+
+    [Test]
+    public void Choices_WhenTheOptionIsNoChoice_ShouldBeEmpty()
+    {
+        var definition = new OptionDefinition("AzureDevOps.Project", "Project", OptionKind.Text);
+        var row = new OptionRowViewModel(definition, null, A.Fake<IFileExplorer>());
+
+        row.IsChoice.Should().BeFalse();
+        row.Choices.Should().BeEmpty();
+    }
+
+    private static OptionDefinition ThemeOption() => new(
+        "General.Theme",
+        "Theme",
+        OptionKind.Choice,
+        "Light")
+    {
+        Choices =
+        [
+            new OptionChoice("Light", "Light"),
+            new OptionChoice("Dark", "Dark"),
+        ],
+    };
 }

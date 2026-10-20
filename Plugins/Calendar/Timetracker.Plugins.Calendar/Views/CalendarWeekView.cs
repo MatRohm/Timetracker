@@ -30,11 +30,6 @@ public sealed class CalendarWeekView : UserControl
     /// <summary>Smallest height a short session block keeps so it stays clickable.</summary>
     private const double MinimumBlockHeight = 4;
 
-    private static readonly IBrush GridLine = new SolidColorBrush(Color.FromArgb(0x30, 0x69, 0x69, 0x69));
-    private static readonly IBrush BlockBackground = new SolidColorBrush(Color.FromRgb(0xD9, 0xE7, 0xF7));
-    private static readonly IBrush BlockBorder = new SolidColorBrush(Color.FromRgb(0x4A, 0x7E, 0xBB));
-    private static readonly IBrush GapBand = new SolidColorBrush(Color.FromArgb(0x30, 0xC0, 0x56, 0x00));
-
     private readonly CalendarViewModel _calendar;
     private readonly Grid _headerGrid = new();
     private readonly Grid _bodyGrid = new();
@@ -202,7 +197,7 @@ public sealed class CalendarWeekView : UserControl
         return new Border
         {
             Background = day.IsToday ? ViewBrushes.Today : ViewBrushes.Surface,
-            BorderBrush = GridLine,
+            BorderBrush = ViewBrushes.CalendarGridLine,
             BorderThickness = new Thickness(0, 0, 1, 1),
             Padding = new Thickness(4, 2, 4, 3),
             Child = panel,
@@ -217,7 +212,7 @@ public sealed class CalendarWeekView : UserControl
 
         for (var time = axis.Start; time <= axis.End; time += TimeSpan.FromHours(1))
         {
-            var line = new Rectangle { Height = 1, Fill = GridLine };
+            var line = new Rectangle { Height = 1, Fill = ViewBrushes.CalendarGridLine };
             Canvas.SetTop(line, CalendarLayout.Top(time, axis));
             canvas.Children.Add(line);
             widthActions.Add(width => line.Width = width);
@@ -289,7 +284,7 @@ public sealed class CalendarWeekView : UserControl
 
         return new Border
         {
-            BorderBrush = GridLine,
+            BorderBrush = ViewBrushes.CalendarGridLine,
             BorderThickness = new Thickness(0, 0, 1, 0),
             Child = canvas,
         };
@@ -310,7 +305,7 @@ public sealed class CalendarWeekView : UserControl
 
         var band = new Border
         {
-            Background = GapBand,
+            Background = ViewBrushes.GapBand,
             BorderBrush = ViewBrushes.Warning,
             BorderThickness = new Thickness(2, 0, 0, 0),
             Child = book,
@@ -348,8 +343,8 @@ public sealed class CalendarWeekView : UserControl
 
         var block = new Border
         {
-            Background = BlockBackground,
-            BorderBrush = session.IsRunning ? ViewBrushes.Success : BlockBorder,
+            Background = ViewBrushes.CalendarBlock,
+            BorderBrush = session.IsRunning ? ViewBrushes.Success : ViewBrushes.CalendarBlockBorder,
             BorderThickness = new Thickness(session.IsRunning ? 2 : 1),
             CornerRadius = new CornerRadius(3),
             Padding = new Thickness(4, 1),
