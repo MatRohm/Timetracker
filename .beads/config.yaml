@@ -123,4 +123,4 @@
 export:
     auto: true
 sync:
-    remote: "git+https://github.com/MatRohm/Timetracker.git"
+    remote: "git+https://gitea.home.arpa/MR/Timetracker.git"
