@@ -154,6 +154,17 @@ public sealed class CalendarDayViewModel(Func<DateTimeOffset>? now = null) : Obs
         OnPropertyChanged(nameof(ActiveSpans));
     }
 
+    /// <summary>Applies one built day: sessions, activity spans, gaps and distribution.</summary>
+    public void Apply(CalendarDayContent content)
+    {
+        Update(content.Date, content.Sessions);
+        ContributorText = content.ContributorText;
+        ActiveTime = content.ActiveTime;
+        SetActiveSpans(content.ActiveSpans);
+        SetDistribution(content.Distribution);
+        SetGaps(content.Gaps);
+    }
+
     /// <summary>Replaces the day's clipped session blocks.</summary>
     public void Update(DateTimeOffset date, IEnumerable<CalendarSessionViewModel> sessions)
     {
