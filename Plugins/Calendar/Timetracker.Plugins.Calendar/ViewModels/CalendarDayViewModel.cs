@@ -110,6 +110,12 @@ public sealed class CalendarDayViewModel(Func<DateTimeOffset>? now = null) : Obs
     public IReadOnlyList<CalendarSessionViewModel> Sessions { get; private set; } = [];
 
     /// <summary>
+    /// The day's booking elements for the header's copy flyout, ordered by
+    /// earliest session; sessions without an element form a &lt;None&gt; group.
+    /// </summary>
+    public IReadOnlyList<CalendarCopyGroupViewModel> CopyGroups { get; private set; } = [];
+
+    /// <summary>
     /// Active stretches of this day, clipped to the day and ordered by start;
     /// the view draws one green strip segment per span.
     /// </summary>
@@ -174,6 +180,7 @@ public sealed class CalendarDayViewModel(Func<DateTimeOffset>? now = null) : Obs
         Header = $"{date.ToString("ddd", CultureInfo.InvariantCulture)} {date.Day:00}.{date.Month:00}.";
 
         Sessions = items;
+        CopyGroups = BuildCopyGroups(items);
         _bookedSeconds = items.Sum(s => s.Duration.TotalSeconds);
         TotalText = items.Count > 0 ? $"Σ {CalendarTimeFormat.HoursMinutes(_bookedSeconds)}" : "";
         IsToday = date.Date == _now().Date;
@@ -181,7 +188,38 @@ public sealed class CalendarDayViewModel(Func<DateTimeOffset>? now = null) : Obs
 
         OnPropertyChanged(nameof(Date));
         OnPropertyChanged(nameof(Sessions));
+        OnPropertyChanged(nameof(CopyGroups));
     }
+
+    /// <summary>
+    /// One group per trimmed booking element (case-insensitive; entries without
+    /// one form the &lt;None&gt; group), ordered by earliest session. Each group
+    /// carries the clipped day time and its distinct task names in first-seen
+    /// order.
+    /// </summary>
+    private static IReadOnlyList<CalendarCopyGroupViewModel> BuildCopyGroups(
+        IReadOnlyList<CalendarSessionViewModel> sessions)
+    {
+        var groups = sessions
+            .GroupBy(session => session.BookingElement.Trim(), StringComparer.CurrentCultureIgnoreCase)
+            .OrderBy(group => group.Min(session => session.Start))
+            .ThenBy(group => ElementLabel(group.Key), StringComparer.CurrentCultureIgnoreCase)
+            .Select(group => new CalendarCopyGroupViewModel(
+                ElementLabel(group.Key),
+                group.Aggregate(TimeSpan.Zero, (sum, session) => sum + session.Duration),
+                [.. group
+                    .GroupBy(session => session.Task.Trim(), StringComparer.CurrentCultureIgnoreCase)
+                    .OrderBy(task => task.Min(session => session.Start))
+                    .ThenBy(task => task.Key, StringComparer.CurrentCultureIgnoreCase)
+                    .Select(task => task.Key)]))
+            .ToList();
+
+        IReadOnlyList<CalendarCopyGroupViewModel> result = groups;
+        return result;
+    }
+
+    private static string ElementLabel(string element) =>
+        element.Length > 0 ? element : Strings.Calendar_NoBookingElement;
 
     /// <summary>Recomputes the untracked time from the active time and the booked sessions.</summary>
     private void RefreshUntracked()

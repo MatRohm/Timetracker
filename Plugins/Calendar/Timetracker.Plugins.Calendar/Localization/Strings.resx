@@ -88,11 +88,20 @@
   <data name="Calendar_DistributionHintNone" xml:space="preserve">
     <value>Nothing to distribute: the day has no untracked time, or no task can absorb it</value>
   </data>
+  <data name="Calendar_Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Calendar_CopyDay" xml:space="preserve">
+    <value>Copy this day's tracked tasks by booking element</value>
+  </data>
   <data name="Calendar_CopyElementTasks" xml:space="preserve">
     <value>Copy this element's tasks</value>
   </data>
   <data name="Calendar_CopyTask" xml:space="preserve">
     <value>Copy this task</value>
+  </data>
+  <data name="Calendar_NoBookingElement" xml:space="preserve">
+    <value>&lt;None&gt;</value>
   </data>
   <data name="Calendar_ClipboardError" xml:space="preserve">
     <value>Could not access the clipboard.</value>
