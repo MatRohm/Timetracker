@@ -152,6 +152,74 @@ public sealed class CalendarDayViewModelTests
         day.UntrackedText.Should().Be("0:10 untracked");
     }
 
+    [Test]
+    public void CopyGroups_WhenADayHasTwoElements_ShouldLabelEachWithItsTotal()
+    {
+        var day = new CalendarDayViewModel();
+        var date = new DateTimeOffset(2026, 9, 21, 0, 0, 0, Offset);
+
+        day.Update(date,
+        [
+            Block(date, 9, 60, "Report", "Project X"),
+            Block(date, 10, 30, "Review", "Project X"),
+            Block(date, 12, 30, "Meeting", "Project Y"),
+        ]);
+
+        day.CopyGroups.Select(g => g.Label).Should().Equal("Project X (1:30)", "Project Y (0:30)");
+    }
+
+    [Test]
+    public void CopyGroups_WhenAnElementHasRepeatedTask_ShouldListTheTaskOnceOldestFirst()
+    {
+        var day = new CalendarDayViewModel();
+        var date = new DateTimeOffset(2026, 9, 21, 0, 0, 0, Offset);
+
+        day.Update(date,
+        [
+            Block(date, 9, 60, "Report", "Project X"),
+            Block(date, 14, 30, "Review", "Project X"),
+            Block(date, 16, 15, "report", "Project X"),
+        ]);
+
+        day.CopyGroups.Single().CopyText.Should().Be("Report" + Environment.NewLine + "Review");
+    }
+
+    [Test]
+    public void CopyGroups_WhenAnElementIsMissing_ShouldUseTheNoneLabel()
+    {
+        var day = new CalendarDayViewModel();
+        var date = new DateTimeOffset(2026, 9, 21, 0, 0, 0, Offset);
+
+        day.Update(date, [Block(date, 9, 45, "Adhoc")]);
+
+        day.CopyGroups.Single().Label.Should().Be("<None> (0:45)");
+    }
+
+    [Test]
+    public void CopyGroups_WhenElementsDifferByCase_ShouldMergeThem()
+    {
+        var day = new CalendarDayViewModel();
+        var date = new DateTimeOffset(2026, 9, 21, 0, 0, 0, Offset);
+
+        day.Update(date,
+        [
+            Block(date, 9, 30, "Report", "Project X"),
+            Block(date, 10, 30, "Review", "project x"),
+        ]);
+
+        day.CopyGroups.Single().Label.Should().Be("Project X (1:00)");
+    }
+
+    [Test]
+    public void CopyGroups_WhenADayIsEmpty_ShouldBeEmpty()
+    {
+        var day = new CalendarDayViewModel();
+
+        day.Update(new DateTimeOffset(2026, 9, 21, 0, 0, 0, Offset), []);
+
+        day.CopyGroups.Should().BeEmpty();
+    }
+
     private static CalendarSessionViewModel Block(
         DateTimeOffset date,
         int startHour,

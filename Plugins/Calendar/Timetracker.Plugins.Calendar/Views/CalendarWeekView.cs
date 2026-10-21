@@ -180,6 +180,12 @@ public sealed class CalendarWeekView : UserControl
 
         if (day.TotalText.Length > 0)
         {
+            var actions = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 4,
+            };
+
             var distribute = new Button
             {
                 Content = Strings.Calendar_Distribute,
@@ -191,7 +197,23 @@ public sealed class CalendarWeekView : UserControl
             ToolTip.SetTip(distribute, day.DistributionHint);
             ToolTip.SetShowOnDisabled(distribute, true);
             distribute.Click += async (_, _) => await DistributeAsync(day);
-            panel.Children.Add(distribute);
+            actions.Children.Add(distribute);
+
+            if (day.CopyGroups.Count > 0)
+            {
+                var copy = new Button
+                {
+                    Content = Strings.Calendar_Copy,
+                    FontSize = 10,
+                    Padding = new Thickness(5, 0),
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                };
+                ToolTip.SetTip(copy, Strings.Calendar_CopyDay);
+                copy.Flyout = BuildCopyFlyout(day);
+                actions.Children.Add(copy);
+            }
+
+            panel.Children.Add(actions);
         }
 
         return new Border
@@ -202,6 +224,24 @@ public sealed class CalendarWeekView : UserControl
             Padding = new Thickness(4, 2, 4, 3),
             Child = panel,
         };
+    }
+
+    /// <summary>
+    /// One flyout item per booking element of the day; selecting an item copies
+    /// that element's task names.
+    /// </summary>
+    private MenuFlyout BuildCopyFlyout(CalendarDayViewModel day)
+    {
+        var items = new List<MenuItem>();
+        foreach (var group in day.CopyGroups)
+        {
+            var item = new MenuItem { Header = group.Label };
+            item.Click += async (_, _) => await CopyAsync(group.CopyText);
+            items.Add(item);
+        }
+
+        var flyout = new MenuFlyout { ItemsSource = items };
+        return flyout;
     }
 
     private Control BuildDayBody(CalendarDayViewModel day)
