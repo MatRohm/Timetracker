@@ -1,0 +1,179 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. v1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Release ${{ inputs.version }}
+    runs-on: ubuntu-latest
+
+    env:
+      # Tag as entered (e.g. v1.0.0), used for the release and the archives.
+      RELEASE_VERSION: ${{ inputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history and tags, so the release-notes step can enumerate the
+          # commits since the previous release tag.
+          fetch-depth: 0
+
+      - name: Validate version input
+        shell: bash
+        run: |
+          VERSION="$RELEASE_VERSION"
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Version must look like v1.0.0 (optionally with suffix like -beta.1), got: '$VERSION'"
+            exit 1
+          fi
+
+      - name: Derive build version
+        shell: bash
+        run: |
+          # MSBuild's Version property rejects the tag's leading "v"; the SDK then
+          # derives AssemblyVersion, FileVersion and InformationalVersion from it
+          # (also stripping a prerelease suffix where required).
+          echo "BUILD_VERSION=${RELEASE_VERSION#v}" >> "$GITHUB_ENV"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish linux-x64
+        run: >
+          dotnet publish Timetracker.App/Timetracker.App.csproj -c Release -r linux-x64 --self-contained true
+          -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:Version=$BUILD_VERSION
+
+      - name: Publish win-x64
+        run: >
+          dotnet publish Timetracker.App/Timetracker.App.csproj -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:Version=$BUILD_VERSION
+
+      - name: Package (tar.gz / zip)
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$RELEASE_VERSION"
+          LINUX_DIR="Timetracker.App/bin/Release/net10.0/linux-x64/publish"
+          WIN_DIR="Timetracker.App/bin/Release/net10.0/win-x64/publish"
+          LINUX_ARCHIVE="Timetracker-$VERSION-linux-x64.tar.gz"
+          WIN_ARCHIVE="Timetracker-$VERSION-win-x64.zip"
+
+          # Both archives are written to the workspace root, where the release step
+          # expects to find them. Running zip from $WIN_DIR would otherwise drop the
+          # zip next to the publish folder and break the release.
+          if ! command -v zip >/dev/null 2>&1; then
+            echo "zip is required to build the Windows release archive" >&2
+            exit 1
+          fi
+
+          tar -czf "$LINUX_ARCHIVE" \
+            -C "$LINUX_DIR" Timetracker Timetracker.Plugins.ActivityMonitor
+          (cd "$WIN_DIR" && zip -q "$OLDPWD/$WIN_ARCHIVE" Timetracker.exe Timetracker.Plugins.ActivityMonitor.exe)
+
+      - name: Generate release notes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Commits since the previous release tag, or from the root if none exists.
+          PREV=$(git tag --sort=-v:refname | head -1)
+          if [ -z "$PREV" ]; then
+            PREV=$(git rev-list --max-parents=0 HEAD)
+          fi
+
+          FEATURES=""
+          FIXES=""
+          OTHERS=""
+          BREAKING=""
+
+          while IFS= read -r hash; do
+            subject=$(git log -1 --pretty=%s "$hash")
+            body=$(git log -1 --pretty=%b "$hash")
+
+            case "$subject" in
+              feat*) section=Features ;;
+              fix*) section="Bug fixes" ;;
+              technical*) section=Other ;;
+              *) continue ;;
+            esac
+
+            bullet="* $subject"
+
+            # Breaking: "!" after type/scope AND a BREAKING CHANGE footer (both required).
+            if printf '%s' "$subject" | grep -Eq '^(feat|fix|technical)(\([^()]+\))?!:' \
+               && printf '%s\n' "$body" | grep -Eq '^BREAKING[ -]CHANGE:'; then
+              footer=$(printf '%s\n' "$body" \
+                | sed -n '/^BREAKING[ -]CHANGE:/,$p' \
+                | sed '1s/^BREAKING[ -]CHANGE:[[:space:]]*//' \
+                | tr '\n' ' ' \
+                | sed 's/[[:space:]][[:space:]]*/ /g; s/[[:space:]]*$//')
+              BREAKING="${BREAKING}* ${footer}\n"
+            fi
+
+            case "$section" in
+              Features) FEATURES="${FEATURES}${bullet}\n" ;;
+              "Bug fixes") FIXES="${FIXES}${bullet}\n" ;;
+              Other) OTHERS="${OTHERS}${bullet}\n" ;;
+            esac
+          done < <(git rev-list --reverse "$PREV..HEAD")
+
+          {
+            if [ -n "$BREAKING" ]; then
+              printf '## Breaking changes\n\n'
+              printf '%b' "$BREAKING"
+              printf '\n'
+            fi
+            if [ -n "$FEATURES" ]; then
+              printf '## Features\n\n'
+              printf '%b' "$FEATURES"
+              printf '\n'
+            fi
+            if [ -n "$FIXES" ]; then
+              printf '## Bug fixes\n\n'
+              printf '%b' "$FIXES"
+              printf '\n'
+            fi
+            if [ -n "$OTHERS" ]; then
+              printf '## Other\n\n'
+              printf '%b' "$OTHERS"
+              printf '\n'
+            fi
+            printf -- '- Timetracker-%s-linux-x64.tar.gz - for 64-bit Linux\n' "$RELEASE_VERSION"
+            printf -- '- Timetracker-%s-win-x64.zip - for 64-bit Windows\n\n' "$RELEASE_VERSION"
+            printf 'Self-contained single-file builds: no .NET installation needed.\n'
+            printf 'Unzip and run Timetracker (or Timetracker.exe), then use the week view to install the PC activity monitor.\n'
+            printf 'Data file: timetracker.json in your user folder.\n'
+          } > release-notes.md
+
+      - name: Create GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION="$RELEASE_VERSION"
+          gh release create "$VERSION" \
+            --target "$GITHUB_SHA" \
+            --title "Timetracker $VERSION" \
+            --notes-file release-notes.md \
+            "Timetracker-$VERSION-linux-x64.tar.gz" \
+            "Timetracker-$VERSION-win-x64.zip"
+
+      - name: Summary
+        shell: bash
+        run: |
+          echo "### Release $RELEASE_VERSION created" >> "$GITHUB_STEP_SUMMARY"
+          echo "- linux-x64 archive: attached" >> "$GITHUB_STEP_SUMMARY"
+          echo "- win-x64 zip: attached" >> "$GITHUB_STEP_SUMMARY"
